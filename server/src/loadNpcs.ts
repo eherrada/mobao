@@ -115,6 +115,10 @@ class LoadNpcs {
         if (datNpc.objs) tmpNPC.objs = datNpc.objs;
         tmpNPC.aguaValida = datNpc.aguaValida;
         tmpNPC.tierraInvalida = datNpc.tierraInvalida ?? 0;
+        tmpNPC.stationary = Number(datNpc.stationary ?? 0);
+        tmpNPC.noRespawn = Number(datNpc.noRespawn ?? 0);
+        if (datNpc.team) tmpNPC.team = String(datNpc.team);
+        if (datNpc.structure) tmpNPC.structure = String(datNpc.structure);
         if (datNpc.desc) tmpNPC.desc = datNpc.desc;
 
         if (forceRandomSpawn) {

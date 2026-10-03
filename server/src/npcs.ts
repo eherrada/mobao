@@ -23,6 +23,7 @@ import * as safeZone from "./safeZone";
 export {};
 
 const vars = require("./vars");
+const { mapW, mapH } = require("./mapBounds");
 const socket = require("./socket") as SocketApi;
 const funct = require("./functions");
 const game = require("./game") as GameApi;
@@ -526,6 +527,27 @@ function handleNpcSpellKillUser(npc: NpcCharacter, user: PlayerCharacter) {
 
     if (user.disconnectOnDeath && !getClientById(user.id)) {
         game.closeForce(user.id);
+    }
+}
+
+function announceStructureDestroyed(npc: NpcCharacter) {
+    const teamLabel = npc.team === "red" ? "roja" : npc.team === "blue" ? "azul" : "";
+    const what = npc.structure === "nexus" ? "El nexo" : "Una torre";
+    const text =
+        npc.structure === "nexus"
+            ? `${what} ${teamLabel} fue destruido. ¡Fin de la partida!`
+            : `${what} ${teamLabel} fue destruida.`;
+
+    for (const userId in vars.personajes) {
+        const user = vars.personajes[userId] as PlayerCharacter | undefined;
+
+        if (!user || user.map !== npc.map) {
+            continue;
+        }
+
+        withUserClient(user.id, (client) => {
+            handleProtocol.console(`[MOBA] ${text}`, npc.structure === "nexus" ? "yellow" : "orange", 1, 0, client);
+        });
     }
 }
 
@@ -1214,8 +1236,8 @@ function isAttackTileReservedByOtherNpc(targetId: EntityId, pos: Position, npcId
     return Boolean(reservation && reservation.npcId !== npcId);
 }
 
-function isWithinMapBounds(pos: Position) {
-    return pos.x >= 1 && pos.y >= 1 && pos.x <= 100 && pos.y <= 100;
+function isWithinMapBounds(idMap: number, pos: Position) {
+    return pos.x >= 1 && pos.y >= 1 && pos.x <= mapW(idMap) && pos.y <= mapH(idMap);
 }
 
 function isWithinFlowFieldBounds(pos: Position, center: Position) {
@@ -1223,7 +1245,7 @@ function isWithinFlowFieldBounds(pos: Position, center: Position) {
 }
 
 function canNpcUseTileForFlow(idMap: number, pos: Position, aguaValida: boolean, tierraInvalida = false) {
-    if (!isWithinMapBounds(pos)) {
+    if (!isWithinMapBounds(idMap, pos)) {
         return false;
     }
 
@@ -2268,6 +2290,13 @@ function Npcs(this: NpcsApi) {
 
             vars.areaNpc[idNpc] = [];
 
+            if (npc.noRespawn) {
+                announceStructureDestroyed(npc);
+                delete vars.npcs[idNpc];
+                delete vars.areaNpc[idNpc];
+                return;
+            }
+
             const respawnCooldownMs = getNpcRespawnCooldownMs(npc);
             const respawnEntry = getNpcRespawnEntry(npc);
 
@@ -2402,6 +2431,10 @@ function Npcs(this: NpcsApi) {
             }
 
             if (!targetIsSummon && userTarget && tryNpcCastSpell(npc, userTarget, updateNpcHeading)) {
+                return;
+            }
+
+            if (npc.stationary) {
                 return;
             }
 
@@ -2818,7 +2851,7 @@ function Npcs(this: NpcsApi) {
 
             for (let y = posYStart; y <= posYEnd; y++) {
                 for (let x = posXStart; x <= posXEnd; x++) {
-                    if (x >= 1 && x <= 100 && y >= 1 && y <= 100) {
+                    if (x >= 1 && x <= mapW(npc.map) && y >= 1 && y <= mapH(npc.map)) {
                         const mapData = vars.mapData[npc.map][y][x];
                         if (mapData.id) {
                             const target = getUser(mapData.id);
@@ -2843,7 +2876,7 @@ function Npcs(this: NpcsApi) {
 
             for (let y = posYStart; y <= posYEnd; y++) {
                 for (let x = posXStart; x <= posXEnd; x++) {
-                    if (x >= 1 && x <= 100 && y >= 1 && y <= 100) {
+                    if (x >= 1 && x <= mapW(idMap) && y >= 1 && y <= mapH(idMap)) {
                         const mapData = vars.mapData[idMap][y][x];
                         if (mapData.id) {
                             const target = getUser(mapData.id);
@@ -2911,7 +2944,7 @@ function Npcs(this: NpcsApi) {
                 let positionStartY = npc.pos.y - AREA_RANGE_Y;
 
                 for (let y = positionStartY; y < positionStartY + AREA_DIAMETER_Y; y++) {
-                    if (positionStartX >= 1 && y >= 1 && positionStartX <= 100 && y <= 100) {
+                    if (positionStartX >= 1 && y >= 1 && positionStartX <= mapW(npc.map) && y <= mapH(npc.map)) {
                         const newUserID = vars.mapData[npc.map][y][positionStartX].id as EntityId | 0;
                         if (newUserID) addNpcToUser(newUserID);
                     }
@@ -2921,7 +2954,7 @@ function Npcs(this: NpcsApi) {
                 positionStartY = npc.pos.y - AREA_RANGE_Y;
 
                 for (let y = positionStartY; y < positionStartY + AREA_DIAMETER_Y; y++) {
-                    if (positionStartX >= 1 && y >= 1 && positionStartX <= 100 && y <= 100) {
+                    if (positionStartX >= 1 && y >= 1 && positionStartX <= mapW(npc.map) && y <= mapH(npc.map)) {
                         const newUserID = vars.mapData[npc.map][y][positionStartX].id as EntityId | 0;
                         if (newUserID) removeNpcFromUser(newUserID);
                     }
@@ -2931,7 +2964,7 @@ function Npcs(this: NpcsApi) {
                 let positionStartY = npc.pos.y - AREA_RANGE_Y;
 
                 for (let y = positionStartY; y < positionStartY + AREA_DIAMETER_Y; y++) {
-                    if (positionStartX >= 1 && y >= 1 && positionStartX <= 100 && y <= 100) {
+                    if (positionStartX >= 1 && y >= 1 && positionStartX <= mapW(npc.map) && y <= mapH(npc.map)) {
                         const newUserID = vars.mapData[npc.map][y][positionStartX].id as EntityId | 0;
                         if (newUserID) addNpcToUser(newUserID);
                     }
@@ -2941,7 +2974,7 @@ function Npcs(this: NpcsApi) {
                 positionStartY = npc.pos.y - AREA_RANGE_Y;
 
                 for (let y = positionStartY; y < positionStartY + AREA_DIAMETER_Y; y++) {
-                    if (positionStartX >= 1 && y >= 1 && positionStartX <= 100 && y <= 100) {
+                    if (positionStartX >= 1 && y >= 1 && positionStartX <= mapW(npc.map) && y <= mapH(npc.map)) {
                         const newUserID = vars.mapData[npc.map][y][positionStartX].id as EntityId | 0;
                         if (newUserID) removeNpcFromUser(newUserID);
                     }
@@ -2951,7 +2984,7 @@ function Npcs(this: NpcsApi) {
                 let positionStartY = npc.pos.y + AREA_RANGE_Y;
 
                 for (let x = positionStartX; x < positionStartX + AREA_DIAMETER_X; x++) {
-                    if (x >= 1 && positionStartY >= 1 && x <= 100 && positionStartY <= 100) {
+                    if (x >= 1 && positionStartY >= 1 && x <= mapW(npc.map) && positionStartY <= mapH(npc.map)) {
                         const newUserID = vars.mapData[npc.map][positionStartY][x].id as EntityId | 0;
                         if (newUserID) addNpcToUser(newUserID);
                     }
@@ -2961,7 +2994,7 @@ function Npcs(this: NpcsApi) {
                 positionStartY = npc.pos.y - AREA_OUTSIDE_OFFSET_Y;
 
                 for (let x = positionStartX; x < positionStartX + AREA_DIAMETER_X; x++) {
-                    if (x >= 1 && positionStartY >= 1 && x <= 100 && positionStartY <= 100) {
+                    if (x >= 1 && positionStartY >= 1 && x <= mapW(npc.map) && positionStartY <= mapH(npc.map)) {
                         const newUserID = vars.mapData[npc.map][positionStartY][x].id as EntityId | 0;
                         if (newUserID) removeNpcFromUser(newUserID);
                     }
@@ -2971,7 +3004,7 @@ function Npcs(this: NpcsApi) {
                 let positionStartY = npc.pos.y - AREA_RANGE_Y;
 
                 for (let x = positionStartX; x < positionStartX + AREA_DIAMETER_X; x++) {
-                    if (x >= 1 && positionStartY >= 1 && x <= 100 && positionStartY <= 100) {
+                    if (x >= 1 && positionStartY >= 1 && x <= mapW(npc.map) && positionStartY <= mapH(npc.map)) {
                         const newUserID = vars.mapData[npc.map][positionStartY][x].id as EntityId | 0;
                         if (newUserID) addNpcToUser(newUserID);
                     }
@@ -2981,7 +3014,7 @@ function Npcs(this: NpcsApi) {
                 positionStartY = npc.pos.y + AREA_OUTSIDE_OFFSET_Y;
 
                 for (let x = positionStartX; x < positionStartX + AREA_DIAMETER_X; x++) {
-                    if (x >= 1 && positionStartY >= 1 && x <= 100 && positionStartY <= 100) {
+                    if (x >= 1 && positionStartY >= 1 && x <= mapW(npc.map) && positionStartY <= mapH(npc.map)) {
                         const newUserID = vars.mapData[npc.map][positionStartY][x].id as EntityId | 0;
                         if (newUserID) removeNpcFromUser(newUserID);
                     }

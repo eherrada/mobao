@@ -21,3 +21,8 @@ playwright-report/
 *.cer
 *.jks
 *.keystore
+
+# devdb
+devdb/data/
+devdb/dev-credentials.md
+devdb/*.log

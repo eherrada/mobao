@@ -21,6 +21,7 @@ const login = require("./login") as LoginApi;
 const socket = require("./socket") as SocketApi;
 const funct = require("./functions");
 const vars = require("./vars");
+const { mapW, mapH } = require("./mapBounds");
 const command = require("./commands");
 const chatAuditLogger = require("./chatAuditLogger");
 const respawn = require("./respawn");
@@ -918,9 +919,9 @@ function castPartialInvisibilityRemovalSpell(
 ) {
     const visibleUsers = new Set<EntityId>();
     const minX = Math.max(1, user.pos.x - CLIENT_VIEW_RANGE_X);
-    const maxX = Math.min(100, user.pos.x + CLIENT_VIEW_RANGE_X);
+    const maxX = Math.min(mapW(user.map), user.pos.x + CLIENT_VIEW_RANGE_X);
     const minY = Math.max(1, user.pos.y - CLIENT_VIEW_RANGE_Y);
-    const maxY = Math.min(100, user.pos.y + CLIENT_VIEW_RANGE_Y + CLIENT_VIEW_EXTRA_BOTTOM_Y);
+    const maxY = Math.min(mapH(user.map), user.pos.y + CLIENT_VIEW_RANGE_Y + CLIENT_VIEW_EXTRA_BOTTOM_Y);
 
     for (let y = minY; y <= maxY; y++) {
         for (let x = minX; x <= maxX; x++) {
@@ -1485,7 +1486,7 @@ function updateUserAreaAfterMovement(ws: RuntimeClient, user: RuntimeCharacter, 
         let positionStartY = user.pos.y - AREA_RANGE_Y;
 
         for (let y = positionStartY; y < positionStartY + AREA_DIAMETER_Y; y++) {
-            if (positionStartX >= 1 && y >= 1 && positionStartX <= 100 && y <= 100) {
+            if (positionStartX >= 1 && y >= 1 && positionStartX <= mapW(user.map) && y <= mapH(user.map)) {
                 const mapData = vars.mapData[user.map][y][positionStartX];
 
                 if (mapData.id) {
@@ -1558,7 +1559,7 @@ function updateUserAreaAfterMovement(ws: RuntimeClient, user: RuntimeCharacter, 
         positionStartY = user.pos.y - AREA_RANGE_Y;
 
         for (let y = positionStartY; y < positionStartY + AREA_DIAMETER_Y; y++) {
-            if (positionStartX >= 1 && y >= 1 && positionStartX <= 100 && y <= 100) {
+            if (positionStartX >= 1 && y >= 1 && positionStartX <= mapW(user.map) && y <= mapH(user.map)) {
                 const mapData = vars.mapData[user.map][y][positionStartX];
 
                 if (mapData.id) {
@@ -1599,7 +1600,7 @@ function updateUserAreaAfterMovement(ws: RuntimeClient, user: RuntimeCharacter, 
         let positionStartY = user.pos.y - AREA_RANGE_Y;
 
         for (let y = positionStartY; y < positionStartY + AREA_DIAMETER_Y; y++) {
-            if (positionStartX >= 1 && y >= 1 && positionStartX <= 100 && y <= 100) {
+            if (positionStartX >= 1 && y >= 1 && positionStartX <= mapW(user.map) && y <= mapH(user.map)) {
                 const mapData = vars.mapData[user.map][y][positionStartX];
 
                 if (mapData.id) {
@@ -1672,7 +1673,7 @@ function updateUserAreaAfterMovement(ws: RuntimeClient, user: RuntimeCharacter, 
         positionStartY = user.pos.y - AREA_RANGE_Y;
 
         for (let y = positionStartY; y < positionStartY + AREA_DIAMETER_Y; y++) {
-            if (positionStartX >= 1 && y >= 1 && positionStartX <= 100 && y <= 100) {
+            if (positionStartX >= 1 && y >= 1 && positionStartX <= mapW(user.map) && y <= mapH(user.map)) {
                 const mapData = vars.mapData[user.map][y][positionStartX];
 
                 if (mapData.id) {
@@ -1713,7 +1714,7 @@ function updateUserAreaAfterMovement(ws: RuntimeClient, user: RuntimeCharacter, 
         let positionStartY = user.pos.y + AREA_RANGE_Y;
 
         for (let x = positionStartX; x < positionStartX + AREA_DIAMETER_X; x++) {
-            if (x >= 1 && positionStartY >= 1 && x <= 100 && positionStartY <= 100) {
+            if (x >= 1 && positionStartY >= 1 && x <= mapW(user.map) && positionStartY <= mapH(user.map)) {
                 const mapData = vars.mapData[user.map][positionStartY][x];
 
                 if (mapData.id) {
@@ -1786,7 +1787,7 @@ function updateUserAreaAfterMovement(ws: RuntimeClient, user: RuntimeCharacter, 
         positionStartY = user.pos.y - AREA_OUTSIDE_OFFSET_Y;
 
         for (let x = positionStartX; x < positionStartX + AREA_DIAMETER_X; x++) {
-            if (x >= 1 && positionStartY >= 1 && x <= 100 && positionStartY <= 100) {
+            if (x >= 1 && positionStartY >= 1 && x <= mapW(user.map) && positionStartY <= mapH(user.map)) {
                 const mapData = vars.mapData[user.map][positionStartY][x];
 
                 if (mapData.id) {
@@ -1827,7 +1828,7 @@ function updateUserAreaAfterMovement(ws: RuntimeClient, user: RuntimeCharacter, 
         let positionStartY = user.pos.y - AREA_RANGE_Y;
 
         for (let x = positionStartX; x < positionStartX + AREA_DIAMETER_X; x++) {
-            if (x >= 1 && positionStartY >= 1 && x <= 100 && positionStartY <= 100) {
+            if (x >= 1 && positionStartY >= 1 && x <= mapW(user.map) && positionStartY <= mapH(user.map)) {
                 const mapData = vars.mapData[user.map][positionStartY][x];
 
                 if (mapData.id) {
@@ -1900,7 +1901,7 @@ function updateUserAreaAfterMovement(ws: RuntimeClient, user: RuntimeCharacter, 
         positionStartY = user.pos.y + AREA_OUTSIDE_OFFSET_Y;
 
         for (let x = positionStartX; x < positionStartX + AREA_DIAMETER_X; x++) {
-            if (x >= 1 && positionStartY >= 1 && x <= 100 && positionStartY <= 100) {
+            if (x >= 1 && positionStartY >= 1 && x <= mapW(user.map) && positionStartY <= mapH(user.map)) {
                 const mapData = vars.mapData[user.map][positionStartY][x];
 
                 if (mapData.id) {
@@ -2279,17 +2280,17 @@ function eventClick(ws: RuntimeClient) {
         const y = pkg.getByte();
         const mouseButton = pkg.canReadBytes(1) ? pkg.getByte() : 0;
 
-        if (x < 1 || x > 100) {
-            return;
-        }
-
-        if (y < 1 || y > 100) {
-            return;
-        }
-
         const user = getCharacterById(clientId) as any;
 
         if (!user) {
+            return;
+        }
+
+        if (x < 1 || x > mapW(user.map)) {
+            return;
+        }
+
+        if (y < 1 || y > mapH(user.map)) {
             return;
         }
 
@@ -2415,7 +2416,7 @@ function eventClick(ws: RuntimeClient) {
 
         let selectedTarget = resolveAreaTarget(user.map, x, y);
 
-        if (!selectedTarget && y < 100) {
+        if (!selectedTarget && y < mapH(user.map)) {
             selectedTarget = resolveAreaTarget(user.map, x, y + 1);
         }
 
@@ -3610,18 +3611,18 @@ function attackRange(ws: RuntimeClient) {
             y: pkg.getByte(),
         };
 
-        if (pos.x < 1 || pos.x > 100) {
+        if (pos.x < 1 || pos.x > mapW(user.map)) {
             return;
         }
 
-        if (pos.y < 1 || pos.y > 100) {
+        if (pos.y < 1 || pos.y > mapH(user.map)) {
             return;
         }
 
         const userMapData = vars.mapData[user.map];
         let tileSelected = userMapData?.[pos.y]?.[pos.x];
 
-        if (!tileSelected?.id && pos.y < 100) {
+        if (!tileSelected?.id && pos.y < mapH(user.map)) {
             tileSelected = userMapData?.[pos.y + 1]?.[pos.x];
         }
 
@@ -3840,11 +3841,11 @@ function attackSpell(ws: RuntimeClient) {
         };
         const preferSelfIfEmpty = pkg.canReadBytes(1) ? pkg.getByte() === 1 : false;
 
-        if (pos.x < 1 || pos.x > 100) {
+        if (pos.x < 1 || pos.x > mapW(user.map)) {
             return;
         }
 
-        if (pos.y < 1 || pos.y > 100) {
+        if (pos.y < 1 || pos.y > mapH(user.map)) {
             return;
         }
 
@@ -3910,7 +3911,7 @@ function attackSpell(ws: RuntimeClient) {
         const userMapData = vars.mapData[user.map];
         let tileSelected = userMapData?.[pos.y]?.[pos.x];
 
-        if (!tileSelected?.id && pos.y < 100) {
+        if (!tileSelected?.id && pos.y < mapH(user.map)) {
             tileSelected = userMapData?.[pos.y + 1]?.[pos.x];
         }
 

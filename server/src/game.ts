@@ -51,6 +51,7 @@ export {};
 const funct = require("./functions");
 const socket = require("./socket") as SocketApi;
 const vars = require("./vars");
+const { mapW, mapH } = require("./mapBounds");
 const handleProtocol = require("./handleProtocol");
 const fishing = require("./fishing");
 const harvesting = require("./harvesting");
@@ -1420,7 +1421,7 @@ function findNearestLegalPosition(
             level++;
         }
 
-        if ((tmpPos.x > 100 || tmpPos.x < 0) && (tmpPos.y > 100 || tmpPos.y < 0)) {
+        if ((tmpPos.x > mapW(numMap) || tmpPos.x < 0) && (tmpPos.y > mapH(numMap) || tmpPos.y < 0)) {
             tmpPos.x = 50;
             tmpPos.y = 50;
             numMap = 1;
@@ -1530,7 +1531,7 @@ function resolveTeleportPosition(
 }
 
 function hasMapCell(idMap: number, posX: number, posY: number): boolean {
-    if (posX < 1 || posY < 1 || posX > 100 || posY > 100) {
+    if (posX < 1 || posY < 1 || posX > mapW(idMap) || posY > mapH(idMap)) {
         return false;
     }
 
@@ -3862,7 +3863,7 @@ function Game(this: GameApi) {
         aguaValida: boolean,
         ignoreOccupantId?: EntityId,
     ) => {
-        if (x < 1 || y < 1 || x > 100 || y > 100) {
+        if (x < 1 || y < 1 || x > mapW(idMapa) || y > mapH(idMapa)) {
             return false;
         }
 
@@ -3881,7 +3882,7 @@ function Game(this: GameApi) {
     };
 
     const hasLegalNpcMovement = (x: number, y: number, idMapa: number, aguaValida: boolean, tierraInvalida = false) => {
-        if (x < 1 || y < 1 || x > 100 || y > 100) {
+        if (x < 1 || y < 1 || x > mapW(idMapa) || y > mapH(idMapa)) {
             return false;
         }
 
@@ -3903,7 +3904,7 @@ function Game(this: GameApi) {
     };
 
     const hasLegalNpcRespawn = (x: number, y: number, idMapa: number, aguaValida: boolean, tierraInvalida = false) => {
-        if (x < 1 || y < 1 || x > 100 || y > 100) {
+        if (x < 1 || y < 1 || x > mapW(idMapa) || y > mapH(idMapa)) {
             return false;
         }
 
@@ -3932,7 +3933,7 @@ function Game(this: GameApi) {
         movement: number,
         tierraInvalida = false,
     ) => {
-        if (x < 1 || y < 1 || x > 100 || y > 100) {
+        if (x < 1 || y < 1 || x > mapW(idMapa) || y > mapH(idMapa)) {
             return false;
         }
 
@@ -3960,8 +3961,8 @@ function Game(this: GameApi) {
         useNpcRules = false,
         tierraInvalida = false,
     ): RespawnPosition | null => {
-        for (let y = 1; y <= 100; y++) {
-            for (let x = 1; x <= 100; x++) {
+        for (let y = 1; y <= mapH(map); y++) {
+            for (let x = 1; x <= mapW(map); x++) {
                 const isValid = useNpcRules
                     ? game.validPosRespawnNpc({ x, y }, map, aguaValida, tierraInvalida)
                     : game.validPosRespawn({ x, y }, map, aguaValida);
@@ -5606,8 +5607,8 @@ function Game(this: GameApi) {
      */
     this.respawnNpc = function (map: number, aguaValida: boolean, tierraInvalida = false): RespawnPosition {
         try {
-            let posNewX = funct.randomIntFromInterval(1, 100);
-            let posNewY = funct.randomIntFromInterval(1, 100);
+            let posNewX = funct.randomIntFromInterval(1, mapW(map));
+            let posNewY = funct.randomIntFromInterval(1, mapH(map));
 
             let count = 0;
 
@@ -5622,8 +5623,8 @@ function Game(this: GameApi) {
                     tierraInvalida,
                 )
             ) {
-                posNewX = funct.randomIntFromInterval(1, 100);
-                posNewY = funct.randomIntFromInterval(1, 100);
+                posNewX = funct.randomIntFromInterval(1, mapW(map));
+                posNewY = funct.randomIntFromInterval(1, mapH(map));
 
                 count++;
 
@@ -5767,7 +5768,7 @@ function Game(this: GameApi) {
 
                 for (let y = posYStart; y <= posYEnd; y++) {
                     for (let x = posXStart; x <= posXEnd; x++) {
-                        if (x >= 1 && y >= 1 && x <= 100 && y <= 100) {
+                        if (x >= 1 && y >= 1 && x <= mapW(user.map) && y <= mapH(user.map)) {
                             const mapData = vars.mapData[user.map][y][x];
 
                             if (mapData.id) {
@@ -5898,7 +5899,7 @@ function Game(this: GameApi) {
 
             for (let y = posYStart; y <= posYEnd; y++) {
                 for (let x = posXStart; x <= posXEnd; x++) {
-                    if (x >= 1 && y >= 1 && x <= 100 && y <= 100) {
+                    if (x >= 1 && y >= 1 && x <= mapW(user.map) && y <= mapH(user.map)) {
                         const mapData = vars.mapData[user.map]?.[y]?.[x];
 
                         if (mapData?.id) {
@@ -5937,7 +5938,7 @@ function Game(this: GameApi) {
 
             for (let y = posYStart; y <= posYEnd; y++) {
                 for (let x = posXStart; x <= posXEnd; x++) {
-                    if (x >= 1 && x <= 100 && y >= 1 && y <= 100) {
+                    if (x >= 1 && x <= mapW(idMap) && y >= 1 && y <= mapH(idMap)) {
                         const mapData = vars.mapData[idMap]?.[y]?.[x];
 
                         if (mapData?.id) {

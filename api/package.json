@@ -12,6 +12,7 @@
         "cancel-npc-sold-market-listings:prod": "node dist/scripts/cancelNpcSoldMarketListings.js",
         "diag:double-login": "tsx src/scripts/diagnoseDoubleLogin.ts",
         "balance-snapshot": "tsx src/scripts/reportBalanceSnapshot.ts",
+        "seed-moba-npcs": "tsx src/scripts/seedMobaNpcs.ts",
         "export-frontend-npcs": "tsx src/scripts/exportFrontendNpcs.ts",
         "export-frontend-npcs:frontend": "tsx src/scripts/exportFrontendNpcs.ts --output ../frontend/public/init/npcs.json",
         "fix-missing-heads": "tsx src/scripts/fixCharactersMissingHeads.ts",

@@ -6,6 +6,7 @@ import { getCharacterById, getClientById } from "./runtimeRegistry";
 export {};
 
 const vars = require("./vars");
+const { mapW, mapH } = require("./mapBounds");
 const handleProtocol = require("./handleProtocol") as HandleProtocolApi;
 const socket = require("./socket") as SocketApi;
 const workingLock = require("./workingLock");
@@ -75,8 +76,8 @@ function clearFishingState(user: FishingUser, keepTargeting = false) {
     };
 }
 
-function isWithinMapBounds(x: number, y: number) {
-    return x >= 1 && x <= 100 && y >= 1 && y <= 100;
+function isWithinMapBounds(idMap: number, x: number, y: number) {
+    return x >= 1 && x <= mapW(idMap) && y >= 1 && y <= mapH(idMap);
 }
 
 function isWaterGraphic(graphicLayer1: number) {
@@ -88,7 +89,7 @@ function isWaterGraphic(graphicLayer1: number) {
 }
 
 function isWaterTile(idMap: number, pos: Position) {
-    if (!isWithinMapBounds(pos.x, pos.y)) {
+    if (!isWithinMapBounds(idMap, pos.x, pos.y)) {
         return false;
     }
 
@@ -109,7 +110,7 @@ function isAdjacentToWater(idMap: number, pos: Position) {
 }
 
 function hasInvalidFishingTrigger(idMap: number, pos: Position) {
-    if (!isWithinMapBounds(pos.x, pos.y)) {
+    if (!isWithinMapBounds(idMap, pos.x, pos.y)) {
         return true;
     }
 

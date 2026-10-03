@@ -6,6 +6,7 @@ export {};
 
 const funct = require("./functions");
 const vars = require("./vars");
+const { mapW, mapH } = require("./mapBounds");
 const pkg = require("./package") as PackageApi;
 const arenaManager = require("./arenaManager");
 const challengeManager = require("./challengeManager");
@@ -549,7 +550,7 @@ const socket: SocketApi = {
 
             for (let y = posYStart; y <= posYEnd; y++) {
                 for (let x = posXStart; x <= posXEnd; x++) {
-                    if (x >= 1 && y >= 1 && x <= 100 && y <= 100) {
+                    if (x >= 1 && y >= 1 && x <= mapW(user.map) && y <= mapH(user.map)) {
                         const mapData = vars.mapData[user.map]?.[y]?.[x];
 
                         if (!mapData) {

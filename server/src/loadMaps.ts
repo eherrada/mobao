@@ -157,7 +157,7 @@ class LoadMaps {
 
     async initialize() {
         const arMapsToLoad: Array<Promise<unknown>> = [];
-        const extraTestMaps = [500, 501, 502, 503, 504, 505, 506];
+        const extraTestMaps = [500, 501, 502, 503, 504, 505, 506, 600];
 
         for (let i = 1; i < 291; i++) {
             if (this.mapFilesExist(i)) {
@@ -271,6 +271,8 @@ class LoadMaps {
                 tile.trigger = toNumber(trigger);
             }
 
+            vars.mapData[mapNum].width = width;
+            vars.mapData[mapNum].height = height;
             vars.mapData[mapNum].name = metadata.name || "";
             vars.mapData[mapNum].musicNum = toNumber(metadata.musicNum);
             vars.mapData[mapNum].magiaSinEfecto = toNumber(metadata.magiaSinEfecto);

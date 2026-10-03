@@ -441,6 +441,11 @@ export type RuntimeNpc = {
     nextThinkAt?: number;
     aguaValida?: NumericFlag;
     tierraInvalida?: NumericFlag;
+    /** Estructuras del MOBA (torres/nexo): no se mueven y no reaparecen. */
+    stationary?: number;
+    noRespawn?: number;
+    team?: string;
+    structure?: string;
     npcType?: number;
     snd1?: number;
     snd2?: number;

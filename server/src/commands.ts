@@ -32,6 +32,7 @@ const socket = require("./socket") as SocketApi;
 const game = require("./game") as GameApi;
 const npcs = require("./npcs");
 const vars = require("./vars");
+const { mapW, mapH } = require("./mapBounds");
 const funct = require("./functions");
 const chatAuditLogger = require("./chatAuditLogger");
 const handleProtocol = require("./handleProtocol") as HandleProtocolApi;
@@ -3275,8 +3276,8 @@ const command: CommandApi = {
                         target.map < 1 ||
                         target.pos.x < 1 ||
                         target.pos.y < 1 ||
-                        target.pos.x > 100 ||
-                        target.pos.y > 100
+                        target.pos.x > mapW(target.map) ||
+                        target.pos.y > mapH(target.map)
                     ) {
                         handleProtocol.console(
                             `[INFO] ${target.nameCharacter} no tiene una ubicacion valida para teletransportarte.`,
