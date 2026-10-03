@@ -1,0 +1,48 @@
+[
+    {
+        "title": "Hechizos",
+        "items": []
+    },
+    {
+        "title": "Calidad de vida y cuenta",
+        "items": [
+            "Macros por default en PvP si no tenés ninguno guardado",
+            "Agregar /desc"
+        ]
+    },
+    {
+        "title": "Movimiento, colisiones e interacción",
+        "items": [""]
+    },
+    {
+        "title": "NPCs, IA y combate PvE",
+        "items": []
+    },
+    {
+        "title": "Mundo, mapas y progresión",
+        "items": [
+            "Revisión de todos los mapas",
+            "Limitación de dungeons/mapas por nivel",
+            "Rehacer los portales a Dungeon Newbie y nacer ahi"
+        ]
+    },
+    {
+        "title": "Economía, items y vendedores",
+        "items": []
+    },
+    {
+        "title": "Balance de clases, razas y progresión",
+        "items": [
+            "Ajuste general de balance en cada raza/clase (vida, golpe, estadisticas)",
+            "Skills desde 0"
+        ]
+    },
+    {
+        "title": "Oficios y sistemas de progreso",
+        "items": []
+    },
+    {
+        "title": "Social y competitivo",
+        "items": ["Duelos", "Amigos"]
+    }
+]

@@ -1,0 +1,32 @@
+name: aoweb-api-blue
+
+services:
+  api:
+    build:
+      context: .
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3100
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-aoweb}
+      TOKEN_AUTH: ${TOKEN_AUTH:-changeme}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
+      SITE_URL: ${SITE_URL}
+      SES_REGION: ${SES_REGION}
+      SES_ACCESS_KEY_ID: ${SES_ACCESS_KEY_ID}
+      SES_SECRET_ACCESS_KEY: ${SES_SECRET_ACCESS_KEY}
+      SES_FROM_EMAIL: ${SES_FROM_EMAIL}
+      SES_FROM_NAME: ${SES_FROM_NAME}
+      GAME_DATA_ADMIN_EMAIL: ${GAME_DATA_ADMIN_EMAIL:-}
+      GAME_DATA_ADMIN_ACCOUNT_ID: ${GAME_DATA_ADMIN_ACCOUNT_ID:-}
+      GAME_DATA_ADMIN_PROXY_TOKEN: ${GAME_DATA_ADMIN_PROXY_TOKEN}
+    networks:
+      - default
+      - postgres_shared
+    ports:
+      - "127.0.0.1:3100:3100"
+
+networks:
+  postgres_shared:
+    external: true
+    name: api_default

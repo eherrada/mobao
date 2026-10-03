@@ -1,0 +1,249 @@
+[
+    {
+        "features": [
+            "Arreglo de bug en barcas",
+            "Mapa del juego presionando el minimap",
+            "Comando /hogar (te lleva a Ullathorpe por el momento)",
+            "Tiempo de pociones de agilidad y fuerza"
+        ]
+    },
+    {
+        "features": [
+            "Arreglo de movilidad con teclas.",
+            "Hechizos y flechas ahora se pueden mantener antes de lanzar.",
+            "Boton para tirar todo",
+            "Boton para vender todo / depositar todo",
+            "Ya no se pierde el puntero del hechizo al pasar de mapa"
+        ]
+    },
+    {
+        "features": [
+            "Los hechizos ya no aparecen en la consola",
+            "Agregado re-ordenar los items con click derecho",
+            "Agregado re-ordenar los hechizos",
+            "Agregado boton para ver informacion de los hechizos",
+            "Arreglado inmobilizar, ahora el personaje inmobilizado se puede mover en el lugar",
+            "Arreglado bug de barca cuando te subias desde una costa"
+        ]
+    },
+    {
+        "features": [
+            "Sonidos: Los sonidos se reproducen por distancia, cuanto mas cerca estas de la entidad que lo genera mas fuerte se escucha",
+            "Ya se puede limpiar la burbuja de dialogo/hechizo mandando un espacio vacio en la barra de dialogo",
+            "Hechizo invisibilidad funcionando",
+            "Se les agrego una leve transparencia a los fantasmas y hechizos"
+        ]
+    },
+    {
+        "features": [
+            "Pagar fianza para convertirse en ciudadano nuevamente con el comando /fianza",
+            "Si estas en zona insegura para desconectarte tenes que usar el comando /salir el cual te pondra un temporizador de 10 segundos",
+            "Arreglo de invisibilidad te seguian los NPCs",
+            "Arreglo de items cayendo en zonas no agarrables del mapa",
+            "Ahora el hechizo se puede seleccionar igual aunque no tengas mana",
+            "Arreglo de bug cuando caias arriba de otro personaje/NPC el mismo desaparecia del mapa"
+        ]
+    },
+    {
+        "features": [
+            "Se agregaron intervalos nuevos, golpes: 950ms, arcos: 950ms, hechizos: 850ms, golpe+magia: 800ms (se van a ir ajustando a medida que pase el tiempo)",
+            "Re-balance de vidas de todas las clases/razas, todos ahora tiene menos vida, la real",
+            "Se sacó el sonido al pasar de mapa",
+            "Ya se puede pescar desde la barca",
+            "Arreglado un bug de cuando pasabas con un hechizo seleccionado de mapa no seguia caminando",
+            "Borrar personajes",
+            "Ya se puede equipar o desequipar items estando arriba de una barca",
+            "Fondo oscuro a la sección del juego",
+            "Mejoras en sistema de caminata y conexión con el servidor",
+            "Cambios de texto en daño cuerpo a cuerpo y rango"
+        ]
+    },
+    {
+        "features": [
+            "Mejoras en la AI de los NPCs, paso fundamental para las invocaciones que vienen luego"
+        ]
+    },
+    {
+        "features": [
+            "Hechizos de Invocaciones ya funcionando",
+            "Agrego la función de ocultar con la O",
+            "Abrir el mapa con la M",
+            "La armadura de cazador ya funciona, el cazador cuando la tiene equipada se puede mover y atacar oculto sin que se le vaya la invisibilidad por un tiempo determinado",
+            "En la UI ya se muestra el porcentaje de experiencia",
+            "Los fantasmas ahora son atravesables por los usuarios vivos"
+        ]
+    },
+    {
+        "features": [
+            "Se agregó el hechizo Detectar Invisibilidad en la ciudad de Lindos",
+            "Los NPCs ahora pueden atravesar a los usuarios muertos",
+            "Se agregaron niveles necesarios para lanzar cada hechizo",
+            "Paralizar/Inmovilizar/Remover Paralisis no pueden castearse si el usuario no está en un estado correspondiente",
+            "Ya no se pueden atacar a los NPCs no hostiles de las ciudades",
+            "Transparencia al pasar por detrás de los árboles",
+            "Se arregló un bug en la actualización de la mana en la UI al subir nivel"
+        ]
+    },
+    {
+        "features": ["Sistema de Party"]
+    },
+    {
+        "features": [
+            "Se cambió la invisibilidad, ahora no está 100% invisible sino que hace un efecto de reaparecer por un determinado tiempo",
+            "Los items de newbie ya no se pueden usar siendo mas de nivel 13",
+            "Los items newbies se remueven al ser nivel 13",
+            "Arreglo de repartición de oro entre party",
+            "Arreglo de bug donde items se seguían viendo en el suelo aunque no estén ahí.",
+            "El comando /fianza solo se puede ejecutar en zona segura"
+        ]
+    },
+    {
+        "features": [
+            "Se ajustaron todos los hechizos mágicos",
+            "Las resistencias mágicas de las túnicas/sombreros ya son aplicables en porcentaje correspondiente",
+            "Los items tipo flautas/laudes ya funcionan en Druida/Bardo"
+        ]
+    },
+    {
+        "features": [
+            "Se agregó un nuevo intervalo de uso de item asi separando el uso de item vs el click en el item, ahora ambos tienen intervalos separados, hacer dobleclick a un item es mas rápido que usarlo desde la U, por ejemplo una poción, hacer click y U al mismo tiempo toma pociones mas rápido ahora ya que tiene intervalos separados.",
+            "Se arregló un bug en las arenas del mundo abierto donde te tenias que hacer criminal muchas veces para combatir.",
+            "El party ahora solo puede hacerse entre personajes de la misma facción",
+            "Se arregló las flautas/laudes, ahora se pueden equipar junto a items de daño ya que cuentan como instrumentos musicales",
+            "Se agregaron flautas/laudes en los vendedores de magias de las principales ciudades"
+        ]
+    },
+    {
+        "features": ["Clanes", "Social"]
+    },
+    {
+        "features": [
+            "Se arreglaron los máximos de fuerza y agilidad a subir con pociones o hechizos",
+            "Se agregó el comando /stats para ver tus estadísticas actuales",
+            "Ahora se ven en el minimapa los miembros de tu clan"
+        ]
+    },
+    {
+        "features": [
+            "Los NPCs ahora pueden tirar hechizos",
+            "Se agregaron los anillos, ya pueden ser equipados",
+            "Los NPCs acuaticos ya no se pueden subir a la tierra"
+        ]
+    },
+    {
+        "features": [
+            "Se agregó el hechizo de resucitar",
+            "Ya se pueden usar invocaciones en el agua",
+            "Se arregló un bug donde los muertos podían tirar items",
+            "Se agrandaron los tiles para comerciar con los NPCs y para usar el banco",
+            "Los items ahora se caen al agua si mueres en el agua",
+            "Se subió el mapa arreglado"
+        ]
+    },
+    {
+        "features": [
+            "Al morir los personajes muertos tienen 45 segundos hasta entrar en el mundo de los muertos, en este mundo no van a poder ver mas a los personajes del mapa salvo a las personas de su clan/party hasta ser resucitados.",
+            "Se implementó la mineria y herrería con items basicos",
+            "Se implementó el talado de arboles y la carpintería con items basicos",
+            "Se implementó un nuevo motor de música y sonidos."
+        ]
+    },
+    {
+        "features": [
+            "Al morir los items caen igual al suelo reemplazando otros existentes si el piso está lleno de items.",
+            "Cada 15 minutos se limpian automaticamente los items del piso con una alerta previa"
+        ]
+    },
+    {
+        "features": [
+            "Se agregaron items en todos los vendedores, ahora cada item tiene un tier y todas las ciudades venden el mismo equipo.",
+            "Se agregaron los NPCs vendedores, banco y sacerdote en la Ciudad Abandonada.",
+            "Los anillos ahora pueden ser usado por todas las clases.",
+            "Se corrigieron todos los items de armaduras/armas/tunicas/cascos/sombreros para cada clase."
+        ]
+    },
+    {
+        "features": [
+            "Se agregó la opción de hacer el juego pantalla completa.",
+            "Se agregaron los items de Galera y Galeón, ya no se caen y son funcionales, se hacen desde la carpintería.",
+            "Se agregaron items al crafting de la herrería.",
+            "Arreglado un bug donde se podían curar a los NPCs con hechizos."
+        ]
+    },
+    {
+        "features": [
+            "Se agregó la Espada Mata Dragones, la misma mata de un golpe al dragón y se consume, se hace en herrería.",
+            "El dragón de Dungeon Dragón tiene un tiempo de reaparición de 1 hora luego de ser matado.",
+            "Se balancearon todos los NPCs del juego, ahora Dungeon Inferno, Nueva Esparanza, Dungeon Marabel, Isla Pirata y Ruinas de Ëarost tienen NPCs acordes al mapa.",
+            "Se cambió el sistema de golpe por experiencia, ahora al matar al NPC te da el 70% de la experiencia.",
+            "Se cambió toda la carga de mapas priorizando cargar primero lo que ves y el cambio de mapas para que sea mas fluido."
+        ]
+    },
+    {
+        "features": [
+            "Se implementó el sistema de facciones (aún faltan implementar los ítems, que vienen en breve, con ítems para cada clase y rango). Pueden revisar las facciones, requerimientos y puntos desde la Wiki: https://aoweb.app/wiki/factions",
+            "Se implementó la bóveda por cuenta, con la misma se pueden compartir ítems y oro entre diferentes personajes de tu misma cuenta.",
+            "Se implementó la bóveda de clanes, con la misma se pueden compartir ítems y oro entre diferentes personajes de tu mismo clan.",
+            "Se implementó un color único para el tag del clan cuando se sale a zona insegura.",
+            "Se arregló un bug del /fianza, donde si volvías a hacerte ciudadano y por error le pegabas a un ciudadano pero no lo matabas, te hacía pagar la fianza completa.",
+            "Se agregó la opción de ordenar bóveda con click derecho."
+        ]
+    },
+    {
+        "features": [
+            "Se implementaron los retos, pueden acceder con /retos",
+            "Se subió el nivel máximo de 47 a 50, cada nivel extra es la misma cantidad de experiencia que de 46 a 47, así puedo centrarme en mejorar el endgame.",
+            "Se arregló el hit a los usuarios cuando estaban detrás de NPCs, como por ejemplo un golem.",
+            "Se cambiaron los ítems permitidos en las subastas, ahora solo se permiten ítems de drop o crafting."
+        ]
+    },
+    {
+        "features": [
+            "En los mapas de montaña y en el mapa intermedio de Ruinas de Ëarost no se permite usar magia.",
+            "Ya se puede asignar con el comando /asignarhogar para volver con /hogar en los gobernadores de cada ciudad (Nix, Banderbill, Ullathorpe, Lindos y Arghal).",
+            "Se limitó el acceso al portal de Dungeon Newbie solo para usuarios menores a nivel 13.",
+            "Se agregaron 2 golems, 1 golem infernal y 3 medusas en Dungeon Dragon.",
+            "Se limitó el acceso a dungeons por nivel: Mausoleo: 15 a 28. Dungeon Marabel: 20 a 35. Dungeon Veriil: 28 a 43. Dungeon Dragon: 30 a 50. Montaña: 22 a 38. Ruinas de Ëarost: 25 a 40. Dungeon Inferno: 38 a 50.",
+            "Se agregaron efectos al herir o apuñalar a un NPC/Usuario.",
+            "Se agregaron efectos al fallar contra un NPC/Usuario.",
+            "Se agregó un efecto al lanzar una flecha hacia el objetivo; este gráfico cambia según la flecha usada.",
+            "Se arregló el texto de la experiencia.",
+            "Se optimizó el primer ingreso al juego para que tenga que descargar menos recursos.",
+            "Se arregló un bug que no dejaba publicar Báculos Engarzados en la subasta."
+        ]
+    },
+    {
+        "features": [
+            "Se agregaron vendedores de pasajes en 4 ciudades principales con puertos para viajar entre ellas.",
+            "Los clanes ya no pueden ser neutrales.",
+            "Se agregó el gobernador de la ciudad de Arkhein para poder asignar /hogar en esa ciudad."
+        ]
+    },
+    {
+        "features": [
+            "Se agregó en la esquina superior derecha del mapa, 3 mapas de nieve, donde en el último se encuentran los Golems de Hielo.",
+            "Se agregaron en los vendedores de armaduras 2 ítems que son para no morirse de frío en la nieve.",
+            "El mapa de Nueva Esperanza pasó a ser zona segura.",
+            "Se eliminaron los límites superiores de nivel a todos los mapas.",
+            "Se agregó un efecto desde el usuario hacia NPC/usuario al lanzar un hechizo.",
+            "Se agregó el capitán del puerto de Arghal para realizar viajes a esa ciudad.",
+            "Ya no se puede pagar fianza o sacar el seguro estando en un clan ciudadano o criminal.",
+            "Se sacó del clan a los usuarios que estaban en infracción de facción.",
+            "Los ciudadanos ya no pueden lanzar hechizos de soporte hacia los criminales."
+        ]
+    },
+    {
+        "features": [
+            "Ahora la invisibilidad se va al hacer daño a un usuario.",
+            "Los ítems ahora se agrupan al levantarlos del suelo en un máximo de 10.000 por stack.",
+            "Se le asignó la tecla N al /meditar, si ya la tenían usada pueden configurar una nueva.",
+            "Si atacás a un jugador o un jugador te ataca, hay 5 segundos en los que se entra en combate, durante los cuales no se va a poder cambiar de mapa.",
+            "Se unificaron los intervalos de click + U en las pociones, ahora ambos tienen el mismo intervalo (250ms) y si mantienen presionada la tecla U o la tecla del macro de la poción se toman automáticamente.",
+            "Se eliminaron 2 Golems de Hielo del Polo Norte dejando 4 en total en el mapa.",
+            "Se agregaron contadores de Agilidad, Fuerza, Invisibilidad e Inmovilizar en la pantalla.",
+            "Se agregó una barra debajo de los NPCs y personajes que muestra el tiempo que están inmovilizados.",
+            "Se arregló un bug donde algunos usuarios pasaban de mapa y caían al agua.",
+            "* El intervalo de poción, al ser un intervalo nuevo, no está calibrado, se va a ir calibrando en base a feedback y pruebas."
+        ]
+    }
+]
