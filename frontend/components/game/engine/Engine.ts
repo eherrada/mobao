@@ -199,6 +199,7 @@ export interface Character {
     weaponAnimationStartedAt?: number;
     shieldAnimationStartedAt?: number;
     movementStartedAt?: number;
+    lastStepEndedAt?: number;
     movementDurationMs?: number;
     animationIdleStartedAt?: number;
     idBody: number;
@@ -495,6 +496,8 @@ function formatCharacterAnimationDebugLabel(character: Character): string {
         }`,
     ].join("\n");
 }
+
+const SUBPIXEL_CAMERA = true;
 
 export class Engine {
     // Configuration
@@ -1032,9 +1035,41 @@ export class Engine {
             durationMs?: number;
         },
     ): void {
-        const durationMs = this.getWalkDurationMs(options?.durationMs);
+        let durationMs = this.getWalkDurationMs(options?.durationMs);
         const now = this.timestamp();
-        const startedAt = options?.startedAt ?? now;
+        let startedAt = options?.startedAt ?? now;
+        let moveX = deltaX;
+        let moveY = deltaY;
+
+        if (options?.startedAt === undefined) {
+            if (character.id === this.user?.id) {
+                // Personaje local: si el paso anterior termino hace instantes, encadenar sin hueco.
+                const endedAt = character.lastStepEndedAt;
+
+                if (typeof endedAt === "number" && now - endedAt >= 0 && now - endedAt < 40) {
+                    startedAt = endedAt;
+                }
+            } else if (typeof character.movementStartedAt === "number") {
+                // Entidad remota con un paso todavia en curso: en vez de "saltar" a un nuevo paso, se suma lo que
+                // le falta recorrer y se avanza a velocidad constante (absorbe paquetes que llegan antes o tarde).
+                const prevProgress = this.getCharacterMovementProgress(character, now);
+
+                if (prevProgress < 1) {
+                    const residualX = character.addtoUserPos.x * (1 - prevProgress);
+                    const residualY = character.addtoUserPos.y * (1 - prevProgress);
+                    const combinedX = residualX + deltaX;
+                    const combinedY = residualY + deltaY;
+                    const length = Math.hypot(combinedX, combinedY);
+
+                    if (length <= 2.6) {
+                        moveX = combinedX;
+                        moveY = combinedY;
+                        durationMs = Math.max(30, durationMs * length);
+                    }
+                }
+            }
+        }
+
         const elapsedMs = Math.max(0, now - startedAt);
         const progress = Math.max(0, Math.min(1, elapsedMs / durationMs));
         const idleStartedAt = character.animationIdleStartedAt;
@@ -1064,11 +1099,11 @@ export class Engine {
         }
         character.animationIdleStartedAt = undefined;
         character.moving = progress < 1;
-        character.addtoUserPos = { x: deltaX, y: deltaY };
+        character.addtoUserPos = { x: moveX, y: moveY };
         character.scrollDirectionX = this.sign(deltaX);
         character.scrollDirectionY = this.sign(deltaY);
-        character.moveOffsetX = -1 * (TILE_SIZE * deltaX) * (1 - progress);
-        character.moveOffsetY = -1 * (TILE_SIZE * deltaY) * (1 - progress);
+        character.moveOffsetX = -1 * (TILE_SIZE * moveX) * (1 - progress);
+        character.moveOffsetY = -1 * (TILE_SIZE * moveY) * (1 - progress);
 
         if (!character.moving) {
             this.resetMovement(character);
@@ -1314,6 +1349,14 @@ export class Engine {
     ): void {
         const wasMoving = character.moving;
         const now = this.timestamp();
+
+        // Si el paso termino de forma natural, recordar cuando debio terminar: el siguiente paso encadenado
+        // arranca desde ahi y no desde "ahora" (se pierde hasta un cuadro de movimiento por paso).
+        if (typeof character.movementStartedAt === "number") {
+            character.lastStepEndedAt =
+                character.movementStartedAt + this.getWalkDurationMs(character.movementDurationMs);
+        }
+
         character.moving = false;
         character.moveOffsetX = 0;
         character.moveOffsetY = 0;
@@ -1478,7 +1521,7 @@ export class Engine {
         this.startCharacterMovement(personaje, newX, newY, options);
 
         if (!dontSend) {
-            this.timeWalk = this.timestamp();
+            this.timeWalk = personaje.movementStartedAt ?? this.timestamp();
             this.sendPositionPacket?.(heading);
             this.scheduleMovementCheck(
                 this.getWalkDurationMs(options?.durationMs),
@@ -2237,9 +2280,12 @@ export class Engine {
         this.mapContainer.x = targetCameraX;
         this.mapContainer.y = targetCameraY;
 
-        // Round camera position to whole pixels to prevent flickering
-        this.mapContainer.x = Math.round(this.mapContainer.x);
-        this.mapContainer.y = Math.round(this.mapContainer.y);
+        // Posicion sub-pixel: el redondeo a pixeles enteros hacia que la velocidad de la camara oscilara (2-3 px por
+        // cuadro). Si hubiera costuras entre tiles, volver a Math.round.
+        if (!SUBPIXEL_CAMERA) {
+            this.mapContainer.x = Math.round(this.mapContainer.x);
+            this.mapContainer.y = Math.round(this.mapContainer.y);
+        }
 
         // Update debug grid position to match map
         if (this.debugGrid) {
