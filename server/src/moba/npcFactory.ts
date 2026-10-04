@@ -4,6 +4,7 @@ const login = require("../login");
 const npcs = require("../npcs");
 const handleProtocol = require("../handleProtocol");
 const socket = require("../socket");
+const teams = require("./teams");
 const _ = require("lodash");
 
 type SpawnOptions = {
@@ -34,7 +35,7 @@ function spawnMobaNpc(opts: SpawnOptions): any | null {
     npc.pos.x = opts.x;
     npc.pos.y = opts.y;
     npc.nameCharacter = datNpc.name;
-    npc.color = "white";
+    npc.color = teams.teamColor(opts.team);
     npc.isNpc = true;
     npc.idBody = datNpc.idBody;
     npc.idHead = datNpc.idHead;
@@ -90,7 +91,7 @@ function spawnMobaNpc(opts: SpawnOptions): any | null {
             return;
         }
 
-        handleProtocol.sendNpc(npc);
+        handleProtocol.sendNpc(npc, client);
         socket.send(client);
     });
 

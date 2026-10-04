@@ -1511,7 +1511,7 @@ function updateUserAreaAfterMovement(ws: RuntimeClient, user: RuntimeCharacter, 
                             npcArea.push(clientId);
                         }
 
-                        handleProtocol.sendNpc(areaTarget.target);
+                        handleProtocol.sendNpc(areaTarget.target, ws);
                         socket.send(ws);
                     } else if (canRenderCharacter(clientId, areaTarget.target as RuntimeCharacter)) {
                         handleProtocol.sendCharacter(areaTarget.target, clientId);
@@ -1625,7 +1625,7 @@ function updateUserAreaAfterMovement(ws: RuntimeClient, user: RuntimeCharacter, 
                             npcArea.push(clientId);
                         }
 
-                        handleProtocol.sendNpc(areaTarget.target);
+                        handleProtocol.sendNpc(areaTarget.target, ws);
                         socket.send(ws);
                     } else if (canRenderCharacter(clientId, areaTarget.target as RuntimeCharacter)) {
                         handleProtocol.sendCharacter(areaTarget.target, clientId);
@@ -1739,7 +1739,7 @@ function updateUserAreaAfterMovement(ws: RuntimeClient, user: RuntimeCharacter, 
                             npcArea.push(clientId);
                         }
 
-                        handleProtocol.sendNpc(areaTarget.target);
+                        handleProtocol.sendNpc(areaTarget.target, ws);
                         socket.send(ws);
                     } else if (canRenderCharacter(clientId, areaTarget.target as RuntimeCharacter)) {
                         handleProtocol.sendCharacter(areaTarget.target, clientId);
@@ -1853,7 +1853,7 @@ function updateUserAreaAfterMovement(ws: RuntimeClient, user: RuntimeCharacter, 
                             npcArea.push(clientId);
                         }
 
-                        handleProtocol.sendNpc(areaTarget.target);
+                        handleProtocol.sendNpc(areaTarget.target, ws);
                         socket.send(ws);
                     } else if (canRenderCharacter(clientId, areaTarget.target as RuntimeCharacter)) {
                         handleProtocol.sendCharacter(areaTarget.target, clientId);

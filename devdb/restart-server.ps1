@@ -4,14 +4,10 @@
 param([switch]$Fast)
 
 $root = Split-Path -Parent $PSScriptRoot
-$conn = Get-NetTCPConnection -LocalPort 7666 -State Listen -ErrorAction SilentlyContinue
-$pids = @($conn.OwningProcess | Select-Object -Unique)
-$parents = foreach ($x in $pids) { (Get-CimInstance Win32_Process -Filter "ProcessId=$x").ParentProcessId }
-foreach ($x in @($pids) + @($parents)) {
-    if (-not $x) { continue }
-    $cmd = (Get-CimInstance Win32_Process -Filter "ProcessId=$x").CommandLine
-    if ($cmd -match 'tsx|server\.ts') { Stop-Process -Id $x -Force -ErrorAction SilentlyContinue }
-}
+# Mata todos los procesos tsx del servidor de juego (incluidos watchers caidos que siguen vivos).
+Get-CimInstance Win32_Process |
+    Where-Object { $_.CommandLine -match 'tsx' -and $_.CommandLine -match 'mobAO\\server' } |
+    ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
 Start-Sleep -Seconds 2
 
 $env:NODE_ENV = "development"

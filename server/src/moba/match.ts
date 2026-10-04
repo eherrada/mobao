@@ -7,6 +7,7 @@ const socket = require("../socket");
 const config = require("./config");
 const teams = require("./teams");
 const ai = require("./ai");
+const fog = require("./fog");
 const { spawnMobaNpc } = require("./npcFactory");
 
 type Team = "blue" | "red";
@@ -416,6 +417,7 @@ function destroyMatch(match: Match) {
     }
 
     delete matches[match.id];
+    fog.clearMatch(match.id);
     delete vars.mapData[match.mapId];
     delete vars.mapa[match.mapId];
 }
@@ -464,13 +466,18 @@ function tick() {
             else match.npcIds.delete(npcId);
         }
 
+        const heroes = heroesOf(match);
+        fog.refreshVision(match.id, heroes, live);
+
         ai.thinkAll(match.id, now, live);
 
-        for (const hero of heroesOf(match)) {
+        for (const hero of heroes) {
             if (hero.dead && hero.mobaRespawnAt && now >= hero.mobaRespawnAt) {
                 respawnHero(match, hero);
             }
         }
+
+        fog.syncVisibility(heroes, live);
     }
 }
 

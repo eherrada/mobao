@@ -7,6 +7,7 @@ import type { AuthErrorResponse } from "../../lib/auth";
 import { useAuthRedirect } from "../../hooks/useAuthRedirect";
 import {
     PVP_CHARACTER_TEMPLATES,
+    MOBA_MAP_ID,
     type ArenaGameTicketResponse,
     type ArenaRoomDetails,
     type ArenaRoomsResponse,
@@ -18,6 +19,7 @@ type CreateRoomForm = {
     isPublic: boolean;
     password: string;
     capacity: string;
+    mode: "arena" | "moba";
 };
 
 function ArenasPageContent() {
@@ -36,6 +38,7 @@ function ArenasPageContent() {
         isPublic: true,
         password: "",
         capacity: "50",
+        mode: "arena",
     });
     const [joinPasswords, setJoinPasswords] = useState<Record<string, string>>(
         {},
@@ -198,6 +201,7 @@ function ArenasPageContent() {
                         ? undefined
                         : createForm.password,
                     capacity: Number(createForm.capacity),
+                    mode: createForm.mode,
                 }),
             });
 
@@ -458,7 +462,31 @@ function ArenasPageContent() {
                                 </button>
                             </div>
 
-                            <div>
+                            <div className="flex gap-2">
+                                {(["arena", "moba"] as const).map((mode) => (
+                                    <button
+                                        key={mode}
+                                        type="button"
+                                        onClick={() =>
+                                            setCreateForm((current) => ({
+                                                ...current,
+                                                mode,
+                                            }))
+                                        }
+                                        className={`flex-1 rounded-2xl border px-4 py-3 text-sm transition ${
+                                            createForm.mode === mode
+                                                ? "border-amber-300/50 bg-amber-300/10 text-amber-100"
+                                                : "border-white/10 bg-white/5 text-stone-300"
+                                        }`}
+                                    >
+                                        {mode === "arena"
+                                            ? "Arena libre"
+                                            : "MOBA 3v3"}
+                                    </button>
+                                ))}
+                            </div>
+
+                            <div hidden={createForm.mode === "moba"}>
                                 <p className="mb-2 px-1 text-xs uppercase tracking-[0.24em] text-stone-400">
                                     Maxima cantidad de jugadores
                                 </p>
@@ -522,7 +550,10 @@ function ArenasPageContent() {
                                         </h2>
                                         <p className="mt-2 text-sm text-stone-300">
                                             {activeRoom.connectedPlayers}{" "}
-                                            conectados - Mapa {activeRoom.mapId}
+                                            conectados -{" "}
+                                            {activeRoom.mapId === MOBA_MAP_ID
+                                                ? "MOBA 3v3"
+                                                : `Mapa ${activeRoom.mapId}`}
                                         </p>
                                     </div>
 

@@ -66,6 +66,25 @@ function handleDebugRequest(request: any, response: any): boolean {
         return true;
     }
 
+    // Entidades de la partida que el espectador NO puede ver ahora mismo (verdad del servidor).
+    if (url.pathname === "/debug/fog") {
+        const fog = require("./fog");
+        const viewerId = String(url.searchParams.get("viewer"));
+        const viewer = vars.personajes[viewerId];
+        const hidden: number[] = [];
+
+        if (viewer?.mobaMatchId) {
+            for (const entity of [...Object.values(vars.personajes), ...Object.values(vars.npcs)] as any[]) {
+                if (entity && entity.mobaMatchId === viewer.mobaMatchId && fog.isHiddenEntityFor(viewerId, entity)) {
+                    hidden.push(entity.id);
+                }
+            }
+        }
+
+        json(response, 200, { hidden });
+        return true;
+    }
+
     if (url.pathname === "/debug/matches") {
         json(response, 200, require("./match").describe());
         return true;

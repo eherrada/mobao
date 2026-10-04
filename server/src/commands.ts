@@ -1799,7 +1799,7 @@ function spawnNpcNextToAdmin(
             vars.areaNpc[npc.id].push(target.id);
         }
 
-        handleProtocol.sendNpc(npc);
+        handleProtocol.sendNpc(npc, vars.clients[target.id]);
         socket.send(vars.clients[target.id]);
     });
 

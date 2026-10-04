@@ -18,13 +18,16 @@ const DEFAULT_ARENA_MAP_ID = 272;
 const DEFAULT_ROOM_CAPACITY = 50;
 const MIN_ROOM_CAPACITY = 2;
 const MAX_ROOM_CAPACITY = 250;
-const MAX_PVP_TEMPLATE_ID = 6;
+const MAX_PVP_TEMPLATE_ID = 7;
+const MOBA_ARENA_MAP_ID = 600;
+const MOBA_ROOM_CAPACITY = 6;
 
 const createRoomSchema = z.object({
   name: z.string().trim().min(3).max(40),
   isPublic: z.boolean(),
   password: z.string().trim().min(1).max(100).optional().or(z.literal("")),
   capacity: z.coerce.number().int().min(MIN_ROOM_CAPACITY).max(MAX_ROOM_CAPACITY).optional(),
+  mode: z.enum(["arena", "moba"]).optional(),
 }).superRefine((value, ctx) => {
   if (!value.isPublic && !value.password?.trim()) {
     ctx.addIssue({
@@ -308,8 +311,8 @@ export async function createArenaRoom(token: string, payload: unknown): Promise<
       data.isPublic,
       passwordHash,
       joinToken,
-      DEFAULT_ARENA_MAP_ID,
-      data.capacity ?? DEFAULT_ROOM_CAPACITY,
+      data.mode === "moba" ? MOBA_ARENA_MAP_ID : DEFAULT_ARENA_MAP_ID,
+      data.mode === "moba" ? MOBA_ROOM_CAPACITY : (data.capacity ?? DEFAULT_ROOM_CAPACITY),
     ],
   );
 

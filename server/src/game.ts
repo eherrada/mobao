@@ -2623,7 +2623,7 @@ function broadcastNpcSnapshot(npc: RuntimeNpc | undefined): void {
 
     game.loopAreaPos(npc.map, npc.pos, function (target: GameCharacter) {
         withUserClient(target.id, (targetClient) => {
-            handleProtocol.sendNpc(npc);
+            handleProtocol.sendNpc(npc, targetClient);
             socket.send(targetClient);
         });
     });

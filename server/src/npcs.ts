@@ -875,7 +875,7 @@ function syncNpcVisibilityForUser(npc: NpcCharacter, user: PlayerCharacter | und
     }
 
     if (isUserInsideNpcViewport(npc, user)) {
-        handleProtocol.sendNpc(npc);
+        handleProtocol.sendNpc(npc, client);
         socket.send(client);
         return;
     }
@@ -2015,8 +2015,8 @@ function Npcs(this: NpcsApi) {
                     vars.areaNpc[npc.id].push(target.id);
                 }
 
-                handleProtocol.sendNpc(npc);
                 withUserClient(target.id, (targetClient) => {
+                    handleProtocol.sendNpc(npc, targetClient);
                     socket.send(targetClient);
                 });
             });
@@ -2420,7 +2420,7 @@ function Npcs(this: NpcsApi) {
                     vars.areaNpc[idNpc].push(target.id);
                 }
 
-                handleProtocol.sendNpc(npc);
+                handleProtocol.sendNpc(npc, targetClient);
                 socket.send(targetClient);
             });
         } catch (err) {
@@ -2988,7 +2988,7 @@ function Npcs(this: NpcsApi) {
                     vars.areaNpc[idNpc].push(userId);
                 }
 
-                handleProtocol.sendNpc(npc);
+                handleProtocol.sendNpc(npc, targetClient);
                 socket.send(targetClient);
             };
 

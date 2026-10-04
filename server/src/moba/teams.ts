@@ -22,8 +22,14 @@ function areAllies(a: TeamHolder, b: TeamHolder): boolean {
     return Boolean(ta && tb && ta === tb);
 }
 
+const TEAM_COLORS: Record<Team, string> = { blue: "#4aa3ff", red: "#ff5a4a" };
+
+function teamColor(team: Team): string {
+    return TEAM_COLORS[team];
+}
+
 function opposite(team: Team): Team {
     return team === "blue" ? "red" : "blue";
 }
 
-module.exports = { teamOf, areEnemies, areAllies, opposite };
+module.exports = { teamOf, areEnemies, areAllies, opposite, teamColor };

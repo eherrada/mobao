@@ -35,6 +35,10 @@ export const PVP_CHARACTER_TEMPLATES = [
     { id: 2, name: "Guerrero" },
     { id: 3, name: "Asesino" },
     { id: 4, name: "Bardo" },
-    { id: 5, name: "Paladin" },
-    { id: 6, name: "Cazador" },
+    { id: 5, name: "Druida" },
+    { id: 6, name: "Paladin" },
+    { id: 7, name: "Cazador" },
 ] as const;
+
+/** Mapa base del modo MOBA (3v3, 3 carriles). */
+export const MOBA_MAP_ID = 600;

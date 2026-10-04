@@ -43,7 +43,7 @@ function broadcastNpcSnapshot(game: GameApi, handleProtocol: HandleProtocolApi, 
             return;
         }
 
-        handleProtocol.sendNpc(npc as any);
+        handleProtocol.sendNpc(npc as any, targetClient);
         const socket = require("./socket") as SocketApi;
         socket.send(targetClient);
     });
@@ -168,6 +168,7 @@ const http = require("http");
 const WebSocketServer = require("ws").Server;
 const httpServer = http.createServer(handleHttpRequest);
 
+require("./moba/fog").installProtocolFilters();
 httpServer.listen(config.port);
 wsServer = new WebSocketServer({
     server: httpServer,

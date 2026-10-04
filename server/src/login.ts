@@ -500,9 +500,13 @@ function Login(this: LoginApi) {
                     const templateId = arenaResult.arena?.pvpTemplateId ?? idChar;
                     const baseMapId = arenaResult.arena?.mapId ?? 272;
                     const arenaRoomId = arenaResult.arena?.roomId;
-                    const arenaMapId = arenaRoomId
-                        ? arenaManager.getOrCreateInstance(arenaRoomId, baseMapId).mapId
-                        : baseMapId;
+                    const isMobaRoom =
+                        Boolean(arenaRoomId) && Number(baseMapId) === require("./moba/config").BASE_MAP_ID;
+                    const arenaMapId = isMobaRoom
+                        ? baseMapId
+                        : arenaRoomId
+                          ? arenaManager.getOrCreateInstance(arenaRoomId, baseMapId).mapId
+                          : baseMapId;
 
                     if (arenaRoomId) {
                         arenaManager.beginHandover(arenaRoomId, account._id);
@@ -511,6 +515,21 @@ function Login(this: LoginApi) {
                     await login.disconnectAllCharacters(account);
 
                     try {
+                        let mobaOptions:
+                            | {
+                                  spawn: { mapId: number; x: number; y: number };
+                                  moba: { matchId: string; team: "blue" | "red"; slot: number };
+                              }
+                            | undefined;
+
+                        if (isMobaRoom && arenaRoomId) {
+                            const slot = require("./moba/match").joinMatch(String(arenaRoomId));
+                            mobaOptions = {
+                                spawn: { mapId: slot.mapId, x: slot.spawn.x, y: slot.spawn.y },
+                                moba: { matchId: String(arenaRoomId), team: slot.team, slot: slot.slot },
+                            };
+                        }
+
                         return await this.connectCharacterPvP(
                             ws,
                             account.name,
@@ -518,6 +537,7 @@ function Login(this: LoginApi) {
                             templateId,
                             arenaRoomId,
                             arenaMapId,
+                            mobaOptions,
                         );
                     } catch (error) {
                         if (arenaRoomId) {
@@ -1160,7 +1180,9 @@ function Login(this: LoginApi) {
             fxId: 0,
             frameFxCounter: 0,
             zonaSegura: 0,
-            color: getFactionColor("none") ?? "#3333ff",
+            color: options?.moba
+                ? require("./moba/teams").teamColor(options.moba.team)
+                : (getFactionColor("none") ?? "#3333ff"),
             clan: "",
             spell: { lanzados: 0, tiempoTotal: 0, startTimer: 0 },
             hit: { hits: 0, tiempoTotal: 0, startTimer: 0 },

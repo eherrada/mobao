@@ -59,6 +59,7 @@ export class Bot {
     private ws!: WebSocket;
     private moveId = 1;
     packets = 0;
+    private frames: Buffer[] = [];
 
     constructor(private opts: BotOptions) {}
 
@@ -66,8 +67,9 @@ export class Bot {
         return new Promise((resolve, reject) => {
             this.ws = new WebSocket(this.opts.url ?? "ws://127.0.0.1:7666");
             this.ws.binaryType = "nodebuffer";
-            this.ws.on("message", () => {
+            this.ws.on("message", (data: Buffer) => {
                 this.packets++;
+                this.frames.push(Buffer.from(data));
             });
             this.ws.on("error", reject);
             this.ws.on("open", () => {
@@ -106,6 +108,17 @@ export class Bot {
 
     spell(slot: number, x: number, y: number) {
         this.send(new Writer(PACKET.attackSpell).byte(slot).byte(x).byte(y).byte(0).buffer());
+    }
+
+    /** True si algun paquete recibido contiene el id de la entidad (los ids viajan como double LE de 8 bytes). */
+    sawEntity(id: number): boolean {
+        const needle = Buffer.alloc(8);
+        needle.writeDoubleLE(id);
+        return this.frames.some((frame) => frame.indexOf(needle) >= 0);
+    }
+
+    clearFrames() {
+        this.frames = [];
     }
 
     close() {

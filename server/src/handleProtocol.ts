@@ -349,7 +349,7 @@ export type HandleProtocolApi = {
         client: RuntimeClient,
     ) => void;
     sendMyCharacter: (character: ProtocolCharacter) => void;
-    sendNpc: (npc: ProtocolNpc) => void;
+    sendNpc: (npc: ProtocolNpc, client?: RuntimeClient) => void;
     sendLegacyNpc: (npc: ProtocolNpc) => void;
     sendCharacter: (character: ProtocolCharacter, viewerId?: EntityId) => void;
     sendLegacyCharacter: (character: ProtocolCharacter, viewerId?: EntityId) => void;
@@ -1110,7 +1110,8 @@ const handleServer: HandleProtocolApi = {
         pkg.writeInt(invisibilitySpellRemainingMs);
     },
 
-    sendNpc(npc) {
+    sendNpc(npc, client) {
+        void client; // el filtro de fog (moba/fog.ts) envuelve este metodo y lo usa
         if (!npc) {
             return;
         }
