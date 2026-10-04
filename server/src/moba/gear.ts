@@ -10,6 +10,7 @@ const vars = require("../vars");
  */
 export type Slot = "weapon" | "armor" | "shield" | "helmet";
 const SLOTS: Slot[] = ["weapon", "armor", "shield", "helmet"];
+const isDwarf = (raceId: number) => raceId === 4 || raceId === 5;
 
 // Precio maximo del objeto de cada nivel de equipo (0 = inicial).
 const TIER_CAPS = [450, 1800, 4800, 12000];
@@ -54,12 +55,37 @@ function hasStats(obj: Obj, slot: Slot): boolean {
     return Number(obj.maxDef ?? 0) >= 1;
 }
 
-function usable(id: string, obj: Obj, slot: Slot, classId: number, dwarf: boolean): boolean {
+/**
+ * Razas que pueden vestir una armadura. El catalogo de AO lo indica en el nombre: "(H/E/EO)" humano/elfo/drow,
+ * "(E/G)" enano/gnomo, "(EO)" solo drow, "(H)" humano, "(G)" gnomo. Sin etiqueta: segun el flag de enanos.
+ */
+function armorRaces(obj: Obj): Set<number> {
+    const tag = /(([A-Z/]+))s*$/.exec(obj.name)?.[1];
+
+    switch (tag) {
+        case "H/E/EO":
+            return new Set([1, 2, 3]);
+        case "E/G":
+            return new Set([4, 5]);
+        case "EO":
+            return new Set([3]);
+        case "H":
+            return new Set([1]);
+        case "G":
+            return new Set([5]);
+        default:
+            return obj.razaEnana ? new Set([4, 5]) : new Set([1, 2, 3]);
+    }
+}
+
+function usable(id: string, obj: Obj, slot: Slot, classId: number, raceId: number): boolean {
+    const dwarf = isDwarf(raceId);
+
     if (!obj || obj.objType !== OBJ_TYPE[slot] || obj.newbie || Number(obj.valor ?? 0) <= 0) return false;
     if (EXCLUDED_NAMES.test(obj.name) || !hasStats(obj, slot)) return false;
     if (Array.isArray(obj.clasesNoPermitidas) && obj.clasesNoPermitidas.includes(classId)) return false;
 
-    if (slot === "armor") return Boolean(obj.razaEnana) === dwarf;
+    if (slot === "armor") return Boolean(obj.razaEnana) === dwarf && armorRaces(obj).has(raceId);
 
     if (slot === "weapon") {
         const isBow = Boolean(obj.proyectil);
@@ -79,8 +105,8 @@ export type Ladder = Record<Slot, number[]>;
 const cache = new Map<string, Ladder>();
 
 /** Escalera de equipo de una clase: para cada espacio, el id del objeto de cada nivel (0 = ninguno). */
-function ladderFor(classId: number, dwarf: boolean): Ladder {
-    const key = `${classId}:${dwarf ? 1 : 0}`;
+function ladderFor(classId: number, raceId: number): Ladder {
+    const key = `${classId}:${raceId}`;
     const cached = cache.get(key);
 
     if (cached) return cached;
@@ -89,7 +115,7 @@ function ladderFor(classId: number, dwarf: boolean): Ladder {
 
     for (const slot of SLOTS) {
         const candidates = Object.entries(vars.datObj as Record<string, Obj>)
-            .filter(([id, obj]) => usable(id, obj, slot, classId, dwarf))
+            .filter(([id, obj]) => usable(id, obj, slot, classId, raceId))
             .map(([id, obj]) => ({ id: Number(id), price: Number(obj.valor), pow: power(obj, slot, classId) }));
 
         let lastPower = -1;
@@ -114,11 +140,9 @@ function ladderFor(classId: number, dwarf: boolean): Ladder {
     return ladder;
 }
 
-const isDwarf = (raceId: number) => raceId === 4 || raceId === 5;
-
 /** Inventario inicial de un heroe: equipo de nivel `tier` equipado, pociones y flechas si hace falta. */
 function buildInventory(classId: number, raceId: number, tier = 0): Record<number, { idItem: number; cant: number; equipped: number }> {
-    const ladder = ladderFor(classId, isDwarf(raceId));
+    const ladder = ladderFor(classId, raceId);
     const inv: Record<number, { idItem: number; cant: number; equipped: number }> = {};
     let slot = 1;
 
@@ -141,8 +165,8 @@ function shopCatalog(): number[] {
     const ids = new Set<number>([POTIONS.red, POTIONS.blue]);
 
     for (const classId of [1, 2, 3, 4, 6, 7, 8, 9]) {
-        for (const dwarf of [false, true]) {
-            const ladder = ladderFor(classId, dwarf);
+        for (const raceId of [1, 2, 3, 4, 5]) {
+            const ladder = ladderFor(classId, raceId);
 
             for (const s of SLOTS) {
                 for (let tier = 1; tier < TIER_CAPS.length; tier++) {
@@ -158,7 +182,7 @@ function shopCatalog(): number[] {
 
 /** Lo que se le ofrece a un heroe en la tienda: sus mejoras (niveles 1-3), pociones y flechas si es cazador. */
 function offeredTo(user: { idClase: number; idRaza: number }): Set<number> {
-    const ladder = ladderFor(user.idClase, isDwarf(user.idRaza));
+    const ladder = ladderFor(user.idClase, user.idRaza);
     const ids = new Set<number>([POTIONS.red, POTIONS.blue]);
 
     for (const s of SLOTS) {

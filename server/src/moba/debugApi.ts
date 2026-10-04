@@ -139,7 +139,7 @@ function handleDebugRequest(request: any, response: any): boolean {
         const gear = require("./gear");
         const classId = Number(url.searchParams.get("class") ?? 3);
         const race = Number(url.searchParams.get("race") ?? 1);
-        const ladder = gear.ladderFor(classId, race === 4 || race === 5);
+        const ladder = gear.ladderFor(classId, race);
         const describe = (id: number) => {
             const o = vars.datObj[id];
             return o ? { id, name: o.name, price: o.valor, hit: `${o.minHit}-${o.maxHit}`, def: `${o.minDef}-${o.maxDef}` } : null;

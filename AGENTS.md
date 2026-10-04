@@ -32,8 +32,14 @@ Hecho:
   partida tarda ~16 ms.
 - Equipos azul/rojo, combate consciente de equipos (fuego amigo bloqueado, NPCs ignoran aliados).
 - Torres (exterior → interior → base) y nexo con **invulnerabilidad escalonada**, victoria, reinicio automático.
-- Minions por oleadas (30 s), IA de carril, torres que priorizan minions.
-- Jungla neutral con correa/regreso/regeneración, reaparición (45 s) y buff del Ogro.
+- Minions por oleadas (40 s: cuerpo a cuerpo, magos a distancia y cada 3 oleadas uno de asedio), IA de carril,
+  torres que priorizan minions. Los minions **salen de las barracas** (una por carril y equipo, invulnerables) y arrancan
+  rumbo al siguiente waypoint del carril (`nextWaypointIndex`), nunca hacia atrás.
+- **Jungla** (18 campamentos, `moba.json` → `camps[].type`): lobos, golems y escorpiones (oro/XP, reaparecen a los 45 s), **Centinela Azul**
+  (+25 % dano de hechizos, mana) y **Zarza Roja** (+20 % dano fisico, vida) en cada lado, **Tortuga del Rio** (cura, 2 en el
+  rio), **Dragon del Rio** (bendicion de equipo acumulable x4, aparece a los 2:30) y **Rey Demonio** (bendicion de equipo
+  2:30, aparece a los 7:00); los dos ultimos viven en claros abiertos sobre el rio. Los monstruos de un campamento comparten
+  agro, vuelven a casa y se regeneran. Buffs en `moba/buffs.ts` (se pierden al morir las de heroe; el HUD las muestra).
 - **Fog de guerra autoritativo en el servidor** (los enemigos no visibles nunca se envían) + capa visual suave en el
   cliente.
 - **Progresión estilo LoL**: niveles 1–18 (mapeados a nivel AO 8–50), XP compartida, puntos de habilidad con rangos y
@@ -42,6 +48,10 @@ Hecho:
 - Balance con datos: matriz de duelos y afinador (`duelMatrix.ts`, `tuneBalance.ts`); multiplicadores en `heroes.ts`.
 - Escalado de minions y torres con el tiempo de partida.
 - Héroes con kits por rol (`server/src/moba/heroes.ts`), lobby con roles, muerte sin pérdida de items, respawn.
+- `/recall` (o `/b`): canal de 8 s que lleva a la base; se cancela al moverte o recibir dano.
+- **Bot que juega como humano** (`server/src/scripts/humanBot.ts` + `playMatch.ts`): ve solo lo que ve su equipo
+  (`/debug/view`, con fog), camina con A* a 200 ms/paso, pelea, lanza hechizos, sube habilidades, compra y se retira.
+  `cd server && npx tsx src/scripts/playMatch.ts 10` juega 10 min de 3v3 con 6 bots (servidor sin `-Fast`).
 - HUD: marcador, reloj, tabla de héroes, oro, minimapa, avisos (paquete `mobaState`).
 - Carga del mapa por zonas (chunks) en el cliente para mapas grandes.
 - Entorno de desarrollo sin Docker (Postgres embebido), bots y API de depuración para tests automáticos.
@@ -90,6 +100,8 @@ cd frontend && npx pnpm dev                                 # :3000
 - Tras tocar plantillas: `cd api && npx pnpm exec tsx src/scripts/seedMobaNpcs.ts` y reiniciar el servidor.
 - Tras tocar el generador: `cd server && npx tsx src/scripts/generateMobaMap.ts` y
   `npx tsx src/scripts/exportFrontendOptimizedMaps.ts --maps=600` (el cliente lee `public/maps_optimized`).
+- Partida de bots: `devdb/restart-server.ps1` (normal) y `cd server && npx tsx src/scripts/playMatch.ts 10`; no editar
+  codigo del servidor durante la corrida (el watcher reinicia y corta la partida).
 - Tests: `devdb/restart-server.ps1 -Fast` y luego `cd server && npm run test:moba`.
   `testFog` es el más importante: busca los ids de los enemigos ocultos dentro de los paquetes que recibe el cliente.
 - Typecheck: `npx tsc --noEmit -p .` en `server`, `api` y `frontend` (los tres deben quedar limpios).

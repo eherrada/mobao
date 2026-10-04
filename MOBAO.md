@@ -121,6 +121,10 @@ powershell -File devdb/restart-server.ps1          # servidor de juego :7666 (ag
 cd frontend && npx pnpm dev                        # :3000
 ```
 
+**Jungla y objetivos:** Centinela Azul y Zarza Roja (bendiciones de heroe, 2 min), Tortuga del Rio, Dragon del Rio
+(acumulable, de equipo) y Rey Demonio (de equipo, 2.5 min). **Volver a la base:** `/recall` o `/b` (8 s quieto).
+**Probar con bots:** `cd server && npx tsx src/scripts/playMatch.ts 10`.
+
 Para jugar: registrate en `http://localhost:3000`, andá a **Arenas → Crear sala → MOBA 3v3**, elegí un héroe y
 entrá. Una segunda sala/cuenta para el equipo contrario (o bots, ver tests).
 
