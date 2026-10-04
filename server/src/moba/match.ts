@@ -31,6 +31,7 @@ type Match = {
     npcIds: Set<number>;
     structures: StructureRecord[];
     spawnQueue: Array<{ at: number; team: Team; lane: string }>;
+    jungleRespawns: Array<{ at: number; camp: number; slot: number }>;
 };
 
 const matches: Record<string, Match> = {};
@@ -179,6 +180,44 @@ function spawnStructures(match: Match) {
     recomputeInvulnerability(match);
 }
 
+const CAMP_SLOTS: Array<{ dx: number; dy: number; big: boolean }> = [
+    { dx: 0, dy: 0, big: true },
+    { dx: -2, dy: 1, big: false },
+    { dx: 2, dy: 1, big: false },
+];
+
+function spawnCampMonster(match: Match, campIndex: number, slot: number) {
+    const camp = config.getMapConfig().camps[campIndex];
+    const def = CAMP_SLOTS[slot];
+
+    if (!camp || !def) return;
+
+    const pos = findFreeNear(match.mapId, { x: camp.x + def.dx, y: camp.y + def.dy }, 3);
+
+    if (!pos) return;
+
+    const npc = spawnMobaNpc({
+        templateId: def.big ? config.TEMPLATES.jungleBig : config.TEMPLATES.jungleSmall,
+        mapId: match.mapId,
+        x: pos.x,
+        y: pos.y,
+        matchId: match.id,
+        campIndex,
+        campSlot: slot,
+    });
+
+    if (npc) match.npcIds.add(npc.id);
+}
+
+function spawnCamps(match: Match) {
+    match.jungleRespawns = [];
+    const camps = config.getMapConfig().camps ?? [];
+
+    camps.forEach((_camp: unknown, index: number) => {
+        CAMP_SLOTS.forEach((_slot, slot) => spawnCampMonster(match, index, slot));
+    });
+}
+
 function createMatch(id: string): Match {
     const mapId = allocateMapId();
     createInstanceMap(mapId);
@@ -196,10 +235,12 @@ function createMatch(id: string): Match {
         npcIds: new Set(),
         structures: [],
         spawnQueue: [],
+        jungleRespawns: [],
     };
 
     matches[id] = match;
     spawnStructures(match);
+    spawnCamps(match);
     return match;
 }
 
@@ -269,6 +310,15 @@ function onNpcDestroyed(npc: any) {
 
     if (npc.structure === "minion") return;
 
+    if (npc.structure === "jungle") {
+        match.jungleRespawns.push({
+            at: Date.now() + config.TIMING.jungleRespawnMs,
+            camp: npc.campIndex,
+            slot: npc.campSlot,
+        });
+        return;
+    }
+
     const where = npc.lane ? ` del carril ${npc.lane}` : npc.tier === 3 ? " de base" : "";
 
     if (npc.structure === "nexus") {
@@ -291,6 +341,26 @@ function endMatch(match: Match, winner: Team) {
     match.winner = winner;
     match.resetAt = Date.now() + config.TIMING.resetAfterWinMs;
     announce(match, `¡Victoria del equipo ${teamLabel(winner)}! Nueva partida en ${Math.round(config.TIMING.resetAfterWinMs / 1000)} s.`, "yellow");
+}
+
+/** El monstruo grande da una bendicion: fuerza y agilidad extra y algo de vida. */
+function onJungleKill(killer: any, monster: any) {
+    if (!monster.buff) return;
+
+    const client = vars.clients[killer.id];
+
+    killer.attrFuerza = Number(killer.bkAttrFuerza ?? killer.attrFuerza) + 10;
+    killer.attrAgilidad = Number(killer.bkAttrAgilidad ?? killer.attrAgilidad) + 10;
+    killer.cooldownFuerza = Date.now();
+    killer.cooldownAgilidad = Date.now();
+    killer.hp = Math.min(killer.maxHp, killer.hp + Math.round(killer.maxHp * 0.3));
+
+    if (client) {
+        handleProtocol.updateFuerza(killer.attrFuerza, Math.round(config.TIMING.buffDurationMs / 1000), client);
+        handleProtocol.updateAgilidad(killer.attrAgilidad, Math.round(config.TIMING.buffDurationMs / 1000), client);
+        handleProtocol.updateHP(killer.hp, client);
+        handleProtocol.console("[MOBA] ¡Obtienes la bendicion del Ogro! (+fuerza, +agilidad)", "green", 1, 0, client);
+    }
 }
 
 function onHeroKill(killer: any, victim: any) {
@@ -413,12 +483,14 @@ function resetMatch(match: Match) {
 
     match.npcIds.clear();
     match.spawnQueue = [];
+    match.jungleRespawns = [];
     match.winner = undefined;
     match.state = "running";
     match.startedAt = Date.now();
     match.waveCount = 0;
     match.nextWaveAt = Date.now() + config.TIMING.firstWaveDelayMs;
     spawnStructures(match);
+    spawnCamps(match);
 
     for (const hero of heroesOf(match)) {
         respawnHero(match, hero);
@@ -477,7 +549,7 @@ function broadcastState(match: Match, heroes: any[], live: any[], now: number) {
         }
 
         for (const npc of live) {
-            if (npc.hp <= 0 || npc.deathProcessed) continue;
+            if (npc.hp <= 0 || npc.deathProcessed || npc.structure === "jungle") continue;
             const alwaysVisible = npc.structure !== "minion";
             if (alwaysVisible || npc.team === team || fog.isVisibleToTeam(match.id, team, npc.pos)) {
                 ents.push([npc.pos.x, npc.pos.y, KIND_CODE[npc.structure] ?? 1, npc.team === "blue" ? 0 : 1]);
@@ -573,6 +645,12 @@ function tick() {
             match.nextWaveAt = now + config.TIMING.waveIntervalMs;
         }
 
+        if (match.jungleRespawns.length > 0) {
+            const due = match.jungleRespawns.filter((r) => r.at <= now);
+            match.jungleRespawns = match.jungleRespawns.filter((r) => r.at > now);
+            for (const r of due) spawnCampMonster(match, r.camp, r.slot);
+        }
+
         if (match.spawnQueue.length > 0) {
             const due = match.spawnQueue.filter((s) => s.at <= now);
             match.spawnQueue = match.spawnQueue.filter((s) => s.at > now);
@@ -627,5 +705,6 @@ module.exports = {
     onHeroDeath,
     onHeroKill,
     onMinionKill,
+    onJungleKill,
     onHeroDisconnected,
 };

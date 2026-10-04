@@ -21,6 +21,8 @@ const TIMING = {
     resetAfterWinMs: envNumber("MOBA_RESET_MS", 15_000),
     teamSize: envNumber("MOBA_TEAM_SIZE", 3),
     passiveGoldPerSecond: envNumber("MOBA_PASSIVE_GOLD", 8),
+    jungleRespawnMs: envNumber("MOBA_JUNGLE_RESPAWN_MS", 45_000),
+    buffDurationMs: 90_000,
 };
 
 const TEMPLATES = {
@@ -28,6 +30,8 @@ const TEMPLATES = {
     nexus: { blue: 9603, red: 9604 },
     minion: { blue: 9605, red: 9606 },
     shop: { blue: 9607, red: 9607 },
+    jungleSmall: 9608,
+    jungleBig: 9609,
 } as const;
 
 type Pt = { x: number; y: number };
@@ -45,6 +49,7 @@ type MapConfig = {
     bases: { blue: Pt; red: Pt };
     lanes: Record<string, Pt[]>;
     structures: StructureDef[];
+    camps: Array<{ x: number; y: number; owner: "blue" | "red" }>;
 };
 
 let cachedConfig: MapConfig | undefined;

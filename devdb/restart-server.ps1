@@ -16,6 +16,7 @@ if ($Fast) {
     $env:MOBA_FIRST_WAVE_MS = "2000"
     $env:MOBA_RESPAWN_MS = "3000"
     $env:MOBA_RESET_MS = "5000"
+    $env:MOBA_JUNGLE_RESPAWN_MS = "5000"
 }
 $log = Join-Path $PSScriptRoot "server.log"
 Remove-Item $log -ErrorAction SilentlyContinue

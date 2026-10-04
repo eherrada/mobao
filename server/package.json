@@ -32,6 +32,7 @@
         "export-frontend-graphics": "tsx src/scripts/exportFrontendOptimizedGraphics.ts",
         "export-frontend-maps": "tsx src/scripts/exportFrontendOptimizedMaps.ts",
         "generate-moba-map": "tsx src/scripts/generateMobaMap.ts",
+        "test:moba": "tsx src/scripts/testMatch.ts && tsx src/scripts/testFog.ts && tsx src/scripts/testJungle.ts && tsx src/scripts/testMinions.ts",
         "export-client-objs": "tsx src/scripts/exportClientObjs.ts",
         "start": "node dist/server.js",
         "lint": "eslint './src/**/*.ts'",

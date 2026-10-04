@@ -158,6 +158,50 @@ function thinkMinion(npc: any, now: number, matchNpcs: any[], heroes: any[]) {
     stepToward(npc, goal);
 }
 
+/** Monstruo neutral: ataca solo a quien lo golpeo, respeta la correa y vuelve a su campamento regenerandose. */
+function thinkJungle(npc: any, now: number) {
+    if (npc.paralizado || npc.inmovilizado) return;
+    if (now < npc.nextMoveAt) return;
+    npc.nextMoveAt = now + npc.moveIntervalMs;
+
+    const home: Pt = npc.homePos;
+    const aggressor = npc.lastAggressorId ? vars.personajes[npc.lastAggressorId] : undefined;
+    const engaged =
+        aggressor &&
+        aggressor.mobaMatchId === npc.mobaMatchId &&
+        !aggressor.dead &&
+        !aggressor.cerrado &&
+        aggressor.hp > 0 &&
+        now - Number(npc.lastAggressedAt ?? 0) < 8000 &&
+        manhattan(aggressor.pos, home) <= npc.leash;
+
+    if (engaged) {
+        if (manhattan(npc.pos, aggressor.pos) <= 1) {
+            if (now >= npc.nextAttackAt) {
+                npc.nextAttackAt = now + npc.attackIntervalMs;
+                setHeadingToward(npc, aggressor.pos);
+                npcs.dealDamageToUser(npc, aggressor, rollDamage(npc), false);
+            }
+        } else {
+            stepToward(npc, aggressor.pos);
+        }
+        return;
+    }
+
+    // Sin objetivo: vuelve a casa y se regenera.
+    npc.lastAggressorId = 0;
+
+    if (manhattan(npc.pos, home) > 0) {
+        stepToward(npc, home);
+        return;
+    }
+
+    if (npc.hp < npc.maxHp) {
+        npc.hp = Math.min(npc.maxHp, npc.hp + Math.ceil(npc.maxHp * 0.08));
+        npcs.broadcastNpcVitals(npc);
+    }
+}
+
 function thinkTower(npc: any, now: number, matchNpcs: any[], heroes: any[]) {
     if (now < npc.nextAttackAt) return;
 
@@ -187,6 +231,8 @@ function thinkAll(matchId: string, now: number, matchNpcs: any[]) {
             thinkMinion(npc, now, matchNpcs, heroes);
         } else if (npc.structure === "tower") {
             thinkTower(npc, now, matchNpcs, heroes);
+        } else if (npc.structure === "jungle") {
+            thinkJungle(npc, now);
         }
     }
 }

@@ -112,7 +112,9 @@ function Respawn(this: any) {
                 if (user.mobaMatchId && pjSelected.mobaMatchId === user.mobaMatchId) {
                     const mobaMatch = require("./moba/match");
 
-                    if (pjSelected.isNpc && pjSelected.structure === "minion") {
+                    if (pjSelected.isNpc && pjSelected.structure === "jungle") {
+                        mobaMatch.onJungleKill(user, pjSelected);
+                    } else if (pjSelected.isNpc && pjSelected.structure === "minion") {
                         mobaMatch.onMinionKill(user);
                     } else if (!pjSelected.isNpc) {
                         mobaMatch.onHeroKill(user, pjSelected);

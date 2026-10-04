@@ -12,8 +12,10 @@ type SpawnOptions = {
     mapId: number;
     x: number;
     y: number;
-    team: "blue" | "red";
+    team?: "blue" | "red";
     matchId: string;
+    campIndex?: number;
+    campSlot?: number;
     lane?: string;
     tier?: number;
     waypoints?: Array<{ x: number; y: number }>;
@@ -35,7 +37,7 @@ function spawnMobaNpc(opts: SpawnOptions): any | null {
     npc.pos.x = opts.x;
     npc.pos.y = opts.y;
     npc.nameCharacter = datNpc.name;
-    npc.color = teams.teamColor(opts.team);
+    npc.color = opts.team ? teams.teamColor(opts.team) : "#d9b86c";
     npc.isNpc = true;
     npc.idBody = datNpc.idBody;
     npc.idHead = datNpc.idHead;
@@ -61,6 +63,8 @@ function spawnMobaNpc(opts: SpawnOptions): any | null {
 
     // Campos del MOBA.
     npc.team = opts.team;
+    npc.leash = Number(datNpc.leash ?? 12);
+    npc.buff = Number(datNpc.buff ?? 0);
     npc.mobaMatchId = opts.matchId;
     npc.structure = String(datNpc.structure ?? "");
     npc.stationary = Number(datNpc.stationary ?? 0);
@@ -75,6 +79,9 @@ function spawnMobaNpc(opts: SpawnOptions): any | null {
     npc.nextAttackAt = 0;
     npc.nextMoveAt = 0;
     npc.waypoints = opts.waypoints;
+    npc.campIndex = opts.campIndex;
+    npc.campSlot = opts.campSlot;
+    npc.homePos = { x: opts.x, y: opts.y };
     npc.wpIndex = 1;
     npc.invulnerable = Boolean(datNpc.invulnerable);
     npc.objs = Array.isArray(datNpc.objs) ? datNpc.objs : [];

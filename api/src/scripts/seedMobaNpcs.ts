@@ -87,6 +87,37 @@ const shop = {
     objs: SHOP_ITEMS.map((item) => ({ cant: 1, item })),
 };
 
+// Monstruos de la jungla: neutrales (sin equipo), atacan solo a quien los golpea y vuelven a su campamento.
+const jungleSmall = {
+    ...common,
+    movement: 20,
+    hp: 380,
+    maxHp: 380,
+    def: 6,
+    defM: 6,
+    magicDef: 0,
+    minHit: 20,
+    maxHit: 30,
+    exp: 40,
+    gold: 25,
+    structure: "jungle",
+    leash: 12,
+    attackIntervalMs: 1300,
+    moveIntervalMs: 300,
+};
+
+const jungleBig = {
+    ...jungleSmall,
+    hp: 1400,
+    maxHp: 1400,
+    def: 12,
+    minHit: 35,
+    maxHit: 55,
+    exp: 120,
+    gold: 90,
+    buff: 1,
+};
+
 const templates = [
     { id: 9601, data: { ...tower, name: "Torre Azul", idBody: 554, team: "blue" } },
     { id: 9602, data: { ...tower, name: "Torre Roja", idBody: 181, team: "red" } },
@@ -94,6 +125,8 @@ const templates = [
     { id: 9604, data: { ...nexus, name: "Nexo Rojo", idBody: 394, team: "red" } },
     { id: 9605, data: { ...minion, name: "Minion Azul", idBody: 15, team: "blue" } },
     { id: 9606, data: { ...minion, name: "Minion Rojo", idBody: 170, team: "red" } },
+    { id: 9608, data: { ...jungleSmall, name: "Lobo de la Jungla", idBody: 10 } },
+    { id: 9609, data: { ...jungleBig, name: "Ogro de la Jungla", idBody: 76 } },
     { id: 9607, data: { ...shop, name: "Mercader del Nexo", idBody: 180, team: "blue" } },
 ];
 

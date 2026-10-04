@@ -184,6 +184,52 @@ function main() {
         }
     }
 
+    // Campamentos de la jungla: anclas del lado azul espejadas (point reflection) para el rojo.
+    // Cada campamento tiene un monstruo grande (buff) y dos chicos alrededor.
+    type Camp = { x: number; y: number; owner: Team };
+    const camps: Camp[] = [];
+    const blueAnchors: Pt[] = [
+        { x: 60, y: 170 }, { x: 45, y: 135 }, { x: 78, y: 118 }, { x: 105, y: 178 },
+        { x: 88, y: 205 }, { x: 120, y: 208 }, { x: 150, y: 214 },
+    ];
+
+    const findCampSpot = (anchor: Pt): Pt | null => {
+        for (let r = 0; r <= 8; r++) {
+            for (let dy = -r; dy <= r; dy++) {
+                for (let dx = -r; dx <= r; dx++) {
+                    if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+                    const x = anchor.x + dx;
+                    const y = anchor.y + dy;
+                    const k = kind[y - 1]?.[x - 1];
+                    if ((k === "grass" || k === "tree") && Math.abs(x - y) > 10 && !laneMask[y - 1][x - 1]) {
+                        return { x, y };
+                    }
+                }
+            }
+        }
+        return null;
+    };
+
+    for (const anchor of blueAnchors) {
+        const blue = findCampSpot(anchor);
+        const red = findCampSpot({ x: 255 - anchor.x, y: 255 - anchor.y });
+        if (blue) camps.push({ ...blue, owner: "blue" });
+        if (red) camps.push({ ...red, owner: "red" });
+    }
+
+    // Despeja arboles y deja pasto transitable en 7x7 alrededor de cada campamento.
+    for (const camp of camps) {
+        for (let dy = -3; dy <= 3; dy++) {
+            for (let dx = -3; dx <= 3; dx++) {
+                const x = camp.x + dx;
+                const y = camp.y + dy;
+                if (kind[y - 1]?.[x - 1] === "water") continue;
+                delete objects[`${x},${y}`];
+                rows[y - 1][x - 1] = 1 + Math.floor(rand() * 16);
+            }
+        }
+    }
+
     const spawn = { blue: { x: 14, y: 241 }, red: { x: 241, y: 14 } };
 
     fs.mkdirSync(OUT_DIR, { recursive: true });
@@ -206,11 +252,11 @@ function main() {
     write("terrain.json", { id: MAP_ID, width: SIZE, height: SIZE, palette, rows });
     write("specials.json", { id: MAP_ID, exits: {}, objects, npcs: {}, triggers: {} });
     write("npcs.json", []);
-    write("moba.json", { size: SIZE, spawn, bases: { blue: BLUE_BASE, red: RED_BASE }, lanes: LANES, structures });
+    write("moba.json", { size: SIZE, spawn, bases: { blue: BLUE_BASE, red: RED_BASE }, lanes: LANES, structures, camps });
 
     const trees = Object.keys(objects).length;
     console.log(
-        `mapa_${MAP_ID} generado: ${SIZE}x${SIZE}, ${trees} arboles, ${structures.length} estructuras en ${OUT_DIR}`,
+        `mapa_${MAP_ID} generado: ${SIZE}x${SIZE}, ${trees} arboles, ${structures.length} estructuras, ${camps.length} campamentos en ${OUT_DIR}`,
     );
 }
 
