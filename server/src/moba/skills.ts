@@ -85,7 +85,13 @@ function autoAssign(hero: any) {
     const slots = Object.keys(hero.spells ?? {})
         .map(Number)
         .sort((a, b) => a - b);
-    const ordered = [...slots.filter((s) => isUlt(hero, s)), ...slots.filter((s) => !isUlt(hero, s))];
+    const preferred: number[] = require("./heroes").SKILL_ORDER[hero.mobaTemplateId ?? -1] ?? [];
+    const rankOf = (slot: number) => {
+        const index = preferred.indexOf(hero.spells[slot].idSpell);
+        return index < 0 ? 999 : index;
+    };
+    const basics = slots.filter((s) => !isUlt(hero, s)).sort((a, b) => rankOf(a) - rankOf(b) || a - b);
+    const ordered = [...slots.filter((s) => isUlt(hero, s)), ...basics];
 
     let guard = 200;
     while (availablePoints(hero) > 0 && guard-- > 0) {

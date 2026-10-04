@@ -84,6 +84,7 @@ function spawnMobaNpc(opts: SpawnOptions): any | null {
     npc.homePos = { x: opts.x, y: opts.y };
     npc.wpIndex = 1;
     npc.invulnerable = Boolean(datNpc.invulnerable);
+    npc.spawnedAt = Date.now();
     npc.objs = Array.isArray(datNpc.objs) ? datNpc.objs : [];
 
     vars.npcs[npc.id] = npc;

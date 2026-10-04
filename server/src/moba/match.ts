@@ -511,7 +511,16 @@ function spawnMinion(match: Match, team: Team, laneName: string) {
         waypoints: path,
     });
 
-    if (npc) match.npcIds.add(npc.id);
+    if (npc) {
+        match.npcIds.add(npc.id);
+
+        // Cada oleada es un poco mas fuerte (como en LoL, los minions escalan con el tiempo).
+        const scale = 1 + Math.min(1.2, match.waveCount * 0.04);
+        npc.maxHp = Math.round(npc.maxHp * scale);
+        npc.hp = npc.maxHp;
+        npc.minHit = Math.round(npc.minHit * scale);
+        npc.maxHit = Math.round(npc.maxHit * scale);
+    }
 }
 
 function resetMatch(match: Match) {
@@ -649,6 +658,26 @@ function broadcastState(match: Match, heroes: any[], live: any[], now: number) {
             },
             client,
         );
+    }
+}
+
+const lastPassiveAt: Record<string, number> = {};
+
+/** Regeneracion pasiva de los heroes vivos (da sosten a los magos y mueve el ritmo de la linea). */
+function passiveRegen(match: Match, heroes: any[], now: number) {
+    if (now - (lastPassiveAt[match.id] ?? 0) < 1000) return;
+
+    lastPassiveAt[match.id] = now;
+
+    for (const hero of heroes) {
+        const client = vars.clients[hero.id];
+
+        if (!client || hero.dead || (hero.hp >= hero.maxHp && hero.mana >= hero.maxMana)) continue;
+
+        hero.hp = Math.min(hero.maxHp, hero.hp + Math.ceil(hero.maxHp * 0.004));
+        hero.mana = Math.min(hero.maxMana, hero.mana + Math.ceil(hero.maxMana * 0.01));
+        handleProtocol.updateHP(hero.hp, client);
+        handleProtocol.updateMana(hero.mana, client);
     }
 }
 
@@ -801,6 +830,7 @@ function tickInner() {
         fog.syncVisibility(heroes, live);
         grantPassiveGold(match, heroes, now);
         regenAtFountain(match, heroes, now);
+        passiveRegen(match, heroes, now);
         broadcastState(match, heroes, live, now);
     }
 }

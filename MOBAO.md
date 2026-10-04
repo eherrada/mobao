@@ -24,9 +24,9 @@ macros asignables a la tecla que quieras, y todos los controles son configurable
   reaparecen a los 45 s. El Ogro grande da una bendición (+fuerza, +agilidad, 30 % de vida).
 - **Fog of war por equipo**, autoritativo en el servidor: los enemigos fuera de visión no se envían al cliente.
   Radios: héroe 8, minion 5, torre 10, nexo 8 (torres y nexos son siempre visibles).
-- **Economía**: oro pasivo (8/s), oro por minions/monstruos/kills y un **mercader** en cada base (doble click)
-  con pociones y equipo. Los héroes se curan rápido cerca de su fuente.
-- **Muerte**: sin pérdida de items; reaparecés en tu base a los 8 s.
+- **Progresión y economía**: niveles 1–18, puntos de habilidad, oro y un **mercader** en cada base (ver más abajo).
+  Los héroes se curan rápido cerca de su fuente y regeneran vida y maná de a poco.
+- **Muerte**: sin pérdida de items; reaparecés en tu base (más tarde cuanto más nivel).
 - HUD: marcador (torres, kills, reloj, nexos), tabla de héroes (K/D/minions), oro, minimapa con visión de equipo,
   cuenta regresiva de respawn y pantalla de victoria/derrota.
 
@@ -45,6 +45,59 @@ Los héroes son las 8 clases de AO (plantillas PvP, nivel 50, sin persistencia).
 | Druida | Control | Paralizar, Inmovilizar, Curar Graves, Tormenta de Fuego, Proyectil Mágico, Fuerza |
 | Paladín | Combatiente | Curar, Remover Parálisis, Inmovilizar, Proyectil Mágico, Fuerza |
 | Cazador | Tirador | Arco a distancia (sin mana) |
+
+## Progresión, habilidades, equipo y razas
+
+**Niveles 1–18.** Los héroes empiezan en nivel 1 y suben con experiencia, como en LoL:
+- Un minion da 55 XP, un lobo 40, el Ogro 110, una torre 250 y matar a un héroe 90 + 30 por su nivel. La XP se reparte
+  entre los aliados cercanos (14 tiles) con un pequeño bono por grupo.
+- El nivel MOBA se mapea a un "nivel AO" efectivo entre 8 y 50 (`server/src/moba/progression.ts`) para reutilizar las
+  fórmulas de AO de vida, maná y golpe. El panel izquierdo muestra ese nivel AO; la insignia **Nv** del HUD muestra el
+  nivel MOBA y su barra de experiencia.
+- Se reaparece en 6 s + 1,5 s por nivel (de 6 s a ~31 s).
+
+**Puntos de habilidad (estilo LoL).** Cada nivel da 1 punto que se gasta en el panel de habilidades (botón "+"):
+- Una habilidad sin puntos no se puede lanzar. Las comunes llegan a rango 5 (el rango r pide nivel 2r−1) y la
+  **definitiva** de cada héroe a rango 3 (niveles 6, 11 y 16).
+- El rango escala el daño y la curación: 75 % en el rango 1 hasta 100 % en el máximo.
+- Guerrero y Cazador pelean con armas y no usan puntos.
+
+**Razas.** En el lobby se elige raza además de clase. Los modificadores salen de `balanceRazas` de AO:
+
+| Raza | Modificadores | Efecto en el MOBA |
+|---|---|---|
+| Humano | +1 Fuerza, +1 Agilidad, +2 Constitución | equilibrado y resistente |
+| Elfo | +2 Agilidad, +2 Inteligencia, +1 Constitución, +1 Carisma | más maná, algo menos de vida |
+| Elfo Drow | +2 Fuerza, +1 Agilidad, +1 Inteligencia, +1 Constitución | fuerza y maná equilibrados |
+| Enano | +3 Fuerza, +3 Constitución, −3 Inteligencia | el más resistente, poco maná |
+| Gnomo | +4 Inteligencia, +3 Agilidad, −2 Fuerza | mucho maná, poca vida |
+
+Cada raza tiene sus cabezas, y enanos y gnomos usan armaduras propias (`server/src/moba/races.ts`).
+
+**Oro y tienda.** Empezás con 600 de oro; ganás oro pasivo (3/s), por minions (60), monstruos (75 / 270 el Ogro), torres
+(250 a todo el equipo) y kills (300). El mercader de cada base (doble click) ofrece **solo lo que tu clase y raza pueden
+usar**: 3 mejoras de arma, armadura, escudo y casco, más pociones (y flechas para el Cazador). El equipo se genera solo
+desde el catálogo de AO (`server/src/moba/gear.ts`): el inicial es básico y cada mejora sube de rango de precio
+(450 / 1800 / 4800 / 12000). Comprar no equipa: hay que equiparlo (E o doble click en el inventario).
+
+**Escalado de la presión.** Cada oleada de minions es un 4 % más fuerte (hasta +120 %) y las torres pegan un 5 % más por
+minuto (hasta +150 %), para que crezcan junto con los héroes.
+
+## Balance
+
+Los multiplicadores por héroe (vida, daño físico, daño de hechizos) están en `server/src/moba/heroes.ts` (`STATS`) y
+salieron de simular duelos 1v1 con bots entre todos los héroes a los niveles 1, 6, 12 y 18 con el equipo de cada nivel:
+
+```bash
+devdb/restart-server.ps1 -NoMinions -NoWatch            # sin oleadas ni reinicios
+cd server && npx tsx src/scripts/duelMatrix.ts 1 1 18    # raza, repeticiones, nivel -> winrate y tiempo para matar
+cd server && npx tsx src/scripts/tuneBalance.ts 1 6 1    # afina los multiplicadores en vivo y los imprime
+```
+
+Estado: las medias de victoria quedaron entre ~40 % y ~65 % y los duelos duran 5–20 s (`MOBA_HP_SCALE=2` los alarga;
+`MOBA_HEAL_SCALE=3` escala las curaciones). Limitaciones conocidas: las políticas de los bots son simples (el Mago, que
+depende de su maná, es el más sensible al nivel) y las razas se miden aparte (`duelMatrix.ts <raza>`). Conviene reafinar
+con partidas reales.
 
 ## Cómo correrlo (Windows, sin Docker)
 
@@ -84,6 +137,10 @@ cd server && npm run test:moba
 | `testMatch` | equipos, instancia, spawn, minions, torres solo contra el enemigo, orden de destrucción, muerte/respawn, victoria, reinicio y limpieza |
 | `testFog` | los enemigos fuera de visión **nunca llegan al cliente** (se buscan sus ids en los paquetes), aparecen al entrar en visión y se ocultan al salir |
 | `testHeroes` | curación a aliados, daño a enemigos, fuego amigo bloqueado |
+| `testRaces` | cada raza cambia vida/maná, cabeza y (enanos/gnomos) armadura |
+| `testProgression` | nivel 1 al empezar, XP y oro por kills reales, subida de nivel, nivel 18 = nivel AO 50 |
+| `testSkills` | sin puntos no se lanza, el paquete gasta el punto, rangos y requisito de nivel de la definitiva |
+| `testShop` | equipo inicial básico, la tienda filtra por clase, comprar descuenta oro y equipar mejora el arma |
 | `testJungle` | monstruos solo contra el agresor, buff, reaparición |
 | `testMinions` | los minions de ambos equipos se encuentran y pelean |
 | `testLoad` | carga: N partidas simultáneas y costo del tick (`/debug/perf`) |
@@ -101,7 +158,11 @@ server/src/moba/
   ai.ts          minions, torres y jungla; índice espacial por celdas para buscar objetivos
   match.ts       ciclo de la partida: instancia, oleadas, respawn, oro, regeneración, victoria, estado del HUD
   fog.ts         visión por equipo y filtros dentro de handleProtocol
-  heroes.ts      kits de hechizos por héroe
+  heroes.ts      kits de hechizos por héroe y multiplicadores de balance
+  progression.ts niveles, XP compartida, oro y reaparición por nivel
+  skills.ts      puntos de habilidad: rangos, requisitos y multiplicador de daño
+  races.ts       razas: cabeza, modificadores y armaduras de enano/gnomo
+  gear.ts        escaleras de equipo por clase y raza, inventario inicial y catálogo de la tienda
   debugApi.ts    API de depuración (solo desarrollo)
 server/src/scripts/generateMobaMap.ts   genera el mapa 600 y moba.json (carriles, estructuras, campamentos)
 frontend/components/moba/MobaHud.tsx    HUD (marcador, minimapa, avisos) vía el paquete `mobaState`
@@ -158,7 +219,7 @@ que hoy crea un sprite por tile (~100–130 mil a 255×255) y es el límite prá
 - Sprites provisorios: torres, nexo, minions y monstruos reutilizan cuerpos de NPCs de AO.
 - Combate al estilo AO: hechizos por tile con hitscan y cooldown global (no hay skillshots ni cooldown por
   habilidad). Es el siguiente gran paso si se quiere sentir más "MOBA".
-- Los héroes son nivel fijo 50: no hay niveles ni compras que cambien habilidades dentro de la partida.
+- La tienda vende equipo; no hay objetos activos ni efectos especiales (anillos, pasivas) todavía.
 - La visión compartida del equipo se refleja en el minimapa, pero los enemigos que ve un aliado lejano (fuera
   del área de 31×31 del cliente) no se envían como entidades.
 - Sin arbustos ni wards, sin matchmaking (las salas del lobby arman las partidas), sin reconexión.

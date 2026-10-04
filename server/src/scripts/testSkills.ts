@@ -18,7 +18,7 @@ async function main() {
     // Mago (kit: 1 Apocalipsis[def], 2 Descarga, 3 Tormenta, 4 Inmovilizar, 5 Proyectil, 6 Celeridad) sin reparto automatico.
     const mage = new Bot({ name: "SkMage", templateId: 0, matchId, team: "blue", x: 100, y: 130, autoSkills: false });
     await mage.connect();
-    const dummy = new Bot({ name: "SkDummy", templateId: 2, matchId, team: "red", x: 103, y: 130, level: 18 });
+    const dummy = new Bot({ name: "SkDummy", templateId: 2, matchId, team: "red", x: 103, y: 130 });
     await dummy.connect();
     await sleep(1200);
 

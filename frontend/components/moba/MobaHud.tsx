@@ -135,16 +135,16 @@ function SkillPanel({ state }: { state: MobaState }) {
                     {state.points} punto{state.points > 1 ? "s" : ""} de habilidad: elegi donde invertirlo
                 </div>
             ) : null}
-            <div className="flex gap-1 rounded-md border border-white/15 bg-black/70 p-1">
+            <div className="flex max-w-[94vw] gap-1 overflow-x-auto rounded-md border border-white/15 bg-black/70 p-1">
                 {state.skills.map((skill) => (
                     <div
                         key={skill.slot}
                         title={`${skill.name} · rango ${skill.rank}/${skill.max}${skill.ult ? " · definitiva" : ""} · proximo rango: nivel ${skill.nextReqLevel}`}
-                        className={`flex w-[68px] flex-col items-center rounded border px-1 py-0.5 ${
+                        className={`flex w-[58px] shrink-0 flex-col items-center rounded border px-1 py-0.5 ${
                             skill.rank === 0 ? "border-white/10 opacity-60" : "border-white/25"
                         } ${skill.ult ? "bg-purple-900/40" : "bg-white/5"}`}
                     >
-                        <span className="w-full truncate text-center text-[10px] leading-tight">{skill.name}</span>
+                        <span className="w-full truncate text-center text-[9px] leading-tight">{skill.name}</span>
                         <div className="my-0.5 flex gap-[2px]">
                             {Array.from({ length: skill.max }, (_, i) => (
                                 <span

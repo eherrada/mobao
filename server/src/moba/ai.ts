@@ -152,9 +152,15 @@ function rollDamage(npc: any): number {
     return funct.randomIntFromInterval(Number(npc.minHit ?? 1), Math.max(Number(npc.minHit ?? 1), Number(npc.maxHit ?? 1)));
 }
 
+/** Las torres pegan mas fuerte a medida que avanza la partida (hasta x2,5 a los 30 minutos). */
+function towerScale(tower: any): number {
+    const minutes = (Date.now() - Number(tower.spawnedAt ?? Date.now())) / 60000;
+    return 1 + Math.min(1.5, minutes * 0.05);
+}
+
 function strike(attacker: any, target: Target) {
     setHeadingToward(attacker, target.entity.pos);
-    const damage = rollDamage(attacker);
+    const damage = Math.round(rollDamage(attacker) * (attacker.structure === "tower" ? towerScale(attacker) : 1));
 
     if (target.isNpc) {
         npcs.dealDamageToNpc(attacker, target.entity, damage);

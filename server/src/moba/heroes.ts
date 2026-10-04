@@ -37,20 +37,33 @@ const HP_SCALE = Number(process.env.MOBA_HP_SCALE) || 2;
 const HEAL_SCALE = Number(process.env.MOBA_HEAL_SCALE) || 3;
 
 const STATS: Record<number, { hp: number; phys: number; spell: number }> = {
-    0: { hp: 1, phys: 1, spell: 1 },
-    1: { hp: 1, phys: 1, spell: 1 },
-    2: { hp: 1, phys: 1, spell: 1 },
-    3: { hp: 1, phys: 1, spell: 1 },
-    4: { hp: 1, phys: 1, spell: 1 },
-    5: { hp: 1, phys: 1, spell: 1 },
-    6: { hp: 1, phys: 1, spell: 1 },
-    7: { hp: 1, phys: 1, spell: 1 },
+    // Resultado de scripts/tuneBalance.ts (media de las ultimas rondas, niveles 1/6/12/18).
+    0: { hp: 1.25, phys: 1.25, spell: 1.25 },
+    1: { hp: 1.2, phys: 1.2, spell: 1.2 },
+    2: { hp: 0.8, phys: 0.8, spell: 0.8 },
+    3: { hp: 0.96, phys: 0.96, spell: 0.96 },
+    4: { hp: 1.06, phys: 1.06, spell: 1.06 },
+    5: { hp: 1.07, phys: 1.07, spell: 1.07 },
+    6: { hp: 1.15, phys: 1.15, spell: 1.15 },
+    7: { hp: 0.88, phys: 0.88, spell: 0.88 },
 };
 
 function statsFor(templateId: number) {
     const s = STATS[templateId] ?? { hp: 1, phys: 1, spell: 1 };
     return { hp: s.hp * HP_SCALE, phys: s.phys, spell: s.spell, heal: HEAL_SCALE };
 }
+
+/** Orden recomendado para gastar puntos de habilidad (ids de hechizo). La definitiva se sube apenas se puede. */
+const SKILL_ORDER: Record<number, number[]> = {
+    0: [8, 15, 23, 24, 18],
+    1: [3, 15, 5, 24, 10, 20, 18],
+    3: [8, 18, 20, 24],
+    4: [3, 15, 5, 20, 18, 24],
+    5: [8, 5, 9, 24, 20],
+    6: [3, 8, 5, 10, 20],
+    2: [],
+    7: [],
+};
 
 function spellsFor(templateId: number): Record<number, { idSpell: number }> | undefined {
     const kit = KITS[templateId];
@@ -65,4 +78,4 @@ function spellsFor(templateId: number): Record<number, { idSpell: number }> | un
     return spells;
 }
 
-module.exports = { spellsFor, statsFor, KITS, STATS };
+module.exports = { spellsFor, statsFor, KITS, STATS, SKILL_ORDER };
