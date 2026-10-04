@@ -16,6 +16,7 @@ export type ArenaRoomDetails = ArenaRoomSummary & {
     isOwner: boolean;
     member: {
         selectedPvpTemplateId: number | null;
+        selectedPvpRaceId?: number | null;
         connected: boolean;
     } | null;
 };
@@ -42,6 +43,15 @@ export const PVP_CHARACTER_TEMPLATES = [
 
 /** Mapa base del modo MOBA (3v3, 3 carriles). */
 export const MOBA_MAP_ID = 600;
+
+/** Razas del MOBA y sus modificadores (server/src/balanceData.ts → balanceRazas; el servidor los aplica). */
+export const MOBA_RACES = [
+    { id: 1, name: "Humano", mods: "+1 Fuerza · +1 Agilidad · +2 Constitucion", note: "Equilibrado y resistente" },
+    { id: 2, name: "Elfo", mods: "+2 Agilidad · +2 Inteligencia · +1 Const. · +1 Carisma", note: "Mas mana, algo menos de vida" },
+    { id: 3, name: "Elfo Drow", mods: "+2 Fuerza · +1 Agilidad · +1 Int. · +1 Const.", note: "Fuerza y mana equilibrados" },
+    { id: 4, name: "Enano", mods: "+3 Fuerza · +3 Constitucion · -3 Inteligencia", note: "El mas resistente, poco mana" },
+    { id: 5, name: "Gnomo", mods: "+4 Inteligencia · +3 Agilidad · -2 Fuerza", note: "Mucho mana, poca vida" },
+] as const;
 
 /** Rol y kit de cada heroe en el MOBA (ver server/src/moba/heroes.ts). */
 export const MOBA_HERO_ROLES: Record<number, { role: string; kit: string }> = {

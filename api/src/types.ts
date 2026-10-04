@@ -41,6 +41,7 @@ export type GameTicketRecord = {
     mode: string;
     arena_room_id: string | null;
     pvp_template_id: number | null;
+    pvp_race_id: number | null;
     created_at: Date;
     expires_at: Date;
     consumed_at: Date | null;
@@ -63,6 +64,7 @@ export type ArenaRoomMemberRecord = {
     room_id: string;
     account_id: string;
     selected_pvp_template_id: number | null;
+    selected_pvp_race_id: number | null;
     connected: boolean;
     joined_at: Date;
     updated_at: Date;
@@ -466,6 +468,7 @@ export type ArenaRoomDetails = ArenaRoomSummary & {
     isOwner: boolean;
     member: {
         selectedPvpTemplateId: number | null;
+        selectedPvpRaceId: number | null;
         connected: boolean;
     } | null;
 };
@@ -482,6 +485,7 @@ export type ArenaGameTicketConsumeResponse = {
         roomName: string;
         mapId: number;
         pvpTemplateId: number;
+        pvpRaceId?: number;
     };
 };
 

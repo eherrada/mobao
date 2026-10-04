@@ -9,6 +9,7 @@ import {
     PVP_CHARACTER_TEMPLATES,
     MOBA_MAP_ID,
     MOBA_HERO_ROLES,
+    MOBA_RACES,
     type ArenaGameTicketResponse,
     type ArenaRoomDetails,
     type ArenaRoomsResponse,
@@ -41,6 +42,7 @@ function ArenasPageContent() {
         capacity: "50",
         mode: "arena",
     });
+    const [selectedRace, setSelectedRace] = useState(1);
     const [joinPasswords, setJoinPasswords] = useState<Record<string, string>>(
         {},
     );
@@ -344,7 +346,7 @@ function ArenasPageContent() {
                     headers: {
                         "Content-Type": "application/json",
                     },
-                    body: JSON.stringify({ templateId }),
+                    body: JSON.stringify({ templateId, raceId: selectedRace }),
                 },
             );
 
@@ -586,6 +588,40 @@ function ArenasPageContent() {
                                         </span>
                                     </p>
                                 </div>
+
+                                {activeRoom.mapId === MOBA_MAP_ID ? (
+                                    <div className="mb-6">
+                                        <p className="text-xs uppercase tracking-[0.24em] text-stone-400">
+                                            Elegir raza
+                                        </p>
+                                        <div className="mt-3 grid gap-2 md:grid-cols-3 xl:grid-cols-5">
+                                            {MOBA_RACES.map((race) => (
+                                                <button
+                                                    key={race.id}
+                                                    type="button"
+                                                    onClick={() =>
+                                                        setSelectedRace(race.id)
+                                                    }
+                                                    className={`rounded-2xl border p-3 text-left transition ${
+                                                        selectedRace === race.id
+                                                            ? "border-amber-300/60 bg-amber-300/10"
+                                                            : "border-white/10 bg-white/5 hover:border-white/25"
+                                                    }`}
+                                                >
+                                                    <p className="font-semibold text-white">
+                                                        {race.name}
+                                                    </p>
+                                                    <p className="mt-1 text-[11px] text-amber-200/80">
+                                                        {race.mods}
+                                                    </p>
+                                                    <p className="mt-1 text-[11px] text-stone-300">
+                                                        {race.note}
+                                                    </p>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ) : null}
 
                                 <div>
                                     <p className="text-xs uppercase tracking-[0.24em] text-stone-400">

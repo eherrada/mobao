@@ -558,3 +558,7 @@ CREATE INDEX IF NOT EXISTS idx_game_smelting_recipes_mineral_item_id ON game_sme
 CREATE INDEX IF NOT EXISTS idx_game_balance_updated_at ON game_balance(updated_at DESC);
 CREATE INDEX IF NOT EXISTS idx_game_data_revisions_kind_id ON game_data_revisions(kind, id DESC);
 CREATE INDEX IF NOT EXISTS idx_challenge_history_finished_at ON challenge_history(finished_at DESC);
+
+-- MOBA: raza elegida junto con el heroe (1 humano, 2 elfo, 3 elfo drow, 4 enano, 5 gnomo)
+ALTER TABLE game_tickets ADD COLUMN IF NOT EXISTS pvp_race_id INTEGER;
+ALTER TABLE arena_room_members ADD COLUMN IF NOT EXISTS selected_pvp_race_id INTEGER;

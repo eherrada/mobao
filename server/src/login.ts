@@ -209,6 +209,7 @@ type ArenaTicketResponse = {
         roomName: string;
         mapId: number;
         pvpTemplateId: number;
+        pvpRaceId?: number;
     };
 };
 
@@ -264,6 +265,7 @@ export type LoginApi = {
                 matchId: string;
                 team: "blue" | "red";
                 slot: number;
+                race?: number;
             };
         },
     ) => Promise<void>;
@@ -420,19 +422,25 @@ function Login(this: LoginApi) {
                     y?: number;
                     team?: string;
                     matchId?: string;
+                    race?: number;
                 };
                 const botTemplateId = Number(botPayload.templateId ?? idChar);
                 let spawnMapId = Number(botPayload.mapId ?? 0);
                 let spawnX = Number(botPayload.x ?? 0);
                 let spawnY = Number(botPayload.y ?? 0);
-                let botMoba: { matchId: string; team: "blue" | "red"; slot: number } | undefined;
+                let botMoba: { matchId: string; team: "blue" | "red"; slot: number; race?: number } | undefined;
 
                 if (botPayload.matchId) {
                     const slot = require("./moba/match").joinMatch(
                         String(botPayload.matchId),
                         botPayload.team === "blue" || botPayload.team === "red" ? botPayload.team : undefined,
                     );
-                    botMoba = { matchId: String(botPayload.matchId), team: slot.team, slot: slot.slot };
+                    botMoba = {
+                        matchId: String(botPayload.matchId),
+                        team: slot.team,
+                        slot: slot.slot,
+                        race: Number(botPayload.race ?? 1),
+                    };
                     spawnMapId = slot.mapId;
                     spawnX = Number(botPayload.x ?? 0) || slot.spawn.x;
                     spawnY = Number(botPayload.y ?? 0) || slot.spawn.y;
@@ -518,7 +526,7 @@ function Login(this: LoginApi) {
                         let mobaOptions:
                             | {
                                   spawn: { mapId: number; x: number; y: number };
-                                  moba: { matchId: string; team: "blue" | "red"; slot: number };
+                                  moba: { matchId: string; team: "blue" | "red"; slot: number; race?: number };
                               }
                             | undefined;
 
@@ -526,7 +534,12 @@ function Login(this: LoginApi) {
                             const slot = require("./moba/match").joinMatch(String(arenaRoomId));
                             mobaOptions = {
                                 spawn: { mapId: slot.mapId, x: slot.spawn.x, y: slot.spawn.y },
-                                moba: { matchId: String(arenaRoomId), team: slot.team, slot: slot.slot },
+                                moba: {
+                                    matchId: String(arenaRoomId),
+                                    team: slot.team,
+                                    slot: slot.slot,
+                                    race: Number(arenaResult.arena?.pvpRaceId ?? 1),
+                                },
                             };
                         }
 
@@ -1015,6 +1028,7 @@ function Login(this: LoginApi) {
                 matchId: string;
                 team: "blue" | "red";
                 slot: number;
+                race?: number;
             };
         },
     ) => {
@@ -1029,6 +1043,10 @@ function Login(this: LoginApi) {
 
             if (mobaSpells) {
                 character.spells = mobaSpells;
+            }
+
+            if (options.moba.race) {
+                require("./moba/races").applyRace(character, options.moba.race);
             }
         }
 

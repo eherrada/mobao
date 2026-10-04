@@ -53,6 +53,7 @@ export type BotOptions = {
     y?: number;
     matchId?: string;
     team?: "blue" | "red";
+    race?: number;
 };
 
 export class Bot {
@@ -83,6 +84,7 @@ export class Bot {
                     y: this.opts.y,
                     matchId: this.opts.matchId,
                     team: this.opts.team,
+                    race: this.opts.race,
                 });
                 this.send(new Writer(PACKET.connectCharacter).string(ticket).byte(3).byte(this.opts.templateId).buffer());
                 setTimeout(resolve, 800);

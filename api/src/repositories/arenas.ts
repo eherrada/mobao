@@ -44,6 +44,7 @@ const joinRoomSchema = z.object({
 
 const selectTemplateSchema = z.object({
   templateId: z.coerce.number().int().min(0).max(MAX_PVP_TEMPLATE_ID),
+  raceId: z.coerce.number().int().min(1).max(5).optional(),
 });
 
 function createOpaqueTicket(): string {
@@ -114,7 +115,7 @@ async function getRoomRecordByJoinToken(joinToken: string): Promise<ArenaRoomRec
 async function getMemberRecord(roomId: string, accountId: string): Promise<ArenaRoomMemberRecord | null> {
   const memberResult = await pool.query<ArenaRoomMemberRecord>(
     `
-      SELECT room_id, account_id, selected_pvp_template_id, connected, joined_at, updated_at
+      SELECT room_id, account_id, selected_pvp_template_id, selected_pvp_race_id, connected, joined_at, updated_at
       FROM arena_room_members
       WHERE room_id = $1
         AND account_id = $2
@@ -173,6 +174,7 @@ async function buildRoomDetails(room: ArenaRoomRecord, accountId: string): Promi
     member: member
       ? {
           selectedPvpTemplateId: member.selected_pvp_template_id,
+          selectedPvpRaceId: member.selected_pvp_race_id,
           connected: member.connected,
         }
       : null,
@@ -425,18 +427,20 @@ export async function createArenaGameTicket(token: string, roomId: string, paylo
 
   await ensureRoomCanAcceptConnectedPlayer(room, session.account_id);
 
-  const { templateId } = selectTemplateSchema.parse(payload);
+  const { templateId, raceId: requestedRaceId } = selectTemplateSchema.parse(payload);
+  const raceId = requestedRaceId ?? 1;
   const ticket = createOpaqueTicket();
 
   await pool.query(
     `
       UPDATE arena_room_members
       SET selected_pvp_template_id = $3,
+          selected_pvp_race_id = $4,
           updated_at = NOW()
       WHERE room_id = $1
         AND account_id = $2
     `,
-    [room.id, session.account_id, templateId],
+    [room.id, session.account_id, templateId, raceId],
   );
 
   await touchRoomActivity(room.id);
@@ -451,12 +455,13 @@ export async function createArenaGameTicket(token: string, roomId: string, paylo
         mode,
         arena_room_id,
         pvp_template_id,
+        pvp_race_id,
         expires_at
       )
-      VALUES ($1, $2, $3, NULL, 'arena', $4, $5, NOW() + ($6 * INTERVAL '1 millisecond'))
+      VALUES ($1, $2, $3, NULL, 'arena', $4, $5, $7, NOW() + ($6 * INTERVAL '1 millisecond'))
       RETURNING expires_at
     `,
-    [ticket, token, session.account_id, room.id, templateId, ARENA_GAME_TICKET_TTL_MS],
+    [ticket, token, session.account_id, room.id, templateId, ARENA_GAME_TICKET_TTL_MS, raceId],
   );
 
   return {
