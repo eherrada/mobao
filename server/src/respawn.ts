@@ -112,11 +112,9 @@ function Respawn(this: any) {
                 if (user.mobaMatchId && pjSelected.mobaMatchId === user.mobaMatchId) {
                     const mobaMatch = require("./moba/match");
 
-                    if (pjSelected.isNpc && pjSelected.structure === "jungle") {
-                        mobaMatch.onJungleKill(user, pjSelected);
-                    } else if (pjSelected.isNpc && pjSelected.structure === "minion") {
-                        mobaMatch.onMinionKill(user);
-                    } else if (!pjSelected.isNpc) {
+                    if (pjSelected.isNpc) {
+                        mobaMatch.onNpcKilledByHero(pjSelected, user);
+                    } else {
                         mobaMatch.onHeroKill(user, pjSelected);
                     }
                 }
@@ -199,6 +197,12 @@ function Respawn(this: any) {
                             }
                         }
                     }
+                }
+
+                if (user.mobaMatchId) {
+                    // El MOBA reparte su propia experiencia y oro (moba/progression.ts).
+                    expGanada = 0;
+                    goldGanado = 0;
                 }
 
                 if (expGanada > 0) {

@@ -148,6 +148,7 @@ const serverPacketID = {
     closeTrade: 190,
     marketAction: 239,
     retosAction: 248,
+    mobaSkill: 250,
 } as const;
 
 type PacketChunk = Buffer | ArrayBuffer | ArrayBufferView | string;

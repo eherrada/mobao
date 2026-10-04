@@ -20,7 +20,8 @@ const TIMING = {
     heroRespawnMs: envNumber("MOBA_RESPAWN_MS", 8_000),
     resetAfterWinMs: envNumber("MOBA_RESET_MS", 15_000),
     teamSize: envNumber("MOBA_TEAM_SIZE", 3),
-    passiveGoldPerSecond: envNumber("MOBA_PASSIVE_GOLD", 8),
+    passiveGoldPerSecond: envNumber("MOBA_PASSIVE_GOLD", 3),
+    startGold: envNumber("MOBA_START_GOLD", 600),
     jungleRespawnMs: envNumber("MOBA_JUNGLE_RESPAWN_MS", 45_000),
     buffDurationMs: 90_000,
 };

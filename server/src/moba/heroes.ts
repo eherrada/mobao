@@ -33,6 +33,8 @@ const KITS: Record<number, number[]> = {
  * (server/src/scripts/duelMatrix.ts); ver MOBAO.md.
  */
 const HP_SCALE = Number(process.env.MOBA_HP_SCALE) || 2;
+// Las curaciones de AO son chicas frente a la vida escalada del MOBA.
+const HEAL_SCALE = Number(process.env.MOBA_HEAL_SCALE) || 3;
 
 const STATS: Record<number, { hp: number; phys: number; spell: number }> = {
     0: { hp: 1, phys: 1, spell: 1 },
@@ -47,7 +49,7 @@ const STATS: Record<number, { hp: number; phys: number; spell: number }> = {
 
 function statsFor(templateId: number) {
     const s = STATS[templateId] ?? { hp: 1, phys: 1, spell: 1 };
-    return { hp: s.hp * HP_SCALE, phys: s.phys, spell: s.spell };
+    return { hp: s.hp * HP_SCALE, phys: s.phys, spell: s.spell, heal: HEAL_SCALE };
 }
 
 function spellsFor(templateId: number): Record<number, { idSpell: number }> | undefined {

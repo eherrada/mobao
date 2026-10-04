@@ -267,6 +267,7 @@ export type LoginApi = {
                 team: "blue" | "red";
                 slot: number;
                 race?: number;
+                level?: number;
             };
         },
     ) => Promise<void>;
@@ -425,12 +426,15 @@ function Login(this: LoginApi) {
                     matchId?: string;
                     race?: number;
                     exactMana?: boolean;
+                    level?: number;
                 };
                 const botTemplateId = Number(botPayload.templateId ?? idChar);
                 let spawnMapId = Number(botPayload.mapId ?? 0);
                 let spawnX = Number(botPayload.x ?? 0);
                 let spawnY = Number(botPayload.y ?? 0);
-                let botMoba: { matchId: string; team: "blue" | "red"; slot: number; race?: number } | undefined;
+                let botMoba:
+                    | { matchId: string; team: "blue" | "red"; slot: number; race?: number; level?: number }
+                    | undefined;
 
                 if (botPayload.matchId) {
                     const slot = require("./moba/match").joinMatch(
@@ -442,6 +446,7 @@ function Login(this: LoginApi) {
                         team: slot.team,
                         slot: slot.slot,
                         race: Number(botPayload.race ?? 1),
+                        level: Number(botPayload.level ?? 1),
                     };
                     spawnMapId = slot.mapId;
                     spawnX = Number(botPayload.x ?? 0) || slot.spawn.x;
@@ -529,7 +534,7 @@ function Login(this: LoginApi) {
                         let mobaOptions:
                             | {
                                   spawn: { mapId: number; x: number; y: number };
-                                  moba: { matchId: string; team: "blue" | "red"; slot: number; race?: number };
+                                  moba: { matchId: string; team: "blue" | "red"; slot: number; race?: number; level?: number };
                               }
                             | undefined;
 
@@ -1033,6 +1038,7 @@ function Login(this: LoginApi) {
                 team: "blue" | "red";
                 slot: number;
                 race?: number;
+                level?: number;
             };
         },
     ) => {
@@ -1055,13 +1061,16 @@ function Login(this: LoginApi) {
         }
 
         const isAdminSummonedBot = Boolean(options?.adminSummonedBot);
-        const targetLevel = Math.max(
-            1,
-            Math.min(
-                balance.MAX_LEVEL,
-                Math.floor(Number(options?.adminSummonedBot?.level ?? PVP_TEMPLATE_LEVEL) || PVP_TEMPLATE_LEVEL),
-            ),
-        );
+        const mobaStartLevel = Math.min(18, Math.max(1, Number(options?.moba?.level ?? 1)));
+        const targetLevel = options?.moba
+            ? require("./moba/progression").aoLevel(mobaStartLevel)
+            : Math.max(
+                  1,
+                  Math.min(
+                      balance.MAX_LEVEL,
+                      Math.floor(Number(options?.adminSummonedBot?.level ?? PVP_TEMPLATE_LEVEL) || PVP_TEMPLATE_LEVEL),
+                  ),
+              );
         const isSyntheticBot = Boolean(options?.markAsBot || isAdminSummonedBot);
         const isPvpCharacter = options?.pvpChar ?? true;
 
@@ -1114,11 +1123,13 @@ function Login(this: LoginApi) {
             nameCharacter: nameCharacter,
             spawnMap: mapId,
             spawnPos: { x: spawnX, y: spawnY },
+            mobaTemplateId: options?.moba ? idChar : undefined,
+            mobaHealMult: mobaStats?.heal ?? 1,
             idClase: character.idClase,
             map: mapId,
             posX: spawnX,
             posY: spawnY,
-            gold: 0,
+            gold: options?.moba ? require("./moba/config").TIMING.startGold : 0,
             idHead: character.idHead,
             idLastHead: 0,
             idLastBody: 0,
@@ -1238,6 +1249,16 @@ function Login(this: LoginApi) {
         };
 
         vars.personajes[ws.id] = newCharacter;
+
+        if (options?.moba) {
+            require("./moba/progression").initHero(newCharacter, mobaStartLevel);
+            require("./moba/skills").initSkills(newCharacter);
+
+            if (isSyntheticBot) {
+                // Los bots reparten sus puntos solos; los jugadores eligen en el panel de habilidades.
+                require("./moba/skills").autoAssign(newCharacter);
+            }
+        }
 
         vars.clients[ws.id] = ws;
         ws.bot = isSyntheticBot;

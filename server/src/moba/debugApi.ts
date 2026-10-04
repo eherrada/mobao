@@ -36,6 +36,14 @@ function snapshotEntity(entity: any) {
         invulnerable: Boolean(entity.invulnerable),
         str: entity.attrFuerza ?? null,
         weapon: entity.idItemWeapon ?? null,
+        level: entity.mobaLevel ?? null,
+        aoLevel: entity.level ?? null,
+        xp: entity.mobaXp ?? null,
+        xpNext: entity.expNextLevel ?? null,
+        gold: entity.gold ?? null,
+        mana: entity.mana ?? null,
+        points: entity.mobaSkillPoints ?? null,
+        ranks: entity.mobaRanks ?? null,
         race: entity.idRaza ?? null,
         head: entity.idHead ?? null,
         body: entity.idBody ?? null,
@@ -133,6 +141,26 @@ function handleDebugRequest(request: any, response: any): boolean {
 
         npc.hp = Number(url.searchParams.get("hp") ?? npc.hp);
         json(response, 200, snapshotEntity(npc));
+        return true;
+    }
+
+    // Da experiencia o fija el nivel de un heroe (para tests).
+    if (url.pathname === "/debug/xp" && request.method === "POST") {
+        const hero = vars.personajes[String(url.searchParams.get("id"))];
+
+        if (!hero) {
+            json(response, 404, { error: "hero not found" });
+            return true;
+        }
+
+        const progression = require("./progression");
+        const level = url.searchParams.get("level");
+
+        if (level) progression.setLevel(hero, Number(level));
+        const amount = Number(url.searchParams.get("amount") ?? 0);
+        if (amount > 0) progression.grantXp(hero, amount);
+
+        json(response, 200, snapshotEntity(hero));
         return true;
     }
 

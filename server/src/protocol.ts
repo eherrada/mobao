@@ -1016,6 +1016,7 @@ dictionaryServer[pkg.serverPacketID.dialog] = dialog;
 dictionaryServer[pkg.serverPacketID.ping] = ping;
 dictionaryServer[pkg.serverPacketID.attackMele] = attackMele;
 dictionaryServer[pkg.serverPacketID.attackRange] = attackRange;
+dictionaryServer[pkg.serverPacketID.mobaSkill] = mobaSkill;
 dictionaryServer[pkg.serverPacketID.attackSpell] = attackSpell;
 dictionaryServer[pkg.serverPacketID.tirarItem] = tirarItem;
 dictionaryServer[pkg.serverPacketID.agarrarItem] = agarrarItem;
@@ -3743,6 +3744,27 @@ function attackRange(ws: RuntimeClient) {
     }
 }
 
+/** El heroe gasta un punto de habilidad en el hechizo de su slot (MOBA). */
+function mobaSkill(ws: RuntimeClient) {
+    try {
+        const user = getCharacterById(ws.id!) as any;
+
+        if (!user?.mobaMatchId || !pkg.canReadBytes(1)) {
+            return;
+        }
+
+        const slot = pkg.getByte();
+        const skills = require("./moba/skills");
+
+        if (skills.levelUp(user, slot)) {
+            const name = vars.datSpell[user.spells[slot].idSpell]?.name ?? "habilidad";
+            handleProtocol.console(`[MOBA] ${name}: rango ${user.mobaRanks[slot]}`, "green", 0, 0, ws);
+        }
+    } catch (err) {
+        funct.dumpError(err);
+    }
+}
+
 function attackSpell(ws: RuntimeClient) {
     try {
         if (!game.existPjOrClose(ws)) {
@@ -3815,7 +3837,26 @@ function attackSpell(ws: RuntimeClient) {
         const isPartialInvisibilityRemoval = isPartialInvisibilityRemovalSpell(datSpell);
         const reviveSpell = isReviveSpell(datSpell);
 
-        if (getSimulatedSkill(user) < Number(datSpell.minSkill ?? 0)) {
+        if (user.mobaMatchId) {
+            // MOBA: la habilidad necesita puntos (rango >= 1) y el rango escala el dano/curacion.
+            const rankMult = require("./moba/skills").rankMultiplier(user, idPos);
+
+            if (rankMult <= 0) {
+                handleProtocol.console(
+                    "Aun no aprendiste esa habilidad: gasta un punto en el panel de habilidades.",
+                    "white",
+                    0,
+                    0,
+                    ws,
+                );
+                handleProtocol.dialog(user.id, "¡Sin puntos en esa habilidad!", "", "#ffb347", 0, ws);
+                return;
+            }
+
+            user.mobaSpellRankMult = rankMult;
+        }
+
+        if (!user.mobaMatchId && getSimulatedSkill(user) < Number(datSpell.minSkill ?? 0)) {
             handleProtocol.console(
                 "Necesitas ser nivel " + getRequiredLevelForSpell(datSpell.minSkill) + " para lanzar ese hechizo.",
                 "white",

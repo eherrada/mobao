@@ -8,6 +8,8 @@ const config = require("./config");
 const teams = require("./teams");
 const ai = require("./ai");
 const fog = require("./fog");
+const progression = require("./progression");
+const skills = require("./skills");
 const { spawnMobaNpc } = require("./npcFactory");
 
 type Team = "blue" | "red";
@@ -180,6 +182,10 @@ function spawnStructures(match: Match) {
     recomputeInvulnerability(match);
 }
 
+const KILL_GOLD = 300;
+const TOWER_GOLD = 250;
+const TOWER_XP = 250;
+
 const CAMP_SLOTS: Array<{ dx: number; dy: number; big: boolean }> = [
     { dx: 0, dy: 0, big: true },
     { dx: -2, dy: 1, big: false },
@@ -330,12 +336,21 @@ function onNpcDestroyed(npc: any) {
     }
 
     announce(match, `Torre ${teamLabel(npc.team)}${where} destruida.`, "orange");
+
+    // Recompensa para todo el equipo que la destruyo.
+    const rewardedTeam = teams.opposite(npc.team);
+    for (const hero of heroesOf(match)) {
+        if (hero.mobaTeam === rewardedTeam) progression.grantGold(hero, TOWER_GOLD);
+    }
+    progression.awardXpNear(rewardedTeam, npc.pos, npc.map, TOWER_XP, 24);
     recomputeInvulnerability(match);
 }
 
+/** Un NPC mato a otro NPC: si era un minion, los heroes enemigos cercanos se reparten la experiencia. */
 function onNpcKilledByNpc(target: any, attacker: any) {
-    void target;
-    void attacker;
+    if (target.structure === "minion" && attacker.team && attacker.team !== target.team) {
+        progression.awardXpNear(attacker.team, target.pos, target.map, Number(target.exp ?? 0));
+    }
 }
 
 function endMatch(match: Match, winner: Team) {
@@ -370,10 +385,23 @@ function onHeroKill(killer: any, victim: any) {
 
     victim.mobaKillCredited = true;
     killer.mobaKills = (killer.mobaKills ?? 0) + 1;
+    progression.grantGold(killer, KILL_GOLD);
+    progression.awardXpNear(killer.mobaTeam, victim.pos, victim.map, 90 + 30 * Number(victim.mobaLevel ?? 1));
 }
 
-function onMinionKill(killer: any) {
-    killer.mobaCs = (killer.mobaCs ?? 0) + 1;
+/** Un heroe mato a un NPC: oro para el, experiencia compartida con los aliados cercanos. */
+function onNpcKilledByHero(npc: any, killer: any) {
+    if (!matches[npc.mobaMatchId]) return;
+
+    if (npc.structure === "minion" || npc.structure === "jungle") {
+        killer.mobaCs = (killer.mobaCs ?? 0) + 1;
+        progression.grantGold(killer, Number(npc.gold ?? 0));
+        progression.awardXpNear(killer.mobaTeam, npc.pos, npc.map, Number(npc.exp ?? 0));
+    }
+
+    if (npc.structure === "jungle") {
+        onJungleKill(killer, npc);
+    }
 }
 
 function onHeroDeath(user: any) {
@@ -383,12 +411,13 @@ function onHeroDeath(user: any) {
 
     user.mobaDeaths = (user.mobaDeaths ?? 0) + 1;
 
-    user.mobaRespawnAt = Date.now() + config.TIMING.heroRespawnMs;
+    const respawnMs = progression.respawnMs(Number(user.mobaLevel ?? 1));
+    user.mobaRespawnAt = Date.now() + respawnMs;
     const client = vars.clients[user.id];
 
     if (client) {
         handleProtocol.console(
-            `[MOBA] Reapareces en ${Math.round(config.TIMING.heroRespawnMs / 1000)} segundos.`,
+            `[MOBA] Reapareces en ${Math.round(respawnMs / 1000)} segundos.`,
             "yellow",
             1,
             0,
@@ -573,6 +602,7 @@ function broadcastState(match: Match, heroes: any[], live: any[], now: number) {
         k: h.mobaKills ?? 0,
         d: h.mobaDeaths ?? 0,
         cs: h.mobaCs ?? 0,
+        lvl: h.mobaLevel ?? 1,
         dead: Boolean(h.dead),
     }));
 
@@ -598,7 +628,18 @@ function broadcastState(match: Match, heroes: any[], live: any[], now: number) {
             {
                 ...base,
                 team: hero.mobaTeam === "blue" ? 0 : 1,
-                me: { id: hero.id, x: hero.pos.x, y: hero.pos.y, gold: hero.gold ?? 0 },
+                me: {
+                    id: hero.id,
+                    x: hero.pos.x,
+                    y: hero.pos.y,
+                    gold: hero.gold ?? 0,
+                    level: hero.mobaLevel ?? 1,
+                    xp: hero.mobaXp ?? 0,
+                    xpNext: progression.xpToNext(hero.mobaLevel ?? 1),
+                    maxLevel: progression.MAX_LEVEL,
+                },
+                skills: skills.describe(hero),
+                points: skills.availablePoints(hero),
                 respawnIn: hero.dead && hero.mobaRespawnAt ? Math.max(0, Math.ceil((hero.mobaRespawnAt - now) / 1000)) : 0,
                 ents: entsByTeam[hero.mobaTeam as Team],
             },
@@ -784,7 +825,7 @@ module.exports = {
     onNpcKilledByNpc,
     onHeroDeath,
     onHeroKill,
-    onMinionKill,
+    onNpcKilledByHero,
     onJungleKill,
     onHeroDisconnected,
 };

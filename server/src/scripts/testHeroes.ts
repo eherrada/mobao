@@ -14,13 +14,13 @@ function check(cond: unknown, msg: string) {
 
 async function main() {
     const matchId = `hero-${Date.now()}`;
-    const healer = new Bot({ name: "Healer", templateId: 1, matchId, team: "blue", x: 100, y: 130 });
+    const healer = new Bot({ name: "Healer", templateId: 1, matchId, team: "blue", x: 100, y: 130, level: 18 });
     await healer.connect();
-    const ally = new Bot({ name: "Ally", templateId: 6, matchId, team: "blue", x: 102, y: 130 });
+    const ally = new Bot({ name: "Ally", templateId: 6, matchId, team: "blue", x: 102, y: 130, level: 18 });
     await ally.connect();
-    const mage = new Bot({ name: "Mage", templateId: 0, matchId, team: "blue", x: 100, y: 133 });
+    const mage = new Bot({ name: "Mage", templateId: 0, matchId, team: "blue", x: 100, y: 133, level: 18 });
     await mage.connect();
-    const enemy = new Bot({ name: "Enemy", templateId: 2, matchId, team: "red", x: 104, y: 133 });
+    const enemy = new Bot({ name: "Enemy", templateId: 2, matchId, team: "red", x: 104, y: 133, level: 18 });
     await enemy.connect();
     await sleep(1500);
 

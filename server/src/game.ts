@@ -751,7 +751,12 @@ function applyMagicBonuses(baseDamage: number, caster: GameCharacter) {
         magicPenetration += Number(item.magicPenetration ?? 0);
     }
 
-    damage = Math.floor(damage * getMagicDamageModifier(caster.idClase) * Number(caster.mobaSpellMult ?? 1));
+    damage = Math.floor(
+        damage *
+            getMagicDamageModifier(caster.idClase) *
+            Number(caster.mobaSpellMult ?? 1) *
+            Number(caster.mobaSpellRankMult ?? 1),
+    );
 
     return { damage, magicPenetration };
 }
@@ -2328,7 +2333,7 @@ function scaleNpcExpReward(rawExp: number): number {
 }
 
 function distribuirExpNpcEscalada(idUser: EntityId, npc: GameNpc, exp: number) {
-    if (!exp) {
+    if (!exp || getCharacterById(idUser)?.mobaMatchId) {
         return;
     }
 
@@ -7118,6 +7123,7 @@ function Game(this: GameApi) {
                     let curo = funct.randomIntFromInterval(datSpell.minHp, datSpell.maxHp);
 
                     curo += Math.round((curo * (3 * user.level)) / 100);
+                    curo = Math.round(curo * Number(user.mobaHealMult ?? 1) * Number(user.mobaSpellRankMult ?? 1));
 
                     if (curo < 1) {
                         curo = 1;
@@ -9504,6 +9510,10 @@ function Game(this: GameApi) {
      */
     this.distribuirExpRestanteNpc = function (idUser: EntityId, idNpc: EntityId) {
         try {
+            if (getCharacterById(idUser)?.mobaMatchId) {
+                return;
+            }
+
             const npc = vars.npcs[idNpc] as GameNpc | undefined;
 
             if (!npc || npc.exp <= 0) {
@@ -9553,6 +9563,10 @@ function Game(this: GameApi) {
 
     this.distribuirOroNpc = function (idUser: EntityId, idNpc: EntityId, totalGold: number) {
         try {
+            if (getCharacterById(idUser)?.mobaMatchId) {
+                return;
+            }
+
             const npc = vars.npcs[idNpc] as GameNpc | undefined;
 
             if (!npc || totalGold <= 0) {

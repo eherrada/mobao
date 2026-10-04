@@ -367,6 +367,12 @@ export type RuntimeCharacter = {
     mobaSlot?: number;
     mobaPhysMult?: number;
     mobaSpellMult?: number;
+    mobaHealMult?: number;
+    mobaSpellRankMult?: number;
+    mobaTemplateId?: number;
+    mobaLevel?: number;
+    mobaXp?: number;
+    mobaRanks?: Record<number, number>;
     mobaRespawnAt?: number;
     challengeTeam?: 1 | 2 | null;
     challengeLockedUntil?: number;

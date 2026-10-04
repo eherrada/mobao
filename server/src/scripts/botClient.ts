@@ -56,6 +56,7 @@ export type BotOptions = {
     team?: "blue" | "red";
     race?: number;
     exactMana?: boolean;
+    level?: number;
 };
 
 export class Bot {
@@ -88,6 +89,7 @@ export class Bot {
                     team: this.opts.team,
                     race: this.opts.race,
                     exactMana: this.opts.exactMana,
+                    level: this.opts.level,
                 });
                 this.send(new Writer(PACKET.connectCharacter).string(ticket).byte(3).byte(this.opts.templateId).buffer());
                 setTimeout(resolve, 800);
