@@ -36,7 +36,7 @@ type MobaState = {
 
 const TEAM_COLOR = ["#4aa3ff", "#ff5a4a"] as const;
 const TEAM_NAME = ["AZUL", "ROJO"] as const;
-const MINIMAP_SIZE = 210;
+const MINIMAP_SIZE = 170;
 
 const CAMP_STYLE = [
     { color: "#4aa3ff", r: 4, shape: "circle" }, // Centinela Azul
@@ -293,6 +293,14 @@ export function MobaHud() {
                         {b.left > 0 ? ` · ${b.left}s` : ""}
                     </div>
                 ))}
+                <button
+                    type="button"
+                    onClick={() => window.dispatchEvent(new CustomEvent("mobao:fullscreen"))}
+                    title="Pantalla completa (Alt+Enter)"
+                    className="rounded-md border border-white/15 bg-black/65 px-2 py-1 text-[11px] hover:bg-black/80"
+                >
+                    Pantalla completa
+                </button>
                 <button
                     type="button"
                     onClick={() => setShowBoard((v) => !v)}

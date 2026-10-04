@@ -1621,6 +1621,25 @@ function HomeContent() {
         }
     }, []);
 
+    // El HUD del MOBA (y Alt+Enter) piden pantalla completa por evento.
+    useEffect(() => {
+        const request = () => void toggleFullscreen();
+        const onKey = (event: KeyboardEvent) => {
+            if (event.altKey && event.key === "Enter") {
+                event.preventDefault();
+                void toggleFullscreen();
+            }
+        };
+
+        window.addEventListener("mobao:fullscreen", request);
+        window.addEventListener("keydown", onKey);
+
+        return () => {
+            window.removeEventListener("mobao:fullscreen", request);
+            window.removeEventListener("keydown", onKey);
+        };
+    }, [toggleFullscreen]);
+
     const dismissFullscreenPrompt = useCallback(() => {
         setShowFullscreenPrompt(false);
     }, []);
