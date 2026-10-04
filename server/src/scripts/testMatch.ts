@@ -72,10 +72,10 @@ async function main() {
     // Se agregan dos heroes pegados a la torre roja exterior del carril top, uno de cada equipo.
     const tx = outerTop.x as number;
     const ty = outerTop.y as number;
-    const blueNear = new Bot({ name: "BlueNear", templateId: 2, matchId, team: "blue", x: tx, y: ty + 2 });
+    const blueNear = new Bot({ name: "BlueNear", templateId: 2, matchId, team: "blue", x: tx, y: ty + 2, level: 18 });
     await blueNear.connect();
     // El tercer slot rojo: la partida admite 3 por equipo.
-    const redNear = new Bot({ name: "RedNear", templateId: 2, matchId, team: "red", x: tx + 1, y: ty + 2 });
+    const redNear = new Bot({ name: "RedNear", templateId: 2, matchId, team: "red", x: tx + 1, y: ty + 2, level: 18 });
     await redNear.connect();
     await sleep(4000);
     st = await debugState(mapId);
