@@ -14,7 +14,8 @@ const teams = require("./teams");
 type Source = { x: number; y: number; r2: number };
 type Team = "blue" | "red";
 
-const VISION_RADIUS = { hero: 10, minion: 6, tower: 11, nexus: 9 };
+// Mantener sincronizado con frontend/components/game/rendering/fogOverlay.ts
+const VISION_RADIUS = { hero: 8, minion: 5, tower: 10, nexus: 8 };
 const AOI_RANGE = 15; // mitad del area de interes 31x31 que el servidor envia a cada cliente
 
 const vision: Record<string, Record<Team, Source[]>> = {};

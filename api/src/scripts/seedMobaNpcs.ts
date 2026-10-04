@@ -63,7 +63,7 @@ const minion = {
     structure: "minion",
     aggroRange: 7,
     attackIntervalMs: 1200,
-    moveIntervalMs: 400,
+    moveIntervalMs: 250,
 };
 
 const templates = [

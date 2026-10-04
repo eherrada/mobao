@@ -29,6 +29,7 @@ import {
     setTextIfChanged,
 } from "../rendering/textStyles";
 import { Engine } from "../engine/Engine";
+import { FogOverlay } from "../rendering/fogOverlay";
 import {
     isAdminInspector,
     buildInspectableNpc,
@@ -699,6 +700,9 @@ export function useRendererBootstrap(options: UseRendererBootstrapOptions) {
                 dialogOverlayContainer.sortableChildren = true;
                 app.stage.addChild(dialogOverlayContainer);
                 engine.dialogOverlayContainer = dialogOverlayContainer;
+
+                // Fog of war del MOBA (se activa solo si el jugador pertenece a un equipo).
+                engine.fogOverlay = new FogOverlay(app);
 
                 options.setWorldVisibility(engine, false);
                 options.updateLoadingProgress(

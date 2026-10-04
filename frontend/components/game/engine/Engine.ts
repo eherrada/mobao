@@ -70,6 +70,7 @@ import {
     unregisterContainerCullEntries,
 } from "../rendering/pixiUtils";
 import type { SharedTextureCaches } from "../rendering/textureCaches";
+import { FogOverlay } from "../rendering/fogOverlay";
 import { getRowZIndex, Z_INDEX_LAYERS } from "../rendering/mapLayers";
 import {
     getCharacterClanLabel,
@@ -556,6 +557,7 @@ export class Engine {
     entityFXRowContainers: Map<number, Container> = new Map();
     entityFXOverlayContainer: Container | null = null;
     dialogOverlayContainer: Container | null = null;
+    fogOverlay: FogOverlay | null = null;
     debugGrid: Container | null = null;
     isDebugMode = false;
     isDestroyed = false;
@@ -2048,6 +2050,7 @@ export class Engine {
         this.render();
 
         this.updateCamera();
+        this.fogOverlay?.update(this as never);
         this.updateCulling();
         this.updateAnimatedMapSprites();
         this.updateCharacterAnimations();
@@ -2990,6 +2993,8 @@ export class Engine {
         this.roofContainer = null;
         this.entityFXOverlayContainer = null;
         this.dialogOverlayContainer = null;
+        this.fogOverlay?.destroy();
+        this.fogOverlay = null;
         this.debugGrid = null;
 
         if (app) {
