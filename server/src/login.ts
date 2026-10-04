@@ -428,6 +428,7 @@ function Login(this: LoginApi) {
                     exactMana?: boolean;
                     level?: number;
                     autoSkills?: boolean;
+                    gearTier?: number;
                 };
                 const botTemplateId = Number(botPayload.templateId ?? idChar);
                 let spawnMapId = Number(botPayload.mapId ?? 0);
@@ -449,6 +450,7 @@ function Login(this: LoginApi) {
                         race: Number(botPayload.race ?? 1),
                         level: Number(botPayload.level ?? 1),
                         autoSkills: botPayload.autoSkills,
+                        gearTier: botPayload.gearTier,
                     } as typeof botMoba;
                     spawnMapId = slot.mapId;
                     spawnX = Number(botPayload.x ?? 0) || slot.spawn.x;
@@ -1060,6 +1062,22 @@ function Login(this: LoginApi) {
             if (options.moba.race) {
                 require("./moba/races").applyRace(character, options.moba.race);
             }
+
+            // Equipo basico (o del nivel pedido por los bots de test); las mejoras se compran en la tienda.
+            character.inv = require("./moba/gear").buildInventory(
+                character.idClase,
+                character.idRaza,
+                Number((options.moba as { gearTier?: number }).gearTier ?? 0),
+            );
+            character.idItemWeapon = 0;
+            character.idItemBody = 0;
+            character.idItemShield = 0;
+            character.idItemHelmet = 0;
+            character.idItemArrow = 0;
+            character.idItemRing = 0;
+            character.idWeapon = 0;
+            character.idShield = 0;
+            character.idHelmet = 0;
         }
 
         const isAdminSummonedBot = Boolean(options?.adminSummonedBot);
@@ -1255,6 +1273,7 @@ function Login(this: LoginApi) {
         if (options?.moba) {
             require("./moba/progression").initHero(newCharacter, mobaStartLevel);
             require("./moba/skills").initSkills(newCharacter);
+            game.autoEquipInventory(ws.id);
 
             if (isSyntheticBot && (options.moba as { autoSkills?: boolean }).autoSkills !== false) {
                 // Los bots reparten sus puntos solos (salvo autoSkills=false); los jugadores eligen en el panel.

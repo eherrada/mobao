@@ -1397,11 +1397,13 @@ const handleServer: HandleProtocolApi = {
                 cant: number;
             }
         >;
+        // La tienda del MOBA le muestra a cada heroe solo el equipo que puede usar (moba/gear.ts).
+        const mobaOffer = npc.structure === "shop" && user.mobaMatchId ? require("./moba/gear").offeredTo(user) : undefined;
         const serializedTradeItems = Object.entries(tradeObjects)
             .map(([indexObj, item]) => {
                 const idItem = isBankTrade ? item.idItem : item.item;
 
-                if (typeof idItem !== "number") {
+                if (typeof idItem !== "number" || (mobaOffer && !mobaOffer.has(idItem))) {
                     return null;
                 }
 

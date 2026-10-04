@@ -2457,6 +2457,7 @@ export type GameApi = {
     puedePegar: (posX: number, posY: number) => boolean;
     bodyNaked: (idUser: EntityId) => number;
     putBodyAndHeadDead: (idUser: EntityId) => void;
+    autoEquipInventory: (idUser: EntityId) => void;
     revivirUsuario: (
         idUser: EntityId,
         options?: {
@@ -6742,6 +6743,15 @@ function Game(this: GameApi) {
      * @param  {[type]} idUser [description]
      * @return {[type]}        [description]
      */
+    /** Equipa automaticamente el inventario del heroe (primer objeto permitido de cada tipo). */
+    this.autoEquipInventory = function (idUser: EntityId) {
+        const user = vars.personajes[idUser] as GameCharacter | undefined;
+
+        if (user) {
+            restoreAutoEquippedInventoryState(user);
+        }
+    };
+
     this.revivirUsuario = function (
         idUser: EntityId,
         options?: {

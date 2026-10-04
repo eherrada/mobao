@@ -58,6 +58,7 @@ export type BotOptions = {
     exactMana?: boolean;
     level?: number;
     autoSkills?: boolean;
+    gearTier?: number;
 };
 
 export class Bot {
@@ -92,6 +93,7 @@ export class Bot {
                     exactMana: this.opts.exactMana,
                     level: this.opts.level,
                     autoSkills: this.opts.autoSkills,
+                    gearTier: this.opts.gearTier,
                 });
                 this.send(new Writer(PACKET.connectCharacter).string(ticket).byte(3).byte(this.opts.templateId).buffer());
                 setTimeout(resolve, 800);
@@ -118,6 +120,23 @@ export class Bot {
     /** Gasta un punto de habilidad en el hechizo del slot (paquete mobaSkill). */
     skill(slot: number) {
         this.send(new Writer(250).byte(slot).buffer());
+    }
+
+    /** Click en un tile (abre el comercio de un NPC). */
+    click(x: number, y: number, button = 0) {
+        this.send(new Writer(183).byte(x).byte(y).byte(button).buffer());
+    }
+
+    /** Compra en el comercio abierto: indice del objeto y cantidad. */
+    buy(index: number, amount = 1) {
+        const w = new Writer(214).byte(index);
+        w.byte(amount & 0xff).byte((amount >> 8) & 0xff);
+        this.send(w.buffer());
+    }
+
+    /** Equipa el objeto del slot de inventario. */
+    equip(slot: number) {
+        this.send(new Writer(210).int(slot).buffer());
     }
 
     range(x: number, y: number) {

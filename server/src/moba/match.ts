@@ -176,6 +176,10 @@ function spawnStructures(match: Match) {
         if (npc) {
             match.npcIds.add(npc.id);
             match.structures.push({ def, npcId: npc.id });
+
+            if (def.kind === "shop") {
+                npc.objs = require("./gear").shopCatalog().map((item: number) => ({ cant: 1, item }));
+            }
         }
     }
 

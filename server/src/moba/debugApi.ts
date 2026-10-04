@@ -36,6 +36,9 @@ function snapshotEntity(entity: any) {
         invulnerable: Boolean(entity.invulnerable),
         str: entity.attrFuerza ?? null,
         weapon: entity.idItemWeapon ?? null,
+        inv: entity.inv
+            ? Object.entries(entity.inv).map(([slot, it]: [string, any]) => [Number(slot), it.idItem, it.cant, it.equipped])
+            : null,
         level: entity.mobaLevel ?? null,
         aoLevel: entity.level ?? null,
         xp: entity.mobaXp ?? null,
@@ -123,6 +126,56 @@ function handleDebugRequest(request: any, response: any): boolean {
         }
 
         json(response, 200, stats);
+        return true;
+    }
+
+    // Escalera de equipo de una clase/raza con nombres y precios (para revisar el balance de la tienda).
+    if (url.pathname === "/debug/gear") {
+        const gear = require("./gear");
+        const classId = Number(url.searchParams.get("class") ?? 3);
+        const race = Number(url.searchParams.get("race") ?? 1);
+        const ladder = gear.ladderFor(classId, race === 4 || race === 5);
+        const describe = (id: number) => {
+            const o = vars.datObj[id];
+            return o ? { id, name: o.name, price: o.valor, hit: `${o.minHit}-${o.maxHit}`, def: `${o.minDef}-${o.maxDef}` } : null;
+        };
+        const out: Record<string, unknown> = {};
+        for (const slot of Object.keys(ladder)) out[slot] = ladder[slot].map(describe);
+        json(response, 200, out);
+        return true;
+    }
+
+    // Da oro a un heroe (para tests de la tienda).
+    if (url.pathname === "/debug/gold" && request.method === "POST") {
+        const hero = vars.personajes[String(url.searchParams.get("id"))];
+
+        if (!hero) {
+            json(response, 404, { error: "hero not found" });
+            return true;
+        }
+
+        require("./progression").grantGold(hero, Number(url.searchParams.get("amount") ?? 0));
+        json(response, 200, snapshotEntity(hero));
+        return true;
+    }
+
+    // Lo que la tienda le ofrece a un heroe: [indice, id, nombre, precio].
+    if (url.pathname === "/debug/shop") {
+        const hero = vars.personajes[String(url.searchParams.get("viewer"))];
+        const shop = (Object.values(vars.npcs) as any[]).find(
+            (n) => n && n.structure === "shop" && n.mobaMatchId === hero?.mobaMatchId && n.team === hero?.mobaTeam,
+        );
+
+        if (!hero || !shop) {
+            json(response, 404, { error: "no shop" });
+            return true;
+        }
+
+        const offered = require("./gear").offeredTo(hero);
+        const items = (shop.objs as Array<{ item: number }>)
+            .map((entry, index) => ({ index, id: entry.item, name: vars.datObj[entry.item]?.name, price: vars.datObj[entry.item]?.valor }))
+            .filter((entry) => offered.has(entry.id));
+        json(response, 200, { shop: { id: shop.id, x: shop.pos.x, y: shop.pos.y }, items });
         return true;
     }
 
