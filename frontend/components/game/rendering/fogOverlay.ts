@@ -1,10 +1,12 @@
-import { Application, Container, Graphics } from "pixi.js";
+import { Application, Container, Graphics, RenderTexture, Sprite, Texture } from "pixi.js";
 
 import { TILE_SIZE } from "../../../lib/viewport";
 
 /**
- * Capa de "fog of war" del modo MOBA (solo visual: el servidor ya no envia lo que el equipo no ve).
- * Oscurece toda la pantalla salvo el area que ven el heroe local y sus aliados.
+ * Fog of war visual del modo MOBA (el servidor ya no envia lo que el equipo no ve).
+ *
+ * Una capa oscura cubre la pantalla y cada fuente de vision (el heroe local y los aliados) "borra" la
+ * oscuridad con una luz de degradé suave. Las luces se mueven fluido junto con las entidades, sin saltos de tile.
  * Se activa sola cuando el color del jugador es el de un equipo del MOBA.
  */
 export const MOBA_TEAM_COLORS = ["#4aa3ff", "#ff5a4a"];
@@ -14,7 +16,9 @@ const HERO_RADIUS = 8;
 const MINION_RADIUS = 5;
 const TOWER_RADIUS = 10;
 const NEXUS_RADIUS = 8;
-const DIM_ALPHA = 0.62;
+const DARKNESS_ALPHA = 0.72;
+const LIGHT_FEATHER = 1.5; // tiles de degradé mas alla del radio de vision
+const FOLLOW_SPEED = 6; // tiles por segundo con los que la luz de un aliado alcanza su posicion
 
 type FogEntity = {
     pos?: { x: number; y: number };
@@ -30,6 +34,7 @@ type FogEngine = {
     mapContainer: Container | null;
     user: (FogEntity & { id?: number }) | null;
     personajes: Record<number, FogEntity>;
+    delta: number;
 };
 
 function radiusFor(entity: FogEntity): number {
@@ -42,13 +47,67 @@ function radiusFor(entity: FogEntity): number {
     return MINION_RADIUS;
 }
 
+function createLightTexture(): Texture {
+    const size = 256;
+    const canvas = document.createElement("canvas");
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext("2d")!;
+    const gradient = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+    // Opaco hasta cerca del borde (ahi termina el radio de vision real) y luego se desvanece.
+    gradient.addColorStop(0, "rgba(255,255,255,1)");
+    gradient.addColorStop(0.78, "rgba(255,255,255,1)");
+    gradient.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, size, size);
+    return Texture.from(canvas);
+}
+
 export class FogOverlay {
-    private graphics = new Graphics();
-    private lastSignature = "";
+    private rt: RenderTexture;
+    private sprite: Sprite;
+    private scene = new Container();
+    private dark = new Graphics();
+    private lights: Sprite[] = [];
+    private lightTexture = createLightTexture();
+    private smoothed = new Map<number, { x: number; y: number }>();
+    private width = 0;
+    private height = 0;
+    private active = false;
 
     constructor(app: Application) {
-        this.graphics.eventMode = "none";
-        app.stage.addChild(this.graphics);
+        this.rt = RenderTexture.create({ width: 2, height: 2, resolution: app.renderer.resolution });
+        this.sprite = new Sprite(this.rt);
+        this.sprite.eventMode = "none";
+        this.sprite.visible = false;
+        this.scene.addChild(this.dark);
+        app.stage.addChild(this.sprite);
+    }
+
+    private resize(w: number, h: number) {
+        if (w === this.width && h === this.height) return;
+
+        this.width = w;
+        this.height = h;
+        this.rt.resize(w, h);
+        this.dark.clear();
+        this.dark.rect(0, 0, w, h).fill({ color: 0x000000, alpha: DARKNESS_ALPHA });
+        this.sprite.texture = this.rt;
+    }
+
+    private light(index: number): Sprite {
+        let sprite = this.lights[index];
+
+        if (!sprite) {
+            sprite = new Sprite(this.lightTexture);
+            sprite.anchor.set(0.5);
+            sprite.blendMode = "erase";
+            this.lights[index] = sprite;
+            this.scene.addChild(sprite);
+        }
+
+        sprite.visible = true;
+        return sprite;
     }
 
     update(engine: FogEngine): void {
@@ -61,100 +120,78 @@ export class FogOverlay {
         const teamColor = user.color;
 
         if (!teamColor || !MOBA_TEAM_COLORS.includes(teamColor)) {
-            if (this.graphics.visible) {
-                this.graphics.clear();
-                this.graphics.visible = false;
-                this.lastSignature = "";
+            if (this.active) {
+                this.active = false;
+                this.sprite.visible = false;
             }
             return;
         }
 
-        this.graphics.visible = true;
+        this.active = true;
+        this.sprite.visible = true;
+        this.resize(app.screen.width, app.screen.height);
 
-        const w = app.screen.width;
-        const h = app.screen.height;
+        let used = 0;
+        const place = (x: number, y: number, radiusTiles: number) => {
+            const sprite = this.light(used++);
+            const diameter = (radiusTiles + LIGHT_FEATHER) * 2 * TILE_SIZE;
+            sprite.width = diameter;
+            sprite.height = diameter;
+            sprite.x = x;
+            sprite.y = y;
+        };
 
-        // Fuentes de vision en coordenadas de tile. El heroe local ve con radio de heroe.
-        const sources: Array<{ x: number; y: number; r2: number; edge2: number }> = [];
-        const addSource = (x: number, y: number, r: number) =>
-            sources.push({ x, y, r2: r * r, edge2: (r + 1.5) * (r + 1.5) });
+        // El heroe local siempre esta en el centro de la pantalla.
+        place(app.screen.width / 2, app.screen.height / 2, HERO_RADIUS);
 
-        addSource(user.pos.x, user.pos.y, HERO_RADIUS);
+        const step = (FOLLOW_SPEED * TILE_SIZE * Math.min(engine.delta, 100)) / 1000;
+        const seen = new Set<number>();
 
-        for (const entity of Object.values(engine.personajes)) {
+        for (const [key, entity] of Object.entries(engine.personajes)) {
             if (!entity?.pos || entity === user || entity.color !== teamColor) continue;
             if (entity.dead || (entity.hp !== undefined && entity.hp <= 0)) continue;
 
-            addSource(entity.pos.x, entity.pos.y, radiusFor(entity));
-        }
+            const id = Number(key);
+            seen.add(id);
 
-        const firstTileX = Math.floor(-map.x / TILE_SIZE) + 1;
-        const firstTileY = Math.floor(-map.y / TILE_SIZE) + 1;
-        const tilesW = Math.ceil(w / TILE_SIZE) + 2;
-        const tilesH = Math.ceil(h / TILE_SIZE) + 2;
-        const signature = `${firstTileX},${firstTileY},${tilesW},${tilesH}|${sources.map((c) => `${c.x},${c.y},${c.r2}`).join(";")}`;
+            const targetX = (entity.pos.x - 1) * TILE_SIZE + TILE_SIZE / 2;
+            const targetY = (entity.pos.y - 1) * TILE_SIZE + TILE_SIZE / 2;
+            let current = this.smoothed.get(id);
 
-        // El mapa se desplaza suave; solo se redibuja cuando cambian las fuentes o la ventana de tiles.
-        this.graphics.x = map.x;
-        this.graphics.y = map.y;
+            if (!current || Math.abs(current.x - targetX) + Math.abs(current.y - targetY) > TILE_SIZE * 12) {
+                current = { x: targetX, y: targetY };
+                this.smoothed.set(id, current);
+            } else {
+                const dx = targetX - current.x;
+                const dy = targetY - current.y;
+                const dist = Math.hypot(dx, dy);
 
-        if (signature === this.lastSignature) return;
-        this.lastSignature = signature;
-
-        const g = this.graphics;
-        g.clear();
-
-        const classify = (tx: number, ty: number): 0 | 1 | 2 => {
-            let nearEdge = false;
-
-            for (const s of sources) {
-                const d2 = (s.x - tx) * (s.x - tx) + (s.y - ty) * (s.y - ty);
-                if (d2 <= s.r2) return 0; // visible
-                if (d2 <= s.edge2) nearEdge = true;
-            }
-
-            return nearEdge ? 1 : 2; // 1 = penumbra, 2 = oscuro
-        };
-
-        const runs: Array<Array<{ x: number; y: number; n: number }>> = [[], []];
-
-        for (let j = 0; j < tilesH; j++) {
-            const ty = firstTileY + j;
-            let runStart = -1;
-            let runKind: 0 | 1 | 2 = 0;
-
-            const flush = (endIndex: number) => {
-                if (runStart >= 0 && runKind !== 0) {
-                    runs[runKind - 1].push({ x: firstTileX + runStart, y: ty, n: endIndex - runStart });
-                }
-            };
-
-            for (let i = 0; i < tilesW; i++) {
-                const kind = classify(firstTileX + i, ty);
-
-                if (kind !== runKind || runStart < 0) {
-                    flush(i);
-                    runStart = i;
-                    runKind = kind;
+                if (dist <= step) {
+                    current.x = targetX;
+                    current.y = targetY;
+                } else if (dist > 0) {
+                    current.x += (dx / dist) * step;
+                    current.y += (dy / dist) * step;
                 }
             }
 
-            flush(tilesW);
+            place(map.x + current.x, map.y + current.y, radiusFor(entity));
         }
 
-        const drawRuns = (list: Array<{ x: number; y: number; n: number }>, alpha: number) => {
-            if (list.length === 0) return;
-            for (const run of list) {
-                g.rect((run.x - 1) * TILE_SIZE, (run.y - 1) * TILE_SIZE, run.n * TILE_SIZE, TILE_SIZE);
-            }
-            g.fill({ color: 0x000000, alpha });
-        };
+        for (const id of this.smoothed.keys()) {
+            if (!seen.has(id)) this.smoothed.delete(id);
+        }
 
-        drawRuns(runs[0], DIM_ALPHA * 0.5);
-        drawRuns(runs[1], DIM_ALPHA);
+        for (let i = used; i < this.lights.length; i++) {
+            this.lights[i].visible = false;
+        }
+
+        app.renderer.render({ container: this.scene, target: this.rt, clear: true });
     }
 
     destroy(): void {
-        this.graphics.destroy();
+        this.sprite.destroy();
+        this.scene.destroy({ children: true });
+        this.rt.destroy(true);
     }
 }

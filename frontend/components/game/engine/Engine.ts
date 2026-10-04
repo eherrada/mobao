@@ -71,6 +71,7 @@ import {
 } from "../rendering/pixiUtils";
 import type { SharedTextureCaches } from "../rendering/textureCaches";
 import { FogOverlay } from "../rendering/fogOverlay";
+import type { ChunkStreamer } from "../rendering/chunkStreamer";
 import { getRowZIndex, Z_INDEX_LAYERS } from "../rendering/mapLayers";
 import {
     getCharacterClanLabel,
@@ -558,6 +559,7 @@ export class Engine {
     entityFXOverlayContainer: Container | null = null;
     dialogOverlayContainer: Container | null = null;
     fogOverlay: FogOverlay | null = null;
+    chunkStreamer: ChunkStreamer | null = null;
     debugGrid: Container | null = null;
     isDebugMode = false;
     isDestroyed = false;
@@ -2051,6 +2053,7 @@ export class Engine {
 
         this.updateCamera();
         this.fogOverlay?.update(this as never);
+        this.chunkStreamer?.update(this.user.pos.x, this.user.pos.y);
         this.updateCulling();
         this.updateAnimatedMapSprites();
         this.updateCharacterAnimations();
@@ -2995,6 +2998,7 @@ export class Engine {
         this.dialogOverlayContainer = null;
         this.fogOverlay?.destroy();
         this.fogOverlay = null;
+        this.chunkStreamer = null;
         this.debugGrid = null;
 
         if (app) {

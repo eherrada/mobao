@@ -30,6 +30,7 @@ import {
 } from "../rendering/textStyles";
 import { Engine } from "../engine/Engine";
 import { FogOverlay } from "../rendering/fogOverlay";
+import { ChunkStreamer, shouldStreamMap } from "../rendering/chunkStreamer";
 import {
     isAdminInspector,
     buildInspectableNpc,
@@ -179,6 +180,10 @@ export function useRendererBootstrap(options: UseRendererBootstrapOptions) {
                 engine.canProcessMovementInput =
                     options.canProcessMovementInput;
                 options.engineRef.current = engine;
+                if (process.env.NODE_ENV === "development") {
+                    // Solo desarrollo: permite medir el render desde la consola del navegador.
+                    (window as unknown as { __aoEngine?: Engine }).__aoEngine = engine;
+                }
                 options.syncMovementState(engine);
 
                 engine.sendPositionPacket = (heading: number) => {
@@ -915,21 +920,43 @@ export function useRendererBootstrap(options: UseRendererBootstrapOptions) {
                             "Completando resto del mapa actual...",
                         );
 
-                        options
-                            .renderMap(engine, {
-                                includeLayers: ["1", "2"],
-                                includeObjects: false,
-                                excludeBounds:
-                                    initialVisibleBounds ?? undefined,
-                            })
-                            .then(() =>
-                                options.renderMap(engine, {
-                                    includeLayers: ["3", "4"],
-                                    includeObjects: true,
-                                    excludeBounds:
-                                        initialVisibleBounds ?? undefined,
-                                }),
-                            )
+                        // Mapas grandes (MOBA 255x255): se cargan por zonas alrededor del jugador en vez de
+                        // crear un sprite por tile de todo el mapa.
+                        const streamLargeMap = shouldStreamMap(
+                            engine.mapDimensions.width,
+                            engine.mapDimensions.height,
+                        );
+
+                        if (streamLargeMap) {
+                            engine.chunkStreamer = new ChunkStreamer(
+                                engine,
+                                (bounds) =>
+                                    options.renderMap(engine, {
+                                        bounds,
+                                        includeLayers: ["1", "2", "3", "4"],
+                                        includeObjects: true,
+                                    }),
+                            );
+                        }
+
+                        (streamLargeMap
+                            ? Promise.resolve()
+                            : options
+                                  .renderMap(engine, {
+                                      includeLayers: ["1", "2"],
+                                      includeObjects: false,
+                                      excludeBounds:
+                                          initialVisibleBounds ?? undefined,
+                                  })
+                                  .then(() =>
+                                      options.renderMap(engine, {
+                                          includeLayers: ["3", "4"],
+                                          includeObjects: true,
+                                          excludeBounds:
+                                              initialVisibleBounds ?? undefined,
+                                      }),
+                                  )
+                        )
                             .then(() =>
                                 options.warmCommonCharacterAssets(engine),
                             )

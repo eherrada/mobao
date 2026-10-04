@@ -105,7 +105,8 @@ server/src/moba/
   debugApi.ts    API de depuración (solo desarrollo)
 server/src/scripts/generateMobaMap.ts   genera el mapa 600 y moba.json (carriles, estructuras, campamentos)
 frontend/components/moba/MobaHud.tsx    HUD (marcador, minimapa, avisos) vía el paquete `mobaState`
-frontend/components/game/rendering/fogOverlay.ts   oscuridad visual del fog (por tiles)
+frontend/components/game/rendering/fogOverlay.ts   oscuridad visual del fog (luces suaves que siguen a cada aliado)
+frontend/components/game/rendering/chunkStreamer.ts  carga del mapa por zonas (solo mapas grandes)
 ```
 
 Puntos de enganche en el código de aoweb (todos mínimos): `isArenaCombat` y `getCombatRelation` (equipos),
@@ -141,6 +142,16 @@ lecturas en servidor, 16 lecturas y 3 escrituras en cliente) y (2) *streaming* d
 que hoy crea un sprite por tile (~100–130 mil a 255×255) y es el límite práctico de tamaño.
 
 **Capacidad estimada**: ~4–6 partidas simultáneas por proceso de servidor con oleadas normales.
+
+## Rendimiento del cliente
+
+- **Carga por zonas**: en mapas grandes (>150×150) solo existen los sprites de los chunks de 16×16 tiles cercanos al
+  jugador (5×5 chunks); al alejarse se destruyen. Medido: ~3 mil objetos en pantalla en lugar de ~100 mil que
+  creaba el cliente al cargar el mapa completo. Los mapas de 100×100 siguen cargándose enteros.
+- **Fog suave**: la oscuridad se pinta en una textura y cada fuente de visión la borra con una luz de degradé que
+  se mueve fluido (antes eran bloques por tile que saltaban).
+- En desarrollo, `window.__aoEngine` expone el motor para medir desde la consola del navegador.
+- Idea pendiente: renderer Three.js (cámara cenital como ahora) en paralelo al de PixiJS.
 
 ## Limitaciones conocidas / próximos pasos
 
