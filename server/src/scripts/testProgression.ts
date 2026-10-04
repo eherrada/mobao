@@ -19,7 +19,7 @@ async function main() {
     await anchor.connect();
     const mapId = (await debugMatches()).find((m) => m.id === matchId)!.mapId as number;
     let st = await debugState(mapId);
-    const wolf = st.npcs.find((n) => n.name?.startsWith("Lobo") && n.campIndex === 0)!;
+    const wolf = st.npcs.find((n) => n.name?.startsWith("Lobo") && n.campIndex === 0 && n.campSlot === 0)!;
 
     // Heroe azul justo debajo de un lobo de la jungla, mirando hacia arriba.
     const hero = new Bot({ name: "ProgHero", templateId: 6, matchId, team: "blue", x: wolf.x, y: wolf.y + 1 });

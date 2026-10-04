@@ -278,12 +278,23 @@ function thinkDummy(npc: any, now: number) {
 }
 
 /** Monstruo neutral: ataca solo a quien lo golpeo, respeta la correa y vuelve a su campamento regenerandose. */
-function thinkJungle(npc: any, now: number) {
+function thinkJungle(npc: any, now: number, campAggro: Map<string, number>) {
     if (npc.paralizado || npc.inmovilizado) return;
     if (now < npc.nextMoveAt) return;
     npc.nextMoveAt = now + npc.moveIntervalMs;
 
     const home: Pt = npc.homePos;
+
+    // Los monstruos de un mismo campamento se ayudan: si uno fue atacado, todos van contra el agresor.
+    if (!npc.lastAggressorId || now - Number(npc.lastAggressedAt ?? 0) >= 8000) {
+        const shared = campAggro.get(`${npc.mobaMatchId}:${npc.campIndex}`);
+
+        if (shared) {
+            npc.lastAggressorId = shared;
+            npc.lastAggressedAt = now;
+        }
+    }
+
     const aggressor = npc.lastAggressorId ? vars.personajes[npc.lastAggressorId] : undefined;
     const engaged =
         aggressor &&
@@ -343,6 +354,13 @@ function thinkTower(npc: any, now: number, grid: Grid) {
 function thinkAll(matchId: string, now: number, matchNpcs: any[]) {
     const heroes = aliveHeroes(matchId);
     const grid = buildGrid(matchNpcs, heroes);
+    const campAggro = new Map<string, number>();
+
+    for (const npc of matchNpcs) {
+        if (npc.structure === "jungle" && npc.lastAggressorId && now - Number(npc.lastAggressedAt ?? 0) < 8000) {
+            campAggro.set(`${npc.mobaMatchId}:${npc.campIndex}`, npc.lastAggressorId);
+        }
+    }
 
     for (const npc of matchNpcs) {
         if (npc.hp <= 0 || npc.deathProcessed) continue;
@@ -352,7 +370,7 @@ function thinkAll(matchId: string, now: number, matchNpcs: any[]) {
         } else if (npc.structure === "tower") {
             thinkTower(npc, now, grid);
         } else if (npc.structure === "jungle") {
-            thinkJungle(npc, now);
+            thinkJungle(npc, now, campAggro);
         } else if (npc.structure === "dummy") {
             thinkDummy(npc, now);
         }

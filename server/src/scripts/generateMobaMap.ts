@@ -196,7 +196,8 @@ function main() {
 
     // Campamentos de la jungla: anclas del lado azul espejadas (point reflection) para el rojo.
     // Cada campamento tiene un monstruo grande (buff) y dos chicos alrededor.
-    type Camp = { x: number; y: number; owner: Team };
+    type CampType = "sentinel" | "bramble" | "wolves" | "golems" | "scorpions" | "crab" | "drake" | "baron";
+    type Camp = { x: number; y: number; owner: Team | "neutral"; type: CampType; clear: number };
     const camps: Camp[] = [];
     const blueAnchors: Pt[] = [
         { x: 60, y: 170 }, { x: 45, y: 135 }, { x: 78, y: 118 }, { x: 105, y: 178 },
@@ -220,20 +221,35 @@ function main() {
         return null;
     };
 
-    for (const anchor of blueAnchors) {
+    // Cada lado tiene 7 campamentos: dos con bendicion (Centinela y Zarza), y cinco comunes.
+    const anchorTypes: CampType[] = ["wolves", "sentinel", "golems", "bramble", "scorpions", "wolves", "golems"];
+
+    blueAnchors.forEach((anchor, i) => {
         const blue = findCampSpot(anchor);
         const red = findCampSpot({ x: 255 - anchor.x, y: 255 - anchor.y });
-        if (blue) camps.push({ ...blue, owner: "blue" });
-        if (red) camps.push({ ...red, owner: "red" });
-    }
+        if (blue) camps.push({ ...blue, owner: "blue", type: anchorTypes[i], clear: 3 });
+        if (red) camps.push({ ...red, owner: "red", type: anchorTypes[i], clear: 3 });
+    });
+
+    // Objetivos neutrales sobre el rio (diagonal x=y): se abre un claro para cada uno, accesible desde los dos lados.
+    const pits: Array<{ x: number; y: number; type: CampType; clear: number }> = [
+        { x: 75, y: 75, type: "baron", clear: 7 },
+        { x: 180, y: 180, type: "drake", clear: 7 },
+        { x: 108, y: 108, type: "crab", clear: 4 },
+        { x: 147, y: 147, type: "crab", clear: 4 },
+    ];
+
+    for (const pit of pits) camps.push({ x: pit.x, y: pit.y, owner: "neutral", type: pit.type, clear: pit.clear });
 
     // Despeja arboles y deja pasto transitable en 7x7 alrededor de cada campamento.
     for (const camp of camps) {
-        for (let dy = -3; dy <= 3; dy++) {
-            for (let dx = -3; dx <= 3; dx++) {
+        for (let dy = -camp.clear; dy <= camp.clear; dy++) {
+            for (let dx = -camp.clear; dx <= camp.clear; dx++) {
                 const x = camp.x + dx;
                 const y = camp.y + dy;
-                if (kind[y - 1]?.[x - 1] === "water") continue;
+                // Los claros de objetivos neutrales abren el rio; los campamentos comunes respetan el agua.
+                if (kind[y - 1]?.[x - 1] === "water" && camp.owner !== "neutral") continue;
+                if (x <= BORDER + 1 || y <= BORDER + 1 || x > SIZE - BORDER - 1 || y > SIZE - BORDER - 1) continue;
                 delete objects[`${x},${y}`];
                 rows[y - 1][x - 1] = 1 + Math.floor(rand() * 16);
             }
@@ -262,7 +278,14 @@ function main() {
     write("terrain.json", { id: MAP_ID, width: SIZE, height: SIZE, palette, rows });
     write("specials.json", { id: MAP_ID, exits: {}, objects, npcs: {}, triggers: {} });
     write("npcs.json", []);
-    write("moba.json", { size: SIZE, spawn, bases: { blue: BLUE_BASE, red: RED_BASE }, lanes: LANES, structures, camps });
+    write("moba.json", {
+        size: SIZE,
+        spawn,
+        bases: { blue: BLUE_BASE, red: RED_BASE },
+        lanes: LANES,
+        structures,
+        camps: camps.map(({ x, y, owner, type }) => ({ x, y, owner, type })),
+    });
 
     const trees = Object.keys(objects).length;
     console.log(

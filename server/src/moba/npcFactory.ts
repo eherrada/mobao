@@ -65,6 +65,8 @@ function spawnMobaNpc(opts: SpawnOptions): any | null {
     npc.team = opts.team;
     npc.leash = Number(datNpc.leash ?? 12);
     npc.buff = Number(datNpc.buff ?? 0);
+    npc.buffId = String(datNpc.buffId ?? "");
+    npc.campType = String(datNpc.campType ?? "");
     npc.mobaMatchId = opts.matchId;
     npc.structure = String(datNpc.structure ?? "");
     npc.stationary = Number(datNpc.stationary ?? 0);

@@ -10,6 +10,7 @@ const ai = require("./ai");
 const fog = require("./fog");
 const progression = require("./progression");
 const skills = require("./skills");
+const buffs = require("./buffs");
 const { spawnMobaNpc } = require("./npcFactory");
 
 type Team = "blue" | "red";
@@ -190,15 +191,9 @@ const KILL_GOLD = 300;
 const TOWER_GOLD = 250;
 const TOWER_XP = 250;
 
-const CAMP_SLOTS: Array<{ dx: number; dy: number; big: boolean }> = [
-    { dx: 0, dy: 0, big: true },
-    { dx: -2, dy: 1, big: false },
-    { dx: 2, dy: 1, big: false },
-];
-
 function spawnCampMonster(match: Match, campIndex: number, slot: number) {
     const camp = config.getMapConfig().camps[campIndex];
-    const def = CAMP_SLOTS[slot];
+    const def = camp && config.CAMP_LAYOUTS[camp.type]?.[slot];
 
     if (!camp || !def) return;
 
@@ -207,7 +202,7 @@ function spawnCampMonster(match: Match, campIndex: number, slot: number) {
     if (!pos) return;
 
     const npc = spawnMobaNpc({
-        templateId: def.big ? config.TEMPLATES.jungleBig : config.TEMPLATES.jungleSmall,
+        templateId: def.template,
         mapId: match.mapId,
         x: pos.x,
         y: pos.y,
@@ -223,8 +218,16 @@ function spawnCamps(match: Match) {
     match.jungleRespawns = [];
     const camps = config.getMapConfig().camps ?? [];
 
-    camps.forEach((_camp: unknown, index: number) => {
-        CAMP_SLOTS.forEach((_slot, slot) => spawnCampMonster(match, index, slot));
+    const now = Date.now();
+
+    camps.forEach((camp: { type: string }, index: number) => {
+        const layout = config.CAMP_LAYOUTS[camp.type as keyof typeof config.CAMP_LAYOUTS] ?? [];
+        const firstMs = config.CAMP_TIMING[camp.type as keyof typeof config.CAMP_TIMING]?.firstMs ?? 0;
+
+        layout.forEach((_slot: unknown, slot: number) => {
+            if (firstMs > 0) match.jungleRespawns.push({ at: now + firstMs, camp: index, slot });
+            else spawnCampMonster(match, index, slot);
+        });
     });
 }
 
@@ -323,11 +326,11 @@ function onNpcDestroyed(npc: any) {
     if (npc.structure === "minion") return;
 
     if (npc.structure === "jungle") {
-        match.jungleRespawns.push({
-            at: Date.now() + config.TIMING.jungleRespawnMs,
-            camp: npc.campIndex,
-            slot: npc.campSlot,
-        });
+        const camp = config.getMapConfig().camps[npc.campIndex];
+        const timing = camp && config.CAMP_TIMING[camp.type as keyof typeof config.CAMP_TIMING];
+        // Los campamentos comunes reaparecen con jungleRespawnMs; los de bendicion y objetivos con su propio tiempo.
+        const delay = timing && timing.respawnMs > 0 ? timing.respawnMs : config.TIMING.jungleRespawnMs;
+        match.jungleRespawns.push({ at: Date.now() + delay, camp: npc.campIndex, slot: npc.campSlot });
         return;
     }
 
@@ -364,23 +367,20 @@ function endMatch(match: Match, winner: Team) {
     announce(match, `¡Victoria del equipo ${teamLabel(winner)}! Nueva partida en ${Math.round(config.TIMING.resetAfterWinMs / 1000)} s.`, "yellow");
 }
 
-/** El monstruo grande da una bendicion: fuerza y agilidad extra y algo de vida. */
+/** Los monstruos con bendicion (Centinela, Zarza, rio, Dragon, Rey Demonio) la dan a quien los mata. */
 function onJungleKill(killer: any, monster: any) {
-    if (!monster.buff) return;
+    if (!monster.buffId) return;
 
-    const client = vars.clients[killer.id];
+    const match = matches[monster.mobaMatchId];
 
-    killer.attrFuerza = Number(killer.bkAttrFuerza ?? killer.attrFuerza) + 10;
-    killer.attrAgilidad = Number(killer.bkAttrAgilidad ?? killer.attrAgilidad) + 10;
-    killer.cooldownFuerza = Date.now();
-    killer.cooldownAgilidad = Date.now();
-    killer.hp = Math.min(killer.maxHp, killer.hp + Math.round(killer.maxHp * 0.3));
+    if (!match) return;
 
-    if (client) {
-        handleProtocol.updateFuerza(killer.attrFuerza, Math.round(config.TIMING.buffDurationMs / 1000), client);
-        handleProtocol.updateAgilidad(killer.attrAgilidad, Math.round(config.TIMING.buffDurationMs / 1000), client);
-        handleProtocol.updateHP(killer.hp, client);
-        handleProtocol.console("[MOBA] ¡Obtienes la bendicion del Ogro! (+fuerza, +agilidad)", "green", 1, 0, client);
+    const team = heroesOf(match).filter((h) => h.mobaTeam === killer.mobaTeam);
+    const name = buffs.award(match, killer, monster.buffId, team);
+
+    // Los objetivos de equipo se anuncian a todos.
+    if (name && buffs.BUFFS[monster.buffId]?.scope === "team") {
+        announce(match, `El equipo ${teamLabel(killer.mobaTeam)} derroto a ${monster.name}: ${name}.`, "yellow");
     }
 }
 
@@ -414,6 +414,7 @@ function onHeroDeath(user: any) {
     if (!match) return;
 
     user.mobaDeaths = (user.mobaDeaths ?? 0) + 1;
+    buffs.clearHero(match, user);
 
     const respawnMs = progression.respawnMs(Number(user.mobaLevel ?? 1));
     user.mobaRespawnAt = Date.now() + respawnMs;
@@ -741,6 +742,7 @@ function broadcastState(match: Match, heroes: any[], live: any[], now: number) {
                     maxLevel: progression.MAX_LEVEL,
                 },
                 skills: skills.describe(hero),
+                buffs: buffs.describe(match, hero, now),
                 points: skills.availablePoints(hero),
                 respawnIn: hero.dead && hero.mobaRespawnAt ? Math.max(0, Math.ceil((hero.mobaRespawnAt - now) / 1000)) : 0,
                 ents: entsByTeam[hero.mobaTeam as Team],
@@ -909,6 +911,8 @@ function tickInner() {
         fog.refreshVision(match.id, heroes, live);
 
         ai.thinkAll(match.id, now, live);
+
+        buffs.tick(match, heroes, now);
 
         for (const hero of heroes) {
             if (hero.dead && hero.mobaRespawnAt && now >= hero.mobaRespawnAt) {

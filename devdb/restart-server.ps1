@@ -17,6 +17,8 @@ if ($Fast) {
     $env:MOBA_RESPAWN_MS = "3000"
     $env:MOBA_RESET_MS = "5000"
     $env:MOBA_JUNGLE_RESPAWN_MS = "5000"
+    $env:MOBA_OBJ_SCALE = "0.03"
+    $env:MOBA_BUFF_SCALE = "0.25"
 }
 if ($NoMinions) {
     # Para los duelos de balance: sin oleadas que interfieran.

@@ -15,6 +15,7 @@ type MobaState = {
     size: number;
     me: { id: number; x: number; y: number; gold: number; level: number; xp: number; xpNext: number; maxLevel: number };
     points: number;
+    buffs?: Array<{ id: string; name: string; left: number; stacks: number; team: boolean }>;
     skills: Array<{
         slot: number;
         spell: number;
@@ -230,6 +231,22 @@ export function MobaHud() {
                     <span style={{ color: TEAM_COLOR[mine] }}>Equipo {TEAM_NAME[mine]}</span> · Oro{" "}
                     <span className="text-amber-300">{state.me.gold}</span>
                 </div>
+                {(state.buffs ?? []).map((b) => (
+                    <div
+                        key={b.id}
+                        className="rounded-md border px-2 py-0.5 text-[11px]"
+                        style={{
+                            borderColor: b.team ? "#c9a227" : "#4ad0a0",
+                            background: "rgba(0,0,0,0.65)",
+                            color: b.team ? "#f5d76e" : "#7fe8c0",
+                        }}
+                        title={b.team ? "Bendicion de equipo" : "Bendicion de la jungla (se pierde al morir)"}
+                    >
+                        {b.name}
+                        {b.stacks > 1 ? ` x${b.stacks}` : ""}
+                        {b.left > 0 ? ` · ${b.left}s` : ""}
+                    </div>
+                ))}
                 <button
                     type="button"
                     onClick={() => setShowBoard((v) => !v)}

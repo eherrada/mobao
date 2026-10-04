@@ -41,7 +41,66 @@ const TEMPLATES = {
     barracks: { blue: 9615, red: 9616 },
     jungleSmall: 9608,
     jungleBig: 9609,
+    sentinel: 9620,
+    bramble: 9621,
+    wolfAlpha: 9622,
+    golem: 9623,
+    scorpion: 9624,
+    spiderling: 9626,
+    crab: 9628,
+    drake: 9629,
+    baron: 9630,
 } as const;
+
+type CampType = "sentinel" | "bramble" | "wolves" | "golems" | "scorpions" | "crab" | "drake" | "baron";
+
+/** Monstruos de cada tipo de campamento (offsets desde el centro). El primero es el principal. */
+const CAMP_LAYOUTS: Record<CampType, Array<{ template: number; dx: number; dy: number }>> = {
+    sentinel: [
+        { template: TEMPLATES.sentinel, dx: 0, dy: 0 },
+        { template: TEMPLATES.spiderling, dx: -2, dy: 1 },
+        { template: TEMPLATES.spiderling, dx: 2, dy: 1 },
+    ],
+    bramble: [
+        { template: TEMPLATES.bramble, dx: 0, dy: 0 },
+        { template: TEMPLATES.spiderling, dx: -2, dy: 1 },
+        { template: TEMPLATES.spiderling, dx: 2, dy: 1 },
+        { template: TEMPLATES.spiderling, dx: 0, dy: 2 },
+    ],
+    wolves: [
+        { template: TEMPLATES.wolfAlpha, dx: 0, dy: 0 },
+        { template: TEMPLATES.jungleSmall, dx: -2, dy: 1 },
+        { template: TEMPLATES.jungleSmall, dx: 2, dy: 1 },
+    ],
+    golems: [
+        { template: TEMPLATES.golem, dx: 0, dy: 0 },
+        { template: TEMPLATES.jungleSmall, dx: -2, dy: 1 },
+    ],
+    scorpions: [
+        { template: TEMPLATES.scorpion, dx: -1, dy: -1 },
+        { template: TEMPLATES.scorpion, dx: 1, dy: -1 },
+        { template: TEMPLATES.scorpion, dx: -1, dy: 1 },
+        { template: TEMPLATES.scorpion, dx: 1, dy: 1 },
+    ],
+    crab: [{ template: TEMPLATES.crab, dx: 0, dy: 0 }],
+    drake: [{ template: TEMPLATES.drake, dx: 0, dy: 0 }],
+    baron: [{ template: TEMPLATES.baron, dx: 0, dy: 0 }],
+};
+
+// Escala de tiempo de los objetivos (los tests rapidos la bajan con MOBA_OBJ_SCALE).
+const OBJ_SCALE = Number(process.env.MOBA_OBJ_SCALE) || 1;
+
+/** Cuando aparece por primera vez y cada cuanto reaparece cada tipo (ms desde el inicio / desde la muerte). */
+const CAMP_TIMING: Record<CampType, { firstMs: number; respawnMs: number }> = {
+    sentinel: { firstMs: 0, respawnMs: 120_000 * OBJ_SCALE },
+    bramble: { firstMs: 0, respawnMs: 120_000 * OBJ_SCALE },
+    wolves: { firstMs: 0, respawnMs: 0 },
+    golems: { firstMs: 0, respawnMs: 0 },
+    scorpions: { firstMs: 0, respawnMs: 0 },
+    crab: { firstMs: 60_000 * OBJ_SCALE, respawnMs: 150_000 * OBJ_SCALE },
+    drake: { firstMs: 150_000 * OBJ_SCALE, respawnMs: 300_000 * OBJ_SCALE },
+    baron: { firstMs: 420_000 * OBJ_SCALE, respawnMs: 360_000 * OBJ_SCALE },
+};
 
 type Pt = { x: number; y: number };
 type StructureDef = {
@@ -58,7 +117,7 @@ type MapConfig = {
     bases: { blue: Pt; red: Pt };
     lanes: Record<string, Pt[]>;
     structures: StructureDef[];
-    camps: Array<{ x: number; y: number; owner: "blue" | "red" }>;
+    camps: Array<{ x: number; y: number; owner: "blue" | "red" | "neutral"; type: CampType }>;
 };
 
 let cachedConfig: MapConfig | undefined;
@@ -72,4 +131,4 @@ function getMapConfig(): MapConfig {
     return cachedConfig;
 }
 
-module.exports = { BASE_MAP_ID, INSTANCE_FIRST_ID, INSTANCE_COUNT, TIMING, TEMPLATES, getMapConfig };
+module.exports = { BASE_MAP_ID, INSTANCE_FIRST_ID, INSTANCE_COUNT, TIMING, TEMPLATES, CAMP_LAYOUTS, CAMP_TIMING, getMapConfig };

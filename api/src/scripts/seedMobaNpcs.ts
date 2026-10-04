@@ -156,6 +156,66 @@ const jungleBig = {
     buff: 1,
 };
 
+// Monstruos con bendicion y objetivos neutrales (ver server/src/moba/buffs.ts).
+const spiderling = { ...jungleSmall, hp: 260, maxHp: 260, minHit: 14, maxHit: 22, exp: 30, gold: 55 };
+const wolfAlpha = { ...jungleSmall, hp: 700, maxHp: 700, def: 8, minHit: 28, maxHit: 40, exp: 80, gold: 140 };
+const golem = { ...jungleSmall, hp: 1200, maxHp: 1200, def: 14, minHit: 32, maxHit: 48, exp: 100, gold: 190, attackIntervalMs: 1500 };
+const scorpion = { ...jungleSmall, hp: 340, maxHp: 340, def: 4, minHit: 18, maxHit: 28, exp: 36, gold: 70, moveIntervalMs: 260 };
+const sentinel = {
+    ...jungleSmall,
+    hp: 1900,
+    maxHp: 1900,
+    def: 14,
+    defM: 14,
+    minHit: 38,
+    maxHit: 58,
+    exp: 150,
+    gold: 150,
+    attackIntervalMs: 1400,
+    buffId: "sentinel",
+};
+const bramble = { ...sentinel, minHit: 42, maxHit: 62, buffId: "bramble" };
+const crab = {
+    ...jungleSmall,
+    hp: 650,
+    maxHp: 650,
+    def: 10,
+    minHit: 12,
+    maxHit: 20,
+    exp: 70,
+    gold: 80,
+    leash: 6,
+    moveIntervalMs: 260,
+    buffId: "crab",
+};
+const drake = {
+    ...jungleSmall,
+    hp: 4200,
+    maxHp: 4200,
+    def: 20,
+    defM: 20,
+    minHit: 60,
+    maxHit: 90,
+    exp: 300,
+    gold: 200,
+    leash: 14,
+    attackIntervalMs: 1600,
+    buffId: "drake",
+};
+const baron = {
+    ...drake,
+    hp: 9000,
+    maxHp: 9000,
+    def: 28,
+    defM: 28,
+    minHit: 95,
+    maxHit: 140,
+    exp: 500,
+    gold: 300,
+    attackIntervalMs: 1400,
+    buffId: "baron",
+};
+
 const dummy = {
     ...common,
     hp: 6000,
@@ -192,6 +252,15 @@ const templates = [
     { id: 9605, data: { ...minion, name: "Minion Azul", idBody: 15, team: "blue" } },
     { id: 9606, data: { ...minion, name: "Minion Rojo", idBody: 170, team: "red" } },
     { id: 9608, data: { ...jungleSmall, name: "Lobo de la Jungla", idBody: 10 } },
+    { id: 9620, data: { ...sentinel, name: "Centinela Azul de la Jungla", idBody: 206 } },
+    { id: 9621, data: { ...bramble, name: "Zarza Roja de la Jungla", idBody: 41 } },
+    { id: 9622, data: { ...wolfAlpha, name: "Lobo Alfa de la Jungla", idBody: 10 } },
+    { id: 9623, data: { ...golem, name: "Golem de Piedra de la Jungla", idBody: 141 } },
+    { id: 9624, data: { ...scorpion, name: "Escorpion de la Jungla", idBody: 51 } },
+    { id: 9626, data: { ...spiderling, name: "Aranita de la Jungla", idBody: 534 } },
+    { id: 9628, data: { ...crab, name: "Tortuga del Rio de la Jungla", idBody: 74 } },
+    { id: 9629, data: { ...drake, name: "Dragon del Rio de la Jungla", idBody: 218 } },
+    { id: 9630, data: { ...baron, name: "Rey Demonio de la Jungla", idBody: 83 } },
     { id: 9609, data: { ...jungleBig, name: "Ogro de la Jungla", idBody: 76 } },
     { id: 9610, data: { ...dummy, name: "Muñeco de Práctica", idBody: 196, team: "red" } },
     { id: 9611, data: { ...casterMinion, name: "Minion Mago Azul", idBody: 130, idHead: 6, team: "blue" } },
