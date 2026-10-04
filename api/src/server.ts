@@ -46,6 +46,8 @@ import {
     leaveArenaRoomByAccount,
     listPublicArenaRooms,
     resetAllArenaRoomMembersConnectedStatus,
+    startArenaMatch,
+    updateArenaLobby,
 } from "./repositories/arenas";
 import {
     banCharacterByName,
@@ -1739,6 +1741,66 @@ app.post("/arenas/rooms/:roomId/select-template", async (request, response) => {
             request.params.roomId,
             request.body,
         );
+
+        if (!result) {
+            response.status(401).json({ error: "Unauthorized" });
+            return;
+        }
+
+        response.json(result);
+    } catch (error) {
+        const message =
+            error instanceof Error ? error.message : "Unexpected error";
+        const status = message === "Sala no encontrada" ? 404 : 400;
+        response.status(status).json({ error: message });
+    }
+});
+
+app.post("/arenas/rooms/:roomId/lobby", async (request, response) => {
+    try {
+        const authorization = request.header("Authorization") || "";
+        const token = authorization.startsWith("Bearer ")
+            ? authorization.slice(7).trim()
+            : "";
+
+        if (!token) {
+            response.status(401).json({ error: "Unauthorized" });
+            return;
+        }
+
+        const result = await updateArenaLobby(
+            token,
+            request.params.roomId,
+            request.body,
+        );
+
+        if (!result) {
+            response.status(401).json({ error: "Unauthorized" });
+            return;
+        }
+
+        response.json(result);
+    } catch (error) {
+        const message =
+            error instanceof Error ? error.message : "Unexpected error";
+        const status = message === "Sala no encontrada" ? 404 : 400;
+        response.status(status).json({ error: message });
+    }
+});
+
+app.post("/arenas/rooms/:roomId/start", async (request, response) => {
+    try {
+        const authorization = request.header("Authorization") || "";
+        const token = authorization.startsWith("Bearer ")
+            ? authorization.slice(7).trim()
+            : "";
+
+        if (!token) {
+            response.status(401).json({ error: "Unauthorized" });
+            return;
+        }
+
+        const result = await startArenaMatch(token, request.params.roomId);
 
         if (!result) {
             response.status(401).json({ error: "Unauthorized" });

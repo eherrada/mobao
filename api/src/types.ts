@@ -42,6 +42,7 @@ export type GameTicketRecord = {
     arena_room_id: string | null;
     pvp_template_id: number | null;
     pvp_race_id: number | null;
+    pvp_team?: string | null;
     created_at: Date;
     expires_at: Date;
     consumed_at: Date | null;
@@ -56,6 +57,7 @@ export type ArenaRoomRecord = {
     join_token: string;
     map_id: number;
     capacity: number;
+    started_at?: Date | null;
     created_at: Date;
     updated_at: Date;
 };
@@ -65,6 +67,8 @@ export type ArenaRoomMemberRecord = {
     account_id: string;
     selected_pvp_template_id: number | null;
     selected_pvp_race_id: number | null;
+    team?: string | null;
+    ready?: boolean;
     connected: boolean;
     joined_at: Date;
     updated_at: Date;
@@ -458,6 +462,8 @@ export type ArenaRoomSummary = {
     mapId: number;
     capacity: number;
     connectedPlayers: number;
+    /** Jugadores en la sala (lobby), conectados o no a la partida. */
+    memberCount: number;
     owner: {
         _id: string;
         name: string;
@@ -470,7 +476,23 @@ export type ArenaRoomDetails = ArenaRoomSummary & {
         selectedPvpTemplateId: number | null;
         selectedPvpRaceId: number | null;
         connected: boolean;
+        team: string | null;
+        ready: boolean;
     } | null;
+    members: ArenaRoomMemberView[];
+    /** true durante unos segundos despues de que el duenio inicio la partida (el lobby redirige al juego). */
+    launching: boolean;
+};
+
+export type ArenaRoomMemberView = {
+    accountId: string;
+    name: string;
+    isOwner: boolean;
+    templateId: number | null;
+    raceId: number | null;
+    team: "blue" | "red";
+    ready: boolean;
+    connected: boolean;
 };
 
 export type ArenaGameTicketConsumeResponse = {
@@ -486,6 +508,7 @@ export type ArenaGameTicketConsumeResponse = {
         mapId: number;
         pvpTemplateId: number;
         pvpRaceId?: number;
+        team?: "blue" | "red";
     };
 };
 

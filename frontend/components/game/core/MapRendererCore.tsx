@@ -137,6 +137,8 @@ interface MapRendererProps {
     screenWidth?: number;
     screenHeight?: number;
     embedded?: boolean;
+    /** Oculta FPS/ping/seguros dibujados dentro del canvas (pantalla del MOBA). */
+    hideStatusTexts?: boolean;
     connection?: ManualConnectionConfig | null;
     equipRequest?: { slot: number; token: number } | null;
     useItemClickRequest?: { slot: number; token: number } | null;
@@ -662,6 +664,7 @@ export default function MapRenderer({
     screenWidth,
     screenHeight,
     embedded = false,
+    hideStatusTexts = false,
     connection,
     equipRequest,
     useItemClickRequest,
@@ -1697,6 +1700,7 @@ export default function MapRenderer({
         connection,
         mapNumber,
         screenSize,
+        hideStatusTexts,
         sharedTextureCachesRef,
         runtimeTimingRef,
         partyMemberIdsRef,

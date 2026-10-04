@@ -562,3 +562,9 @@ CREATE INDEX IF NOT EXISTS idx_challenge_history_finished_at ON challenge_histor
 -- MOBA: raza elegida junto con el heroe (1 humano, 2 elfo, 3 elfo drow, 4 enano, 5 gnomo)
 ALTER TABLE game_tickets ADD COLUMN IF NOT EXISTS pvp_race_id INTEGER;
 ALTER TABLE arena_room_members ADD COLUMN IF NOT EXISTS selected_pvp_race_id INTEGER;
+
+-- MOBA: lobby (equipo, listo, inicio de partida) y equipo en el ticket de juego
+ALTER TABLE arena_room_members ADD COLUMN IF NOT EXISTS team TEXT;
+ALTER TABLE arena_room_members ADD COLUMN IF NOT EXISTS ready BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE arena_rooms ADD COLUMN IF NOT EXISTS started_at TIMESTAMPTZ;
+ALTER TABLE game_tickets ADD COLUMN IF NOT EXISTS pvp_team TEXT;

@@ -6,6 +6,7 @@ import type {
   AccountRecord,
   ArenaRoomDetails,
   ArenaRoomMemberRecord,
+  ArenaRoomMemberView,
   ArenaRoomRecord,
   ArenaRoomSummary,
   AuthSessionRecord,
@@ -21,6 +22,8 @@ const MAX_ROOM_CAPACITY = 250;
 const MAX_PVP_TEMPLATE_ID = 7;
 const MOBA_ARENA_MAP_ID = 600;
 const MOBA_ROOM_CAPACITY = 6;
+const MOBA_TEAM_SIZE = 3;
+const MOBA_LAUNCH_WINDOW_MS = 1000 * 30;
 
 const createRoomSchema = z.object({
   name: z.string().trim().min(3).max(40),
@@ -40,6 +43,13 @@ const createRoomSchema = z.object({
 
 const joinRoomSchema = z.object({
   password: z.string().trim().max(100).optional(),
+});
+
+const lobbyUpdateSchema = z.object({
+  team: z.enum(["blue", "red"]).optional(),
+  ready: z.boolean().optional(),
+  templateId: z.coerce.number().int().min(0).max(MAX_PVP_TEMPLATE_ID).optional(),
+  raceId: z.coerce.number().int().min(1).max(5).optional(),
 });
 
 const selectTemplateSchema = z.object({
@@ -115,7 +125,7 @@ async function getRoomRecordByJoinToken(joinToken: string): Promise<ArenaRoomRec
 async function getMemberRecord(roomId: string, accountId: string): Promise<ArenaRoomMemberRecord | null> {
   const memberResult = await pool.query<ArenaRoomMemberRecord>(
     `
-      SELECT room_id, account_id, selected_pvp_template_id, selected_pvp_race_id, connected, joined_at, updated_at
+      SELECT room_id, account_id, selected_pvp_template_id, selected_pvp_race_id, team, ready, connected, joined_at, updated_at
       FROM arena_room_members
       WHERE room_id = $1
         AND account_id = $2
@@ -141,10 +151,76 @@ async function countConnectedMembers(roomId: string): Promise<number> {
   return Number(countResult.rows[0]?.count ?? 0);
 }
 
+async function countMembers(roomId: string): Promise<number> {
+  const countResult = await pool.query<{ count: string }>(
+    `
+      SELECT COUNT(*)::text AS count
+      FROM arena_room_members
+      WHERE room_id = $1
+    `,
+    [roomId],
+  );
+
+  return Number(countResult.rows[0]?.count ?? 0);
+}
+
+/** Miembros de la sala con su equipo; a quien todavia no tiene equipo se le asigna el menos poblado. */
+async function listRoomMembers(room: ArenaRoomRecord): Promise<ArenaRoomMemberView[]> {
+  const result = await pool.query<{
+    account_id: string;
+    name: string;
+    selected_pvp_template_id: number | null;
+    selected_pvp_race_id: number | null;
+    team: string | null;
+    ready: boolean;
+    connected: boolean;
+  }>(
+    `
+      SELECT member.account_id, account.name, member.selected_pvp_template_id, member.selected_pvp_race_id,
+             member.team, member.ready, member.connected
+      FROM arena_room_members member
+      JOIN accounts account ON account.id = member.account_id
+      WHERE member.room_id = $1
+      ORDER BY member.joined_at ASC, member.account_id ASC
+    `,
+    [room.id],
+  );
+
+  const counts = { blue: 0, red: 0 };
+
+  for (const row of result.rows) {
+    if (row.team === "blue" || row.team === "red") counts[row.team]++;
+  }
+
+  for (const row of result.rows) {
+    if (row.team === "blue" || row.team === "red") continue;
+
+    const assigned: "blue" | "red" = counts.blue <= counts.red ? "blue" : "red";
+    row.team = assigned;
+    counts[assigned]++;
+    await pool.query(
+      `UPDATE arena_room_members SET team = $3 WHERE room_id = $1 AND account_id = $2 AND team IS NULL`,
+      [room.id, row.account_id, assigned],
+    );
+  }
+
+  return result.rows.map((row) => ({
+    accountId: row.account_id,
+    name: row.name,
+    isOwner: row.account_id === room.owner_account_id,
+    templateId: row.selected_pvp_template_id,
+    raceId: row.selected_pvp_race_id,
+    team: row.team === "red" ? "red" : "blue",
+    ready: row.ready,
+    connected: row.connected,
+  }));
+}
+
 async function buildRoomSummary(room: ArenaRoomRecord): Promise<ArenaRoomSummary> {
-  const [owner, connectedPlayers] = await Promise.all([
+  const [owner, connectedPlayers, memberCount] = await Promise.all([
     getAccountById(room.owner_account_id),
     countConnectedMembers(room.id),
+    countMembers(room.id),
   ]);
 
   return {
@@ -155,6 +231,7 @@ async function buildRoomSummary(room: ArenaRoomRecord): Promise<ArenaRoomSummary
     mapId: room.map_id,
     capacity: room.capacity,
     connectedPlayers,
+    memberCount,
     owner: {
       _id: owner?.id ?? room.owner_account_id,
       name: owner?.name ?? "Cuenta",
@@ -163,10 +240,12 @@ async function buildRoomSummary(room: ArenaRoomRecord): Promise<ArenaRoomSummary
 }
 
 async function buildRoomDetails(room: ArenaRoomRecord, accountId: string): Promise<ArenaRoomDetails> {
-  const [summary, member] = await Promise.all([
+  const [summary, member, members] = await Promise.all([
     buildRoomSummary(room),
     getMemberRecord(room.id, accountId),
+    listRoomMembers(room),
   ]);
+  const own = members.find((entry) => entry.accountId === accountId);
 
   return {
     ...summary,
@@ -176,8 +255,13 @@ async function buildRoomDetails(room: ArenaRoomRecord, accountId: string): Promi
           selectedPvpTemplateId: member.selected_pvp_template_id,
           selectedPvpRaceId: member.selected_pvp_race_id,
           connected: member.connected,
+          team: own?.team ?? member.team ?? null,
+          ready: Boolean(member.ready),
         }
       : null,
+    members,
+    launching:
+      room.started_at != null && Date.now() - new Date(room.started_at).getTime() < MOBA_LAUNCH_WINDOW_MS,
   };
 }
 
@@ -207,14 +291,49 @@ async function ensureRoomCanAcceptConnectedPlayer(room: ArenaRoomRecord, account
 }
 
 async function upsertRoomMember(roomId: string, accountId: string): Promise<void> {
+  // Equipo inicial: el menos poblado (azul si empatan).
   await pool.query(
     `
-      INSERT INTO arena_room_members (room_id, account_id, connected)
-      VALUES ($1, $2, FALSE)
+      INSERT INTO arena_room_members (room_id, account_id, connected, team)
+      VALUES (
+        $1,
+        $2,
+        FALSE,
+        CASE
+          WHEN (SELECT COUNT(*) FROM arena_room_members WHERE room_id = $1 AND team = 'blue')
+             <= (SELECT COUNT(*) FROM arena_room_members WHERE room_id = $1 AND team = 'red')
+          THEN 'blue' ELSE 'red'
+        END
+      )
       ON CONFLICT (room_id, account_id)
       DO UPDATE SET updated_at = NOW()
     `,
     [roomId, accountId],
+  );
+}
+
+async function ensureRoomHasMemberSlot(room: ArenaRoomRecord, accountId: string): Promise<void> {
+  if (room.map_id !== MOBA_ARENA_MAP_ID) return;
+  if (await getMemberRecord(room.id, accountId)) return;
+
+  if ((await countMembers(room.id)) >= room.capacity) {
+    throw new Error("La sala esta llena");
+  }
+}
+
+/** Si se fue el duenio, la sala pasa al miembro mas antiguo (para que alguien pueda iniciar la partida). */
+async function transferOwnershipIfNeeded(roomId: string, leavingAccountId: string): Promise<void> {
+  await pool.query(
+    `
+      UPDATE arena_rooms
+      SET owner_account_id = next_owner.account_id
+      FROM (
+        SELECT account_id FROM arena_room_members WHERE room_id = $1 ORDER BY joined_at ASC LIMIT 1
+      ) next_owner
+      WHERE arena_rooms.id = $1
+        AND arena_rooms.owner_account_id = $2
+    `,
+    [roomId, leavingAccountId],
   );
 }
 
@@ -237,6 +356,10 @@ async function removeAccountFromOtherRooms(accountId: string, keepRoomId?: strin
         `,
         [accountId],
       );
+
+  for (const row of removedRoomsResult.rows) {
+    await transferOwnershipIfNeeded(row.room_id, accountId);
+  }
 
   if (removedRoomsResult.rows.length > 0) {
     await pool.query(
@@ -352,6 +475,7 @@ export async function joinArenaRoom(token: string, roomId: string, payload: unkn
     }
   }
 
+  await ensureRoomHasMemberSlot(room, session.account_id);
   await removeAccountFromOtherRooms(session.account_id, room.id);
   await upsertRoomMember(room.id, session.account_id);
   await touchRoomActivity(room.id);
@@ -372,6 +496,7 @@ export async function joinArenaRoomByLink(token: string, joinToken: string): Pro
     throw new Error("Sala no encontrada");
   }
 
+  await ensureRoomHasMemberSlot(room, session.account_id);
   await removeAccountFromOtherRooms(session.account_id, room.id);
   await upsertRoomMember(room.id, session.account_id);
   await touchRoomActivity(room.id);
@@ -392,7 +517,90 @@ export async function getArenaRoom(token: string, roomId: string): Promise<Arena
     return null;
   }
 
+  // El lobby consulta la sala cada uno o dos segundos: eso cuenta como actividad (evita que la limpieza la borre).
+  if (await getMemberRecord(room.id, session.account_id)) {
+    await pool.query(
+      `UPDATE arena_room_members SET updated_at = NOW() WHERE room_id = $1 AND account_id = $2`,
+      [room.id, session.account_id],
+    );
+  }
+
   return buildRoomDetails(room, session.account_id);
+}
+
+/** Lobby: guarda campeon, raza, equipo y estado "listo" sin entrar a jugar. */
+export async function updateArenaLobby(token: string, roomId: string, payload: unknown): Promise<ArenaRoomDetails | null> {
+  const session = await getSessionRecord(token);
+
+  if (!session) {
+    return null;
+  }
+
+  const room = await getRoomRecord(roomId);
+
+  if (!room) {
+    throw new Error("Sala no encontrada");
+  }
+
+  const member = await getMemberRecord(room.id, session.account_id);
+
+  if (!member) {
+    throw new Error("Primero debes unirte a la sala");
+  }
+
+  const data = lobbyUpdateSchema.parse(payload);
+
+  if (data.team && data.team !== member.team) {
+    const taken = await pool.query<{ count: string }>(
+      `SELECT COUNT(*)::text AS count FROM arena_room_members WHERE room_id = $1 AND team = $2 AND account_id <> $3`,
+      [room.id, data.team, session.account_id],
+    );
+
+    if (Number(taken.rows[0]?.count ?? 0) >= MOBA_TEAM_SIZE) {
+      throw new Error("Ese equipo esta completo");
+    }
+  }
+
+  await pool.query(
+    `
+      UPDATE arena_room_members
+      SET team = COALESCE($3, team),
+          ready = COALESCE($4, ready),
+          selected_pvp_template_id = COALESCE($5, selected_pvp_template_id),
+          selected_pvp_race_id = COALESCE($6, selected_pvp_race_id),
+          updated_at = NOW()
+      WHERE room_id = $1
+        AND account_id = $2
+    `,
+    [room.id, session.account_id, data.team ?? null, data.ready ?? null, data.templateId ?? null, data.raceId ?? null],
+  );
+
+  await touchRoomActivity(room.id);
+
+  return buildRoomDetails((await getRoomRecord(room.id)) ?? room, session.account_id);
+}
+
+/** Solo el duenio: marca la sala como iniciada y los lobbies de todos redirigen al juego. */
+export async function startArenaMatch(token: string, roomId: string): Promise<ArenaRoomDetails | null> {
+  const session = await getSessionRecord(token);
+
+  if (!session) {
+    return null;
+  }
+
+  const room = await getRoomRecord(roomId);
+
+  if (!room) {
+    throw new Error("Sala no encontrada");
+  }
+
+  if (room.owner_account_id !== session.account_id) {
+    throw new Error("Solo el creador de la sala puede iniciar la partida");
+  }
+
+  await pool.query(`UPDATE arena_rooms SET started_at = NOW(), updated_at = NOW() WHERE id = $1`, [room.id]);
+
+  return buildRoomDetails((await getRoomRecord(room.id)) ?? room, session.account_id);
 }
 
 export async function leaveArenaRoom(token: string, roomId: string): Promise<{ ok: true } | null> {
@@ -428,7 +636,7 @@ export async function createArenaGameTicket(token: string, roomId: string, paylo
   await ensureRoomCanAcceptConnectedPlayer(room, session.account_id);
 
   const { templateId, raceId: requestedRaceId } = selectTemplateSchema.parse(payload);
-  const raceId = requestedRaceId ?? 1;
+  const raceId = requestedRaceId ?? member.selected_pvp_race_id ?? 1;
   const ticket = createOpaqueTicket();
 
   await pool.query(
@@ -456,12 +664,13 @@ export async function createArenaGameTicket(token: string, roomId: string, paylo
         arena_room_id,
         pvp_template_id,
         pvp_race_id,
+        pvp_team,
         expires_at
       )
-      VALUES ($1, $2, $3, NULL, 'arena', $4, $5, $7, NOW() + ($6 * INTERVAL '1 millisecond'))
+      VALUES ($1, $2, $3, NULL, 'arena', $4, $5, $7, $8, NOW() + ($6 * INTERVAL '1 millisecond'))
       RETURNING expires_at
     `,
-    [ticket, token, session.account_id, room.id, templateId, ARENA_GAME_TICKET_TTL_MS, raceId],
+    [ticket, token, session.account_id, room.id, templateId, ARENA_GAME_TICKET_TTL_MS, raceId, member.team ?? null],
   );
 
   return {
@@ -480,6 +689,7 @@ export async function leaveArenaRoomByAccount(roomId: string, accountId: string)
     [roomId, accountId],
   );
 
+  await transferOwnershipIfNeeded(roomId, accountId);
   await touchRoomActivity(roomId);
 
   await cleanupEmptyRooms();

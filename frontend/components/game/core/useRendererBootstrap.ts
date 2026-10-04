@@ -55,6 +55,8 @@ type UseRendererBootstrapOptions = {
     connection?: ManualConnectionConfig | null;
     mapNumber: number;
     screenSize: { width: number; height: number };
+    /** Oculta los textos de diagnostico (FPS, ping, seguros) dibujados dentro del canvas. */
+    hideStatusTexts?: boolean;
     sharedTextureCachesRef: RefObject<any>;
     runtimeTimingRef: RefObject<any>;
     partyMemberIdsRef: RefObject<Set<string>>;
@@ -840,6 +842,12 @@ export function useRendererBootstrap(options: UseRendererBootstrapOptions) {
                 debugCombatText.zIndex = 1000;
                 debugCombatText.visible = false;
                 app.stage.addChild(debugCombatText);
+
+                if (options.hideStatusTexts) {
+                    for (const text of [fpsText, pingText, seguroText, clanSeguroText]) {
+                        text.renderable = false;
+                    }
+                }
 
                 (engine as any).fpsText = fpsText;
                 options.pingTextRef.current = pingText;

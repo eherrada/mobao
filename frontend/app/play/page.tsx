@@ -1539,7 +1539,15 @@ function HomeContent() {
         }
 
         if (mobaFullView) {
-            return MOBA_FULLVIEW_HUD_SCALE;
+            // El panel derecho ocupa el margen que deja el cuadrado de juego: se agranda hasta llenarlo.
+            const margin = (viewport.width - Math.min(viewport.width, viewport.height)) / 2 - 16;
+            const byWidth = margin / RIGHT_PANEL_WIDTH;
+            const byHeight = rightColumnSize.height > 0 ? (viewport.height - 90) / rightColumnSize.height : Infinity;
+            const fit = Math.min(byWidth, byHeight);
+
+            return Number.isFinite(fit) && fit > 0
+                ? Math.max(MOBA_FULLVIEW_HUD_SCALE, Math.min(MAX_FULLSCREEN_HUD_SCALE, fit))
+                : MOBA_FULLVIEW_HUD_SCALE;
         }
 
         const leftColumnBaseHeight =
@@ -2686,7 +2694,7 @@ function HomeContent() {
                             [data-hud-wrap] { display: contents; }
                             [data-hud-wrap] > :first-child { display: none; }
                             [data-hud-row] { display: contents; }
-                            [data-hud-left] { position: fixed; left: calc(50% - ${Math.floor((CANVAS_BASE_WIDTH * MOBA_FULLVIEW_HUD_SCALE) / 2)}px); bottom: 8px; width: ${Math.floor(CANVAS_BASE_WIDTH * MOBA_FULLVIEW_HUD_SCALE)}px !important; z-index: 0; }
+                            [data-hud-left] { position: fixed; left: calc(50% - ${Math.floor((CANVAS_BASE_WIDTH * hudScale) / 2)}px); bottom: 8px; width: ${Math.floor(CANVAS_BASE_WIDTH * hudScale)}px !important; z-index: 0; }
                             [data-hud-row] > :nth-child(2) { position: fixed; right: 8px; bottom: 8px; z-index: 5; }
                         `}</style>
                     ) : null}

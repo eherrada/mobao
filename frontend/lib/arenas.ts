@@ -6,10 +6,23 @@ export type ArenaRoomSummary = {
     mapId: number;
     capacity: number;
     connectedPlayers: number;
+    /** Jugadores en la sala (lobby), conectados o no a la partida. */
+    memberCount?: number;
     owner: {
         _id: string;
         name: string;
     };
+};
+
+export type ArenaRoomMemberView = {
+    accountId: string;
+    name: string;
+    isOwner: boolean;
+    templateId: number | null;
+    raceId: number | null;
+    team: "blue" | "red";
+    ready: boolean;
+    connected: boolean;
 };
 
 export type ArenaRoomDetails = ArenaRoomSummary & {
@@ -18,7 +31,12 @@ export type ArenaRoomDetails = ArenaRoomSummary & {
         selectedPvpTemplateId: number | null;
         selectedPvpRaceId?: number | null;
         connected: boolean;
+        team?: "blue" | "red" | null;
+        ready?: boolean;
     } | null;
+    members?: ArenaRoomMemberView[];
+    /** true unos segundos después de que el dueño inició la partida. */
+    launching?: boolean;
 };
 
 export type ArenaRoomsResponse = {

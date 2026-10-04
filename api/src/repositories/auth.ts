@@ -1223,7 +1223,7 @@ export async function consumeGameTicket(
 
         const ticketResult = await client.query<GameTicketRecord>(
             `
-        SELECT ticket, account_id, character_id, auth_token, mode, arena_room_id, pvp_template_id, pvp_race_id, created_at, expires_at, consumed_at
+        SELECT ticket, account_id, character_id, auth_token, mode, arena_room_id, pvp_template_id, pvp_race_id, pvp_team, created_at, expires_at, consumed_at
         FROM game_tickets
         WHERE ticket = $1
           AND consumed_at IS NULL
@@ -1353,6 +1353,10 @@ export async function consumeGameTicket(
                     mapId: room.map_id,
                     pvpTemplateId: storedTicket.pvp_template_id,
                     pvpRaceId: storedTicket.pvp_race_id ?? 1,
+                    team:
+                        storedTicket.pvp_team === "blue" || storedTicket.pvp_team === "red"
+                            ? storedTicket.pvp_team
+                            : undefined,
                 },
             };
         }

@@ -210,6 +210,7 @@ type ArenaTicketResponse = {
         mapId: number;
         pvpTemplateId: number;
         pvpRaceId?: number;
+        team?: "blue" | "red";
     };
 };
 
@@ -543,7 +544,7 @@ function Login(this: LoginApi) {
                             | undefined;
 
                         if (isMobaRoom && arenaRoomId) {
-                            const slot = require("./moba/match").joinMatch(String(arenaRoomId));
+                            const slot = require("./moba/match").joinMatch(String(arenaRoomId), arenaResult.arena?.team);
                             mobaOptions = {
                                 spawn: { mapId: slot.mapId, x: slot.spawn.x, y: slot.spawn.y },
                                 moba: {

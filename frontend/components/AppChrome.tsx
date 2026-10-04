@@ -2,16 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import {
-    Home,
-    Swords,
-    Trophy,
-    UserRound,
-    ScrollText,
-    LogIn,
-    LogOut,
-    MessageCircle,
-} from "lucide-react";
+import { Swords, Shield, BookOpen, LogIn, LogOut } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { AuthErrorResponse, AuthSession } from "@/lib/auth";
 
@@ -19,27 +10,16 @@ type AppChromeProps = {
     children: React.ReactNode;
 };
 
+// Navegación de MobAO. Las páginas del AO clásico (personajes, ranking, wiki...) siguen existiendo pero sin enlaces.
 const navItems = [
-    { href: "/", label: "Inicio", icon: Home },
-    { href: "/characters", label: "Personajes", icon: UserRound },
-    { href: "/arenas", label: "Arenas", icon: Swords },
-    { href: "/ranking", label: "Ranking", icon: Trophy },
-    { href: "/wiki/equipment", label: "Wiki", icon: ScrollText },
-    {
-        href: "https://discord.gg/sf8rWAvgxs",
-        label: "Discord",
-        icon: MessageCircle,
-        external: true,
-    },
+    { href: "/moba", label: "Jugar", icon: Swords },
+    { href: "/moba/campeones", label: "Campeones", icon: Shield },
+    { href: "/moba/ayuda", label: "Cómo jugar", icon: BookOpen },
 ];
 
 function isActivePath(pathname: string, href: string) {
-    if (href === "/") {
-        return pathname === "/";
-    }
-
-    if (href === "/wiki/equipment") {
-        return pathname === "/wiki" || pathname.startsWith("/wiki/");
+    if (href === "/moba") {
+        return pathname === "/moba" || pathname.startsWith("/moba/lobby");
     }
 
     return pathname === href || pathname.startsWith(`${href}/`);
@@ -84,44 +64,37 @@ export default function AppChrome({ children }: AppChromeProps) {
         };
     }, [pathname]);
 
-    if (pathname === "/play") {
+    // Pantallas de juego: sin barra superior.
+    if (pathname === "/play" || pathname.startsWith("/moba/play")) {
         return <>{children}</>;
     }
 
     return (
         <>
-            <header className="sticky top-0 z-50 border-b border-white/8 bg-[#05080d]/92 backdrop-blur-xl">
-                <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4">
-                    <Link href="/" className="flex items-center gap-3">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-300 text-sm font-black text-stone-950">
-                            AO
+            <header className="sticky top-0 z-50 border-b border-[#c8aa6e]/20 bg-[#060a12]/95 backdrop-blur-xl">
+                <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3">
+                    <Link href="/moba" className="flex items-center gap-3">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-md border border-[#c8aa6e]/60 bg-[linear-gradient(180deg,#1b2433,#0a0f18)] text-sm font-black tracking-tight text-[#e6c987]">
+                            M
                         </div>
-                        <span className="text-3xl font-semibold tracking-wide text-stone-100">
-                            AOWeb
+                        <span className="text-2xl font-bold uppercase tracking-[0.22em] text-[#e6c987]">
+                            MobAO
                         </span>
                     </Link>
 
-                    <nav className="hidden items-center gap-2 rounded-2xl border border-white/6 bg-black/20 p-1 md:flex">
+                    <nav className="hidden items-center gap-1 md:flex">
                         {navItems.map((item) => {
                             const Icon = item.icon;
-                            const active = item.external
-                                ? false
-                                : isActivePath(pathname, item.href);
+                            const active = isActivePath(pathname, item.href);
 
                             return (
                                 <Link
                                     key={item.href}
                                     href={item.href}
-                                    target={
-                                        item.external ? "_blank" : undefined
-                                    }
-                                    rel={
-                                        item.external ? "noreferrer" : undefined
-                                    }
-                                    className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm transition ${
+                                    className={`inline-flex items-center gap-2 border-b-2 px-4 py-2 text-sm font-semibold uppercase tracking-[0.14em] transition ${
                                         active
-                                            ? "bg-amber-300/12 text-amber-300"
-                                            : "text-stone-400 hover:bg-white/5 hover:text-stone-100"
+                                            ? "border-[#c8aa6e] text-[#e6c987]"
+                                            : "border-transparent text-slate-400 hover:text-slate-100"
                                     }`}
                                 >
                                     <Icon className="h-4 w-4" />
@@ -134,7 +107,7 @@ export default function AppChrome({ children }: AppChromeProps) {
                     <div className="flex items-center gap-3">
                         {session ? (
                             <>
-                                <span className="hidden text-sm text-stone-200 sm:inline">
+                                <span className="hidden text-sm text-slate-200 sm:inline">
                                     {session.account.name}
                                 </span>
                                 <button
@@ -147,8 +120,9 @@ export default function AppChrome({ children }: AppChromeProps) {
                                         router.push("/login");
                                         router.refresh();
                                     }}
-                                    className="inline-flex items-center justify-center rounded-full p-2 text-stone-400 transition hover:bg-white/5 hover:text-stone-100"
-                                    aria-label="Cerrar sesion"
+                                    className="inline-flex items-center justify-center rounded-full p-2 text-slate-400 transition hover:bg-white/5 hover:text-slate-100"
+                                    aria-label="Cerrar sesión"
+                                    title="Cerrar sesión"
                                 >
                                     <LogOut className="h-4 w-4" />
                                 </button>
@@ -156,7 +130,7 @@ export default function AppChrome({ children }: AppChromeProps) {
                         ) : (
                             <Link
                                 href="/login"
-                                className="inline-flex items-center gap-2 rounded-xl border border-white/8 px-4 py-2 text-sm text-stone-200 transition hover:bg-white/5"
+                                className="inline-flex items-center gap-2 rounded-md border border-[#c8aa6e]/40 px-4 py-2 text-sm text-[#e6c987] transition hover:bg-[#c8aa6e]/10"
                             >
                                 <LogIn className="h-4 w-4" />
                                 Ingresar
@@ -166,24 +140,20 @@ export default function AppChrome({ children }: AppChromeProps) {
                 </div>
             </header>
 
-            <div className="md:hidden border-b border-white/8 bg-[#05080d]/92 px-4 py-2 backdrop-blur-xl">
-                <nav className="mx-auto flex max-w-7xl items-center gap-2 overflow-x-auto">
+            <div className="border-b border-[#c8aa6e]/15 bg-[#060a12]/95 px-4 py-2 backdrop-blur-xl md:hidden">
+                <nav className="mx-auto flex max-w-7xl items-center gap-1 overflow-x-auto">
                     {navItems.map((item) => {
                         const Icon = item.icon;
-                        const active = item.external
-                            ? false
-                            : isActivePath(pathname, item.href);
+                        const active = isActivePath(pathname, item.href);
 
                         return (
                             <Link
                                 key={item.href}
                                 href={item.href}
-                                target={item.external ? "_blank" : undefined}
-                                rel={item.external ? "noreferrer" : undefined}
-                                className={`inline-flex shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-sm transition ${
+                                className={`inline-flex shrink-0 items-center gap-2 rounded-md px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] transition ${
                                     active
-                                        ? "bg-amber-300/12 text-amber-300"
-                                        : "text-stone-400 hover:bg-white/5 hover:text-stone-100"
+                                        ? "bg-[#c8aa6e]/12 text-[#e6c987]"
+                                        : "text-slate-400 hover:text-slate-100"
                                 }`}
                             >
                                 <Icon className="h-4 w-4" />

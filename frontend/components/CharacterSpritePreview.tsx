@@ -37,6 +37,8 @@ type CharacterSpritePreviewProps = {
     scale?: number;
     className?: string;
     mode?: "full" | "head";
+    /** Opcional: al terminar de dibujar entrega la imagen (PNG base64) para reutilizarla sin otro contexto WebGL. */
+    onSnapshot?: (dataUrl: string) => void;
 };
 
 type SpritePosition = {
@@ -254,7 +256,10 @@ export default function CharacterSpritePreview({
     scale = 2.1,
     className,
     mode = "full",
+    onSnapshot,
 }: CharacterSpritePreviewProps) {
+    const onSnapshotRef = useRef(onSnapshot);
+    onSnapshotRef.current = onSnapshot;
     const previewWidth = roundToEven(
         (mode === "head" ? HEAD_VIEW_WIDTH : VIEW_WIDTH) * scale,
     );
@@ -618,6 +623,17 @@ export default function CharacterSpritePreview({
                 characterContainer.x +=
                     (desiredCenterPx - currentCenterPx) / rendererResolution;
                 app.renderer.render(stage);
+            }
+
+            if (onSnapshotRef.current && !cancelled) {
+                const dataUrl = await app.renderer.extract.base64({
+                    target: stage,
+                    frame: new Rectangle(0, 0, previewWidth, previewHeight),
+                });
+
+                if (!cancelled) {
+                    onSnapshotRef.current?.(dataUrl);
+                }
             }
         })().catch((error) => {
             console.error("Error rendering character preview:", error);
