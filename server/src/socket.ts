@@ -526,6 +526,7 @@ const socket: SocketApi = {
                     }
 
                     await arenaManager.onPlayerDisconnected(personajeWS);
+                    require("./moba/match").onHeroDisconnected(personajeWS);
                 }
 
                 challengeManager.onPlayerDisconnected(personajeWS);

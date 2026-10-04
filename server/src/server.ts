@@ -121,7 +121,7 @@ function handleSocketClosed(ws: RuntimeClient) {
         return;
     }
 
-    if (user.dead || isInSafeZone(user)) {
+    if (user.dead || user.mobaMatchId || isInSafeZone(user)) {
         socket.closePj(ws);
         return;
     }
@@ -193,7 +193,9 @@ const runtimeTiming = require("./runtimeTiming");
 const handleProtocol = require("./handleProtocol") as HandleProtocolApi;
 
 function handleHttpRequest(request: any, response: any) {
-    void request;
+    if (require("./moba/debugApi").handleDebugRequest(request, response)) {
+        return;
+    }
 
     response.statusCode = 404;
     response.setHeader("Content-Type", "application/json; charset=utf-8");
@@ -908,6 +910,7 @@ createDynamicScheduler(
         harvesting.processTick(now);
         smelting.processTick(now);
         npcs.processPendingMovements();
+        require("./moba/match").tick();
         protocol.processPendingMovements();
         processPendingLogoutTick(now);
     },

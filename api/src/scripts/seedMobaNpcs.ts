@@ -1,24 +1,22 @@
 import pool from "../db";
 import { upsertGameNpc } from "../repositories/gameNpcs";
 
-// Plantillas del MOBA. Cuerpos provisorios: reutilizan sprites de NPCs existentes.
-const TOWER_SPELL_ID = 23; // Descarga Eléctrica (tiene proyectil visual)
+// Plantillas del MOBA. movement 20 = NPC controlado por la IA del MOBA (server/src/moba/ai.ts);
+// la IA clasica de aoweb (movement 3) los ignora. Los cuerpos son provisorios (sprites de NPCs existentes).
+const TOWER_PROJECTILE_SPELL_ID = 23; // Descarga Eléctrica (solo el efecto visual del proyectil)
 
 const common = {
     npcType: 0,
     idHead: 0,
-    movement: 3,
+    movement: 20,
     exp: 0,
     gold: 0,
-    minHit: 0,
-    maxHit: 0,
     poderAtaque: 100,
     poderEvasion: 0,
     magicResistance: 0,
-    stationary: 1,
-    noRespawn: 1,
     aguaValida: 0,
     tierraInvalida: 0,
+    noRespawn: 1,
 };
 
 const tower = {
@@ -28,10 +26,13 @@ const tower = {
     def: 30,
     defM: 30,
     magicDef: 30,
+    minHit: 55,
+    maxHit: 75,
+    stationary: 1,
     structure: "tower",
-    spellRange: 9,
-    spellCastIntervalMs: 1800,
-    spells: [{ idSpell: TOWER_SPELL_ID, cooldownSeconds: 0 }],
+    attackRange: 9,
+    attackIntervalMs: 1500,
+    projectileSpell: TOWER_PROJECTILE_SPELL_ID,
 };
 
 const nexus = {
@@ -41,8 +42,28 @@ const nexus = {
     def: 40,
     defM: 40,
     magicDef: 40,
+    minHit: 0,
+    maxHit: 0,
+    stationary: 1,
     structure: "nexus",
-    spells: [],
+};
+
+const minion = {
+    ...common,
+    hp: 450,
+    maxHp: 450,
+    def: 5,
+    defM: 5,
+    magicDef: 0,
+    minHit: 18,
+    maxHit: 26,
+    exp: 60,
+    gold: 20,
+    stationary: 0,
+    structure: "minion",
+    aggroRange: 7,
+    attackIntervalMs: 1200,
+    moveIntervalMs: 400,
 };
 
 const templates = [
@@ -50,6 +71,8 @@ const templates = [
     { id: 9602, data: { ...tower, name: "Torre Roja", idBody: 181, team: "red" } },
     { id: 9603, data: { ...nexus, name: "Nexo Azul", idBody: 542, team: "blue" } },
     { id: 9604, data: { ...nexus, name: "Nexo Rojo", idBody: 394, team: "red" } },
+    { id: 9605, data: { ...minion, name: "Minion Azul", idBody: 15, team: "blue" } },
+    { id: 9606, data: { ...minion, name: "Minion Rojo", idBody: 170, team: "red" } },
 ];
 
 async function main() {

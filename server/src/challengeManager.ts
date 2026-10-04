@@ -373,6 +373,11 @@ const challengeManager = {
         left: RuntimeCharacter | undefined,
         right: RuntimeCharacter | undefined,
     ): "ally" | "enemy" | null {
+        if (left?.mobaMatchId && left.mobaMatchId === right?.mobaMatchId) {
+            const mobaTeams = require("./moba/teams");
+            return mobaTeams.areAllies(left, right) ? "ally" : mobaTeams.areEnemies(left, right) ? "enemy" : null;
+        }
+
         if (!left || !right || !left.challengeMatchId || !right.challengeMatchId) {
             return null;
         }

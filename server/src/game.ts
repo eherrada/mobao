@@ -52,6 +52,7 @@ const funct = require("./functions");
 const socket = require("./socket") as SocketApi;
 const vars = require("./vars");
 const { mapW, mapH } = require("./mapBounds");
+const mobaTeams = require("./moba/teams");
 const handleProtocol = require("./handleProtocol");
 const fishing = require("./fishing");
 const harvesting = require("./harvesting");
@@ -871,6 +872,7 @@ function resetFuerzaAgilidadBuffs(user: GameCharacter, client?: RuntimeClient) {
 
 function isArenaCombat(user: GameCharacter | undefined, userAttacked: GameCharacter | undefined): boolean {
     return Boolean(
+        (user?.mobaMatchId && user.mobaMatchId === userAttacked?.mobaMatchId && mobaTeams.areEnemies(user, userAttacked)) ||
         (user?.pvpChar && userAttacked?.pvpChar && user.arenaRoomId && user.arenaRoomId === userAttacked.arenaRoomId) ||
         (user?.challengeMatchId &&
             userAttacked?.challengeMatchId &&
@@ -6416,7 +6418,9 @@ function Game(this: GameApi) {
             }
 
             if (userClient) {
-                scheduleDeadWorldTransition(idUser);
+                if (!user.mobaMatchId) {
+                    scheduleDeadWorldTransition(idUser);
+                }
                 handleProtocol.sendMyCharacter(user);
                 socket.send(userClient);
             } else {
@@ -6435,6 +6439,10 @@ function Game(this: GameApi) {
 
             if (shouldSyncVisibilityState) {
                 syncCharacterVisibilityForOthers(idUser);
+            }
+
+            if (user.mobaMatchId) {
+                require("./moba/match").onHeroDeath(user);
             }
         } catch (err) {
             funct.dumpError(err);
@@ -6769,9 +6777,11 @@ function Game(this: GameApi) {
                 user.idHead = user.idLastHead;
             }
 
-            if (isAdminSummonedBot(user)) {
+            if (isAdminSummonedBot(user) || user.mobaMatchId) {
                 restoreAutoEquippedInventoryState(user);
-                enforceAdminSummonedBotMaxBuffs(user, Date.now());
+                if (isAdminSummonedBot(user)) {
+                    enforceAdminSummonedBotMaxBuffs(user, Date.now());
+                }
                 user.nextUseItemAt = 0;
                 user.nextUseItemAfterMeleeAt = 0;
             }
@@ -6795,7 +6805,7 @@ function Game(this: GameApi) {
             syncVisibleCharactersForViewer(idUser);
             game.syncUserNpcVisibility(idUser);
 
-            if (isAdminSummonedBot(user)) {
+            if (isAdminSummonedBot(user) || user.mobaMatchId) {
                 broadcastCharacterVitalsDelta(user);
                 broadcastCharacterSnapshot(user);
             }
@@ -7027,6 +7037,20 @@ function Game(this: GameApi) {
 
             const datSpell = vars.datSpell[idSpell];
             const isHostileSpell = Boolean(datSpell.paraliza || datSpell.inmoviliza || datSpell.subeHp == 2);
+
+            if (isHostileSpell && npc.invulnerable) {
+                withUserClient(idUser, (userClient) => {
+                    handleProtocol.console("Esta estructura es invulnerable por ahora.", "white", 0, 0, userClient);
+                });
+                return 0;
+            }
+
+            if (isHostileSpell && mobaTeams.areAllies(user, npc)) {
+                withUserClient(idUser, (userClient) => {
+                    handleProtocol.console("No puedes atacar a tu propio equipo.", "white", 0, 0, userClient);
+                });
+                return 0;
+            }
 
             if (Number(datSpell?.subeHp ?? 0) === 1) {
                 withUserClient(idUser, (userClient) => {
@@ -7641,6 +7665,20 @@ function Game(this: GameApi) {
             const npc = vars.npcs[idNpc];
 
             if (!user || !npc) {
+                return 0;
+            }
+
+            if (mobaTeams.areAllies(user, npc)) {
+                withUserClient(idUser, (userClient) => {
+                    handleProtocol.console("No puedes atacar a tu propio equipo.", "white", 0, 0, userClient);
+                });
+                return 0;
+            }
+
+            if (npc.invulnerable) {
+                withUserClient(idUser, (userClient) => {
+                    handleProtocol.console("Esta estructura es invulnerable por ahora.", "white", 0, 0, userClient);
+                });
                 return 0;
             }
 
@@ -8649,7 +8687,7 @@ function Game(this: GameApi) {
             const maxExpandedDropRadius = 5;
             let droppedItemsCount = 0;
 
-            if (!user) {
+            if (!user || user.mobaMatchId) {
                 return;
             }
 

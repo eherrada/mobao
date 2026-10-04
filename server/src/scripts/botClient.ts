@@ -1,0 +1,134 @@
+/**
+ * Cliente bot minimo para tests automaticos (no renderiza nada).
+ * Se conecta como bot de plantilla (typeGame=3), igual que login.ts espera.
+ */
+import WebSocket from "ws";
+
+export const PACKET = {
+    changeHeading: 175,
+    position: 176,
+    connectCharacter: 212,
+    attackMele: 229,
+    attackSpell: 243,
+} as const;
+
+export const DIR = { up: 1, down: 2, right: 3, left: 4 } as const;
+
+class Writer {
+    private bytes: number[] = [];
+
+    constructor(id: number) {
+        this.byte(id);
+    }
+
+    byte(v: number) {
+        this.bytes.push(v & 0xff);
+        return this;
+    }
+
+    int(v: number) {
+        this.bytes.push(v & 0xff, (v >> 8) & 0xff, (v >> 16) & 0xff, (v >> 24) & 0xff);
+        return this;
+    }
+
+    string(v: string) {
+        const encoded = Buffer.from(v, "utf8");
+        this.bytes.push(Array.from(v).length & 0xff, (Array.from(v).length >> 8) & 0xff);
+        for (const b of encoded) this.bytes.push(b);
+        return this;
+    }
+
+    buffer() {
+        return Buffer.from(this.bytes);
+    }
+}
+
+export type BotOptions = {
+    url?: string;
+    secret?: string;
+    name: string;
+    templateId: number;
+    mapId?: number;
+    x?: number;
+    y?: number;
+    matchId?: string;
+    team?: "blue" | "red";
+};
+
+export class Bot {
+    private ws!: WebSocket;
+    private moveId = 1;
+    packets = 0;
+
+    constructor(private opts: BotOptions) {}
+
+    connect(): Promise<void> {
+        return new Promise((resolve, reject) => {
+            this.ws = new WebSocket(this.opts.url ?? "ws://127.0.0.1:7666");
+            this.ws.binaryType = "nodebuffer";
+            this.ws.on("message", () => {
+                this.packets++;
+            });
+            this.ws.on("error", reject);
+            this.ws.on("open", () => {
+                const ticket = JSON.stringify({
+                    kind: "loadbot",
+                    secret: this.opts.secret ?? "changeme",
+                    name: this.opts.name,
+                    templateId: this.opts.templateId,
+                    mapId: this.opts.mapId,
+                    x: this.opts.x,
+                    y: this.opts.y,
+                    matchId: this.opts.matchId,
+                    team: this.opts.team,
+                });
+                this.send(new Writer(PACKET.connectCharacter).string(ticket).byte(3).byte(this.opts.templateId).buffer());
+                setTimeout(resolve, 800);
+            });
+        });
+    }
+
+    private send(buf: Buffer) {
+        this.ws.send(buf);
+    }
+
+    heading(dir: number) {
+        this.send(new Writer(PACKET.changeHeading).byte(dir).buffer());
+    }
+
+    step(dir: number) {
+        this.send(new Writer(PACKET.position).byte(dir).int(this.moveId++).buffer());
+    }
+
+    melee() {
+        this.send(new Writer(PACKET.attackMele).buffer());
+    }
+
+    spell(slot: number, x: number, y: number) {
+        this.send(new Writer(PACKET.attackSpell).byte(slot).byte(x).byte(y).byte(0).buffer());
+    }
+
+    close() {
+        this.ws.close();
+    }
+}
+
+export const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+export async function debugState(map = 600) {
+    const res = await fetch(`http://127.0.0.1:7666/debug/state?map=${map}`);
+    return (await res.json()) as {
+        players: Array<Record<string, any>>;
+        npcs: Array<Record<string, any>>;
+    };
+}
+
+export async function debugPost(path: string) {
+    const res = await fetch(`http://127.0.0.1:7666${path}`, { method: "POST" });
+    return res.json();
+}
+
+export async function debugMatches() {
+    const res = await fetch("http://127.0.0.1:7666/debug/matches");
+    return (await res.json()) as Array<Record<string, any>>;
+}

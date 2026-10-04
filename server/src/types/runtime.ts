@@ -361,6 +361,11 @@ export type RuntimeCharacter = {
     lastMovementActivityAt?: number;
     lastCombatActivityAt?: number;
     challengeMatchId?: string | null;
+    /** MOBA: partida y equipo del heroe. */
+    mobaMatchId?: string;
+    mobaTeam?: "blue" | "red";
+    mobaSlot?: number;
+    mobaRespawnAt?: number;
     challengeTeam?: 1 | 2 | null;
     challengeLockedUntil?: number;
     adminSummonedBot?: boolean;
@@ -443,6 +448,7 @@ export type RuntimeNpc = {
     tierraInvalida?: NumericFlag;
     /** Estructuras del MOBA (torres/nexo): no se mueven y no reaparecen. */
     stationary?: number;
+    invulnerable?: boolean;
     noRespawn?: number;
     team?: string;
     structure?: string;

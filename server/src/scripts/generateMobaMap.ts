@@ -145,9 +145,9 @@ function main() {
         rows.push(out);
     }
 
-    // Placement de NPCs: torres y nexos (indices de template se definen en seedMobaNpcs).
-    const NPC = { towerBlue: 9601, towerRed: 9602, nexusBlue: 9603, nexusRed: 9604 };
-    const placements: Array<{ mapNum: number; x: number; y: number; npcIndex: number }> = [];
+    // Estructuras: el mapa base NO lleva NPCs; cada partida las crea desde moba.json.
+    type Structure = { kind: "tower" | "nexus"; team: Team; lane?: string; tier?: number; x: number; y: number };
+    const structures: Structure[] = [];
     const clear = (p: Pt) => {
         for (let dy = -1; dy <= 1; dy++) {
             for (let dx = -1; dx <= 1; dx++) {
@@ -158,25 +158,25 @@ function main() {
             }
         }
     };
-    const place = (p: Pt, npcIndex: number) => {
-        clear(p);
-        placements.push({ mapNum: MAP_ID, x: p.x, y: p.y, npcIndex });
+    const place = (s: Structure) => {
+        clear(s);
+        structures.push(s);
     };
 
-    place(BLUE_BASE, NPC.nexusBlue);
-    place(RED_BASE, NPC.nexusRed);
+    place({ kind: "nexus", team: "blue", ...BLUE_BASE });
+    place({ kind: "nexus", team: "red", ...RED_BASE });
 
-    // Torres de base, flanqueando el nexo.
-    place({ x: BLUE_BASE.x + 7, y: BLUE_BASE.y - 7 }, NPC.towerBlue);
-    place({ x: BLUE_BASE.x - 7, y: BLUE_BASE.y + 7 }, NPC.towerBlue);
-    place({ x: RED_BASE.x - 7, y: RED_BASE.y + 7 }, NPC.towerRed);
-    place({ x: RED_BASE.x + 7, y: RED_BASE.y - 7 }, NPC.towerRed);
+    // Torres de base (tier 3), flanqueando el nexo.
+    place({ kind: "tower", team: "blue", tier: 3, x: BLUE_BASE.x + 7, y: BLUE_BASE.y - 7 });
+    place({ kind: "tower", team: "blue", tier: 3, x: BLUE_BASE.x - 7, y: BLUE_BASE.y + 7 });
+    place({ kind: "tower", team: "red", tier: 3, x: RED_BASE.x - 7, y: RED_BASE.y + 7 });
+    place({ kind: "tower", team: "red", tier: 3, x: RED_BASE.x + 7, y: RED_BASE.y - 7 });
 
-    // Dos torres por carril y equipo.
-    for (const lane of Object.values(LANES)) {
-        for (const f of [0.17, 0.38]) {
-            place(pointAlongLane(lane, f), NPC.towerBlue);
-            place(pointAlongLane(lane, 1 - f), NPC.towerRed);
+    // Dos torres por carril y equipo: exterior (tier 1, hacia el medio) e interior (tier 2).
+    for (const [laneName, lane] of Object.entries(LANES)) {
+        for (const [f, tier] of [[0.17, 2], [0.38, 1]] as const) {
+            place({ kind: "tower", team: "blue", lane: laneName, tier, ...pointAlongLane(lane, f) });
+            place({ kind: "tower", team: "red", lane: laneName, tier, ...pointAlongLane(lane, 1 - f) });
         }
     }
 
@@ -201,12 +201,12 @@ function main() {
     });
     write("terrain.json", { id: MAP_ID, width: SIZE, height: SIZE, palette, rows });
     write("specials.json", { id: MAP_ID, exits: {}, objects, npcs: {}, triggers: {} });
-    write("npcs.json", placements);
-    write("moba.json", { size: SIZE, spawn, bases: { blue: BLUE_BASE, red: RED_BASE } });
+    write("npcs.json", []);
+    write("moba.json", { size: SIZE, spawn, bases: { blue: BLUE_BASE, red: RED_BASE }, lanes: LANES, structures });
 
     const trees = Object.keys(objects).length;
     console.log(
-        `mapa_${MAP_ID} generado: ${SIZE}x${SIZE}, ${trees} arboles, ${placements.length} NPCs (torres+nexos) en ${OUT_DIR}`,
+        `mapa_${MAP_ID} generado: ${SIZE}x${SIZE}, ${trees} arboles, ${structures.length} estructuras en ${OUT_DIR}`,
     );
 }
 

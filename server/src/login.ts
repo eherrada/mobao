@@ -260,6 +260,11 @@ export type LoginApi = {
                 level: number;
             };
             pvpChar?: boolean;
+            moba?: {
+                matchId: string;
+                team: "blue" | "red";
+                slot: number;
+            };
         },
     ) => Promise<void>;
     createId: () => number;
@@ -413,11 +418,25 @@ function Login(this: LoginApi) {
                     mapId?: number;
                     x?: number;
                     y?: number;
+                    team?: string;
+                    matchId?: string;
                 };
                 const botTemplateId = Number(botPayload.templateId ?? idChar);
-                const spawnMapId = Number(botPayload.mapId ?? 0);
-                const spawnX = Number(botPayload.x ?? 0);
-                const spawnY = Number(botPayload.y ?? 0);
+                let spawnMapId = Number(botPayload.mapId ?? 0);
+                let spawnX = Number(botPayload.x ?? 0);
+                let spawnY = Number(botPayload.y ?? 0);
+                let botMoba: { matchId: string; team: "blue" | "red"; slot: number } | undefined;
+
+                if (botPayload.matchId) {
+                    const slot = require("./moba/match").joinMatch(
+                        String(botPayload.matchId),
+                        botPayload.team === "blue" || botPayload.team === "red" ? botPayload.team : undefined,
+                    );
+                    botMoba = { matchId: String(botPayload.matchId), team: slot.team, slot: slot.slot };
+                    spawnMapId = slot.mapId;
+                    spawnX = Number(botPayload.x ?? 0) || slot.spawn.x;
+                    spawnY = Number(botPayload.y ?? 0) || slot.spawn.y;
+                }
 
                 if (
                     botPayload.kind !== "loadbot" ||
@@ -446,6 +465,11 @@ function Login(this: LoginApi) {
                                   }
                                 : undefined,
                         markAsBot: true,
+                        moba:
+                            botMoba ??
+                            (botPayload.team === "blue" || botPayload.team === "red"
+                                ? { matchId: String(botPayload.matchId ?? "bot-test"), team: botPayload.team, slot: 0 }
+                                : undefined),
                     },
                 );
                 return;
@@ -967,6 +991,11 @@ function Login(this: LoginApi) {
                 level: number;
             };
             pvpChar?: boolean;
+            moba?: {
+                matchId: string;
+                team: "blue" | "red";
+                slot: number;
+            };
         },
     ) => {
         const character = _.cloneDeep(vars.charactersPvP[idChar]) as PvPCharacterTemplate | undefined;
@@ -1020,6 +1049,9 @@ function Login(this: LoginApi) {
             idAccount: idAccount,
             arenaRoomId: arenaRoomId || null,
             pvpChar: isPvpCharacter,
+            mobaTeam: options?.moba?.team,
+            mobaMatchId: options?.moba?.matchId,
+            mobaSlot: options?.moba?.slot ?? 0,
             botLoad: isSyntheticBot,
             adminSummonedBot: isAdminSummonedBot,
             adminSummonedBotOwnerId: options?.adminSummonedBot?.ownerId,
@@ -1199,18 +1231,16 @@ function Login(this: LoginApi) {
         funct.logOnlineRecord();
     };
 
+    // Ids unicos y monotonicos (antes: busy-wait sobre Date.now(), que bloqueaba el event loop al spawnear en masa).
+    let lastEntityId = 0;
     this.createId = function () {
-        let unica = true;
-        let id = 0;
+        let id = Math.max(lastEntityId + 1, Date.now());
 
-        while (unica) {
-            id = new Date().getTime();
-
-            if (!vars.personajes[id] && !vars.npcs[id]) {
-                unica = false;
-            }
+        while (vars.personajes[id] || vars.npcs[id]) {
+            id++;
         }
 
+        lastEntityId = id;
         return id;
     };
 }

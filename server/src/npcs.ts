@@ -24,6 +24,7 @@ export {};
 
 const vars = require("./vars");
 const { mapW, mapH } = require("./mapBounds");
+const mobaTeams = require("./moba/teams");
 const socket = require("./socket") as SocketApi;
 const funct = require("./functions");
 const game = require("./game") as GameApi;
@@ -155,6 +156,10 @@ function emitCharacterFxToUserArea(entityId: EntityId, fxId: number) {
 
 export type NpcsApi = {
     createNpc: () => NpcCharacter;
+    dealDamageToUser: (npc: NpcCharacter, user: PlayerCharacter, rawDamage: number, magic?: boolean) => number;
+    dealDamageToNpc: (attacker: NpcCharacter, target: NpcCharacter, rawDamage: number) => boolean;
+    broadcastNpcVitals: (npc: NpcCharacter | undefined) => void;
+    sendNpcProjectile: (npc: NpcCharacter, target: PlayerCharacter, spellId: number) => void;
     spawnSummon: (idUser: EntityId, idSpell: number, targetPos: Position) => EntityId | 0;
     removeOwnerSummons: (idUser: EntityId) => void;
     muereNpc: (idNpc: EntityId) => void;
@@ -530,25 +535,80 @@ function handleNpcSpellKillUser(npc: NpcCharacter, user: PlayerCharacter) {
     }
 }
 
-function announceStructureDestroyed(npc: NpcCharacter) {
-    const teamLabel = npc.team === "red" ? "roja" : npc.team === "blue" ? "azul" : "";
-    const what = npc.structure === "nexus" ? "El nexo" : "Una torre";
-    const text =
-        npc.structure === "nexus"
-            ? `${what} ${teamLabel} fue destruido. ¡Fin de la partida!`
-            : `${what} ${teamLabel} fue destruida.`;
+function computeUserArmorAbsorb(user: PlayerCharacter): number {
+    let minDef = 0;
+    let maxDef = 0;
 
-    for (const userId in vars.personajes) {
-        const user = vars.personajes[userId] as PlayerCharacter | undefined;
-
-        if (!user || user.map !== npc.map) {
-            continue;
-        }
-
-        withUserClient(user.id, (client) => {
-            handleProtocol.console(`[MOBA] ${text}`, npc.structure === "nexus" ? "yellow" : "orange", 1, 0, client);
-        });
+    for (const itemId of [user.idItemBody, user.idItemShield, user.idItemHelmet]) {
+        if (!itemId) continue;
+        const inventoryItem = user.inv[String(itemId)];
+        const obj = inventoryItem ? vars.datObj[inventoryItem.idItem] : undefined;
+        if (!obj) continue;
+        minDef += Number(obj.minDef ?? 0);
+        maxDef += Number(obj.maxDef ?? 0);
     }
+
+    return maxDef > 0 ? funct.randomIntFromInterval(minDef, maxDef) : 0;
+}
+
+/** Dano de un NPC (minion/torre del MOBA) a un jugador. Devuelve el dano aplicado. */
+function dealNpcDamageToUser(npc: NpcCharacter, user: PlayerCharacter, rawDamage: number, magic = false): number {
+    if (user.dead || user.hp <= 0) {
+        return 0;
+    }
+
+    let damage = magic ? applyNpcSpellDamageToUser(rawDamage, user) : rawDamage - computeUserArmorAbsorb(user);
+
+    if (damage < 1) {
+        damage = 1;
+    }
+
+    user.hp -= damage;
+    user.lastCombatActivityAt = Date.now();
+    game.interruptPendingLogoutOnAttack(user.id, "[Servidor] La salida se canceló porque una criatura te atacó.");
+    emitCharacterFxToUserArea(user.id, COMBAT_HIT_FX_ID);
+
+    withUserClient(user.id, (userClient) => {
+        handleProtocol.updateHP(Math.max(0, user.hp), userClient);
+    });
+
+    npcs.loopArea(npc.id, (areaUser) => {
+        withUserClient(areaUser.id, (targetClient) => {
+            handleProtocol.dialog(user.id, String(damage), "", "red", 0, targetClient);
+        });
+    });
+
+    if (user.hp <= 0) {
+        handleNpcSpellKillUser(npc, user);
+    }
+
+    return damage;
+}
+
+/** Dano de un NPC a otro NPC (minion vs minion/torre). Devuelve true si el objetivo murio. */
+function dealNpcDamageToNpc(attacker: NpcCharacter, target: NpcCharacter, rawDamage: number): boolean {
+    if (target.hp <= 0 || target.deathProcessed) {
+        return false;
+    }
+
+    const damage = Math.max(1, rawDamage - Number(target.def ?? 0));
+    target.hp = Math.max(0, target.hp - damage);
+    broadcastNpcVitalsDelta(target);
+
+    npcs.loopArea(target.id, (areaUser) => {
+        withUserClient(areaUser.id, (targetClient) => {
+            handleProtocol.dialog(target.id, String(damage), "", "red", 0, targetClient);
+        });
+    });
+
+    if (target.hp > 0) {
+        return false;
+    }
+
+    target.deathProcessed = true;
+    require("./moba/match").onNpcKilledByNpc(target, attacker);
+    npcs.muereNpc(target.id);
+    return true;
 }
 
 function tryNpcCastSpell(
@@ -1402,6 +1462,10 @@ function selectNpcTarget(npc: NpcCharacter, targetPressure: Map<EntityId, number
             continue;
         }
 
+        if (mobaTeams.areAllies(npc, user)) {
+            continue;
+        }
+
         const score = getTargetScore(npc, user, targetPressure);
 
         if (npc.currentTargetId === idUser) {
@@ -2193,6 +2257,11 @@ function Npcs(this: NpcsApi) {
         attackNpcTarget(summon, targetNpc, owner);
     };
 
+    this.dealDamageToUser = dealNpcDamageToUser;
+    this.dealDamageToNpc = dealNpcDamageToNpc;
+    this.broadcastNpcVitals = broadcastNpcVitalsDelta;
+    this.sendNpcProjectile = sendNpcSpellProjectileToArea;
+
     this.processPendingMovements = function () {
         try {
             const now = Date.now();
@@ -2291,7 +2360,7 @@ function Npcs(this: NpcsApi) {
             vars.areaNpc[idNpc] = [];
 
             if (npc.noRespawn) {
-                announceStructureDestroyed(npc);
+                require("./moba/match").onNpcDestroyed(npc);
                 delete vars.npcs[idNpc];
                 delete vars.areaNpc[idNpc];
                 return;
