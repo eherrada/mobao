@@ -1574,6 +1574,9 @@ function HomeContent() {
         viewport.width,
     ]);
 
+    // Pantalla completa del MOBA: el juego ocupa toda la pantalla (con mas tiles visibles) y el HUD queda encima.
+    const mobaFullView = isFullscreen && arenaMode && viewport.width > 0 && viewport.height > 0;
+
     const hudLayout = useMemo<HudLayout>(() => {
         if (!viewport.width || !viewport.height) {
             return {
@@ -2738,10 +2741,21 @@ function HomeContent() {
                         >
                             <div
                                 className="relative"
-                                style={{
-                                    width: `${hudLayout.canvasWidth ?? CANVAS_BASE_WIDTH}px`,
-                                    height: `${hudLayout.canvasHeight ?? CANVAS_BASE_HEIGHT}px`,
-                                }}
+                                style={
+                                    mobaFullView
+                                        ? {
+                                              position: "fixed",
+                                              left: 0,
+                                              top: 0,
+                                              width: `${viewport.width}px`,
+                                              height: `${viewport.height}px`,
+                                              zIndex: -1,
+                                          }
+                                        : {
+                                              width: `${hudLayout.canvasWidth ?? CANVAS_BASE_WIDTH}px`,
+                                              height: `${hudLayout.canvasHeight ?? CANVAS_BASE_HEIGHT}px`,
+                                          }
+                                }
                             >
                                 <BuffStatusSidebar
                                     hud={hud}
@@ -2751,8 +2765,10 @@ function HomeContent() {
                                 <MapRenderer
                                     embedded
                                     mapNumber={selectedMap}
-                                    width={hudLayout.canvasWidth}
-                                    height={hudLayout.canvasHeight}
+                                    width={mobaFullView ? viewport.width : hudLayout.canvasWidth}
+                                    height={mobaFullView ? viewport.height : hudLayout.canvasHeight}
+                                    screenWidth={mobaFullView ? viewport.width : undefined}
+                                    screenHeight={mobaFullView ? viewport.height : undefined}
                                     connection={connection}
                                     equipRequest={equipRequest}
                                     useItemClickRequest={useItemClickRequest}

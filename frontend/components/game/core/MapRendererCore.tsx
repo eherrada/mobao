@@ -133,6 +133,9 @@ interface MapRendererProps {
     mapNumber: number;
     width?: number;
     height?: number;
+    /** Resolucion interna del render (mas tiles visibles). Por defecto, el viewport fijo de 21x21 tiles. */
+    screenWidth?: number;
+    screenHeight?: number;
     embedded?: boolean;
     connection?: ManualConnectionConfig | null;
     equipRequest?: { slot: number; token: number } | null;
@@ -656,6 +659,8 @@ export default function MapRenderer({
     mapNumber,
     width,
     height,
+    screenWidth,
+    screenHeight,
     embedded = false,
     connection,
     equipRequest,
@@ -1384,11 +1389,11 @@ export default function MapRenderer({
     useEffect(() => {
         setIsMounted(true);
         setScreenSize({
-            width: VIEWPORT_PIXEL_WIDTH,
-            height: VIEWPORT_PIXEL_HEIGHT,
+            width: screenWidth ?? VIEWPORT_PIXEL_WIDTH,
+            height: screenHeight ?? VIEWPORT_PIXEL_HEIGHT,
         });
         setCanvasDisplaySize(getCanvasDisplaySize());
-    }, [getCanvasDisplaySize]);
+    }, [getCanvasDisplaySize, screenWidth, screenHeight]);
 
     useEffect(() => {
         if (!isMounted) return;
