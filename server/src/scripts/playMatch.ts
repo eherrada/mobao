@@ -14,13 +14,24 @@ const roster: Array<[string, number, "top" | "mid" | "bot"]> = [
 ];
 
 async function main() {
-    const matchId = `play-${Date.now()}`;
+    // Con un id de partida (ej. la sala en la que ya estas jugando) los bots solo completan los lugares libres.
+    const given = process.argv[3];
+    const matchId = given ?? `play-${Date.now()}`;
     const bots: HumanBot[] = [];
+    const taken: Record<string, number> = { blue: 0, red: 0 };
+
+    if (given) {
+        const info = (await debugMatches()).find((m) => m.id === given);
+
+        if (!info) throw new Error(`No existe la partida ${given}. Entra primero a la sala. Partidas: ${JSON.stringify((await debugMatches()).map((m) => m.id))}`);
+
+        for (const p of (await debugState(info.mapId as number)).players) taken[String(p.team)]++;
+    }
 
     for (const team of ["blue", "red"] as const) {
-        for (const [role, template, lane] of roster) {
+        roster.slice(taken[team]).forEach(([role, template, lane]) => {
             bots.push(new HumanBot(`${team[0].toUpperCase()}${role}`, template, team, lane, matchId));
-        }
+        });
     }
 
     for (const b of bots) {

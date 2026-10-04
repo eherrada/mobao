@@ -30,11 +30,22 @@ type MobaState = {
     heroes: Array<{ id: number; name: string; team: 0 | 1; k: number; d: number; cs: number; lvl: number; dead: boolean }>;
     /** [x, y, tipo(0 heroe,1 minion,2 torre,3 nexo,4 tienda), equipo(0 azul,1 rojo)] */
     ents: Array<[number, number, number, number]>;
+    /** [x, y, tipo(0 centinela,1 zarza,2 comun,3 rio,4 dragon,5 rey demonio), estado(1 vivo,0 muerto,-1 sin vision)] */
+    camps?: Array<[number, number, number, number]>;
 };
 
 const TEAM_COLOR = ["#4aa3ff", "#ff5a4a"] as const;
 const TEAM_NAME = ["AZUL", "ROJO"] as const;
-const MINIMAP_SIZE = 150;
+const MINIMAP_SIZE = 210;
+
+const CAMP_STYLE = [
+    { color: "#4aa3ff", r: 4, shape: "circle" }, // Centinela Azul
+    { color: "#ff6a4a", r: 4, shape: "circle" }, // Zarza Roja
+    { color: "#d8c27a", r: 2.5, shape: "circle" }, // campamento comun
+    { color: "#4ad0b0", r: 3, shape: "circle" }, // Tortuga del Rio
+    { color: "#ff9a2e", r: 5, shape: "diamond" }, // Dragon
+    { color: "#b05cff", r: 6, shape: "diamond" }, // Rey Demonio
+] as const;
 
 // Trazado de carriles para el fondo del minimapa (mismo layout que server/src/scripts/generateMobaMap.ts).
 const LANES: Array<Array<[number, number]>> = [
@@ -61,24 +72,59 @@ function Minimap({ state }: { state: MobaState }) {
         const scale = MINIMAP_SIZE / state.size;
         const px = (v: number) => (v - 1) * scale;
 
-        ctx.fillStyle = "#0b1410";
+        // Jungla: fondo verde con borde de agua.
+        ctx.fillStyle = "#12301d";
         ctx.fillRect(0, 0, MINIMAP_SIZE, MINIMAP_SIZE);
+        ctx.strokeStyle = "rgba(70,130,200,0.6)";
+        ctx.lineWidth = 3;
+        ctx.strokeRect(1.5, 1.5, MINIMAP_SIZE - 3, MINIMAP_SIZE - 3);
 
-        // Rio en la diagonal.
-        ctx.strokeStyle = "rgba(70,130,200,0.45)";
-        ctx.lineWidth = Math.max(2, 5 * scale);
+        // Rio en la diagonal (7 tiles de ancho).
+        ctx.strokeStyle = "rgba(60,120,200,0.75)";
+        ctx.lineWidth = Math.max(3, 7 * scale);
         ctx.beginPath();
         ctx.moveTo(0, 0);
         ctx.lineTo(MINIMAP_SIZE, MINIMAP_SIZE);
         ctx.stroke();
 
-        // Carriles.
-        ctx.strokeStyle = "rgba(190,170,110,0.55)";
-        ctx.lineWidth = Math.max(2, 10 * scale);
+        // Carriles (11 tiles de ancho).
+        ctx.strokeStyle = "rgba(205,185,125,0.8)";
+        ctx.lineWidth = Math.max(3, 11 * scale);
+        ctx.lineJoin = "round";
         for (const lane of LANES) {
             ctx.beginPath();
             lane.forEach(([x, y], i) => (i === 0 ? ctx.moveTo(px(x), px(y)) : ctx.lineTo(px(x), px(y))));
             ctx.stroke();
+        }
+
+        // Bases.
+        for (const [bx, by, team] of [[30, 225, 0], [225, 30, 1]] as const) {
+            ctx.fillStyle = team === 0 ? "rgba(74,163,255,0.35)" : "rgba(255,90,74,0.35)";
+            ctx.fillRect(px(bx - 19), px(by - 19), 38 * scale, 38 * scale);
+        }
+
+        // Campamentos de la jungla: apagados si estan muertos, grises si no se ven.
+        for (const [x, y, type, status] of state.camps ?? []) {
+            const style = CAMP_STYLE[type] ?? CAMP_STYLE[2];
+            ctx.globalAlpha = status === 1 ? 1 : status === 0 ? 0.3 : 0.55;
+            ctx.fillStyle = status === -1 ? "#8a8f7a" : style.color;
+            ctx.strokeStyle = "rgba(0,0,0,0.7)";
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+
+            if (style.shape === "diamond") {
+                ctx.moveTo(px(x), px(y) - style.r);
+                ctx.lineTo(px(x) + style.r, px(y));
+                ctx.lineTo(px(x), px(y) + style.r);
+                ctx.lineTo(px(x) - style.r, px(y));
+                ctx.closePath();
+            } else {
+                ctx.arc(px(x), px(y), style.r, 0, Math.PI * 2);
+            }
+
+            ctx.fill();
+            ctx.stroke();
+            ctx.globalAlpha = 1;
         }
 
         for (const [x, y, kind, team] of state.ents) {

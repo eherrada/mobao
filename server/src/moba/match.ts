@@ -698,6 +698,19 @@ function broadcastState(match: Match, heroes: any[], live: any[], now: number) {
     };
 
     const entsByTeam = { blue: entsFor("blue"), red: entsFor("red") };
+
+    // Campamentos para el minimapa: [x, y, tipo, estado]. Estado 1 = vivo, 0 = muerto (esperando), -1 = sin vision
+    // (el estado de la jungla enemiga no se revela).
+    const CAMP_CODE: Record<string, number> = { sentinel: 0, bramble: 1, wolves: 2, golems: 2, scorpions: 2, crab: 3, drake: 4, baron: 5 };
+    const aliveCamps = new Set<number>(live.filter((n: any) => n.structure === "jungle").map((n: any) => n.campIndex));
+    const campsFor = (team: Team) =>
+        config.getMapConfig().camps.map((camp: any, index: number) => [
+            camp.x,
+            camp.y,
+            CAMP_CODE[camp.type] ?? 2,
+            fog.isVisibleToTeam(match.id, team, camp) ? (aliveCamps.has(index) ? 1 : 0) : -1,
+        ]);
+    const campsByTeam = { blue: campsFor("blue"), red: campsFor("red") };
     const roster = heroes.map((h) => ({
         id: h.id,
         name: h.nameCharacter,
@@ -746,6 +759,7 @@ function broadcastState(match: Match, heroes: any[], live: any[], now: number) {
                 points: skills.availablePoints(hero),
                 respawnIn: hero.dead && hero.mobaRespawnAt ? Math.max(0, Math.ceil((hero.mobaRespawnAt - now) / 1000)) : 0,
                 ents: entsByTeam[hero.mobaTeam as Team],
+                camps: campsByTeam[hero.mobaTeam as Team],
             },
             client,
         );
