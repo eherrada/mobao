@@ -117,6 +117,11 @@ export class Bot {
         this.send(new Writer(PACKET.attackMele).buffer());
     }
 
+    /** Chat / comandos (ej. "/recall"). */
+    say(text: string) {
+        this.send(new Writer(221).string(text).buffer());
+    }
+
     /** Gasta un punto de habilidad en el hechizo del slot (paquete mobaSkill). */
     skill(slot: number) {
         this.send(new Writer(250).byte(slot).buffer());

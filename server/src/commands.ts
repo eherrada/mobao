@@ -2714,6 +2714,14 @@ const command: CommandApi = {
                     game.accionMeditar(clientId);
                     break;
 
+                case "/recall":
+                case "/b":
+                    // MOBA: volver a la base (canal de 8 s que se cancela si te moves o te pegan).
+                    if (user.mobaMatchId) {
+                        require("./moba/match").startRecall(user);
+                    }
+                    break;
+
                 case "/fianza": {
                     if (!userInSafeZone) {
                         handleProtocol.console(

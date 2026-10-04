@@ -180,6 +180,99 @@ function handleDebugRequest(request: any, response: any): boolean {
         return true;
     }
 
+    // Mapa de tiles caminables (solo terreno) como filas de '.' (libre) y '#' (bloqueado).
+    if (url.pathname === "/debug/walkable") {
+        const game = require("../game");
+        const rows: string[] = [];
+
+        for (let y = 1; y <= 255; y++) {
+            let row = "";
+
+            for (let x = 1; x <= 255; x++) {
+                row += game.legalPos(x, y, 600, false) ? "." : "#";
+            }
+
+            rows.push(row);
+        }
+
+        json(response, 200, { rows });
+        return true;
+    }
+
+    // Vista de un heroe: su estado y las entidades que su equipo puede ver (fog incluido).
+    if (url.pathname === "/debug/view") {
+        const fog = require("./fog");
+        const skills = require("./skills");
+        const progression = require("./progression");
+        const viewerId = String(url.searchParams.get("viewer"));
+        const me = vars.personajes[viewerId];
+
+        if (!me?.mobaMatchId) {
+            json(response, 404, { error: "viewer not in a match" });
+            return true;
+        }
+
+        const near = (e: any) => Math.abs(e.pos.x - me.pos.x) + Math.abs(e.pos.y - me.pos.y) <= 16;
+        const visible = (e: any) => {
+            if (!e || e.mobaMatchId !== me.mobaMatchId || e.cerrado || e.id === me.id) return false;
+            if (fog.isHiddenEntityFor(viewerId, e)) return false;
+            // Lo neutral (jungla) solo se ve si esta dentro de la vision del equipo.
+            if (!e.mobaTeam && !e.team) return fog.isVisibleToTeam(me.mobaMatchId, me.mobaTeam, e.pos);
+            return true;
+        };
+        const view = (e: any) => ({
+            id: e.id,
+            name: e.nameCharacter,
+            x: e.pos.x,
+            y: e.pos.y,
+            hp: e.hp,
+            maxHp: e.maxHp,
+            team: e.team ?? e.mobaTeam ?? null,
+            isNpc: Boolean(e.isNpc),
+            kind: e.minionKind || e.structure || null,
+            structure: e.structure ?? null,
+            lane: e.lane ?? null,
+            tier: e.tier ?? null,
+            invulnerable: Boolean(e.invulnerable),
+            dead: Boolean(e.dead),
+            level: e.mobaLevel ?? null,
+            buff: e.buffId ?? null,
+        });
+        const entities = ([...Object.values(vars.personajes), ...Object.values(vars.npcs)] as any[]).filter(
+            (e) => visible(e) && (near(e) || (e.team ?? e.mobaTeam) === me.mobaTeam || e.structure === "tower" || e.structure === "nexus" || e.structure === "shop" || e.structure === "barracks"),
+        );
+
+        json(response, 200, {
+            me: {
+                id: me.id,
+                name: me.nameCharacter,
+                x: me.pos.x,
+                y: me.pos.y,
+                heading: me.heading,
+                hp: me.hp,
+                maxHp: me.maxHp,
+                mana: me.mana,
+                maxMana: me.maxMana,
+                gold: me.gold,
+                level: me.mobaLevel,
+                xp: me.mobaXp,
+                xpNext: progression.xpToNext(me.mobaLevel ?? 1),
+                dead: Boolean(me.dead),
+                team: me.mobaTeam,
+                classId: me.idClase,
+                templateId: me.mobaTemplateId,
+                raceId: me.idRaza,
+                points: skills.availablePoints(me),
+                skills: skills.describe(me),
+                inv: Object.entries(me.inv ?? {}).map(([slot, it]: [string, any]) => ({ slot: Number(slot), item: it.idItem, qty: it.cant, equipped: Boolean(it.equipped) })),
+                recalling: Boolean(me.mobaRecall),
+            },
+            entities: entities.map(view),
+            match: require("./match").describe().find((m: any) => m.id === me.mobaMatchId) ?? null,
+        });
+        return true;
+    }
+
     if (url.pathname === "/debug/matches") {
         json(response, 200, require("./match").describe());
         return true;

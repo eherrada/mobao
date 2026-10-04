@@ -436,6 +436,52 @@ function heroSpawnPoint(match: Match, team: Team, slot: number): Pt {
     return { x: base.x + (team === "blue" ? offset.x : -offset.x), y: base.y + (team === "blue" ? offset.y : -offset.y) };
 }
 
+const RECALL_MS = 8000;
+
+/** Inicia (o cancela) el regreso a la base. Se cancela si el heroe se mueve o recibe dano. */
+function startRecall(hero: any) {
+    const client = vars.clients[hero.id];
+
+    if (!client || hero.dead) return;
+
+    if (hero.mobaRecall) {
+        hero.mobaRecall = undefined;
+        handleProtocol.console("[MOBA] Regreso cancelado.", "white", 0, 0, client);
+        return;
+    }
+
+    hero.mobaRecall = { until: Date.now() + RECALL_MS, x: hero.pos.x, y: hero.pos.y, hp: hero.hp };
+    handleProtocol.console("[MOBA] Volviendo a la base... quedate quieto 8 segundos.", "yellow", 1, 0, client);
+    handleProtocol.dialog(hero.id, "Volviendo a la base...", "", "#9ad1ff", 0, client);
+}
+
+function processRecall(match: Match, hero: any, now: number) {
+    const recall = hero.mobaRecall;
+
+    if (!recall) return;
+
+    const client = vars.clients[hero.id];
+    const cancelled = !client || hero.dead || hero.pos.x !== recall.x || hero.pos.y !== recall.y || hero.hp < recall.hp;
+
+    if (cancelled) {
+        hero.mobaRecall = undefined;
+
+        if (client && !hero.dead) {
+            handleProtocol.console("[MOBA] Regreso cancelado.", "white", 0, 0, client);
+        }
+
+        return;
+    }
+
+    recall.hp = Math.max(recall.hp, hero.hp);
+
+    if (now >= recall.until) {
+        hero.mobaRecall = undefined;
+        const spawn = heroSpawnPoint(match, hero.mobaTeam, hero.mobaSlot ?? 0);
+        game.telep(client, match.mapId, spawn.x, spawn.y, "moba.recall");
+    }
+}
+
 function respawnHero(match: Match, hero: any) {
     const client = vars.clients[hero.id];
 
@@ -868,6 +914,8 @@ function tickInner() {
             if (hero.dead && hero.mobaRespawnAt && now >= hero.mobaRespawnAt) {
                 respawnHero(match, hero);
             }
+
+            processRecall(match, hero, now);
         }
 
         fog.syncVisibility(heroes, live);
@@ -902,6 +950,7 @@ module.exports = {
     onNpcKilledByNpc,
     onHeroDeath,
     onHeroKill,
+    startRecall,
     onNpcKilledByHero,
     onJungleKill,
     onHeroDisconnected,
