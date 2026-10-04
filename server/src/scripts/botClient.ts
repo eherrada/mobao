@@ -57,6 +57,7 @@ export type BotOptions = {
     race?: number;
     exactMana?: boolean;
     level?: number;
+    autoSkills?: boolean;
 };
 
 export class Bot {
@@ -90,6 +91,7 @@ export class Bot {
                     race: this.opts.race,
                     exactMana: this.opts.exactMana,
                     level: this.opts.level,
+                    autoSkills: this.opts.autoSkills,
                 });
                 this.send(new Writer(PACKET.connectCharacter).string(ticket).byte(3).byte(this.opts.templateId).buffer());
                 setTimeout(resolve, 800);
@@ -111,6 +113,11 @@ export class Bot {
 
     melee() {
         this.send(new Writer(PACKET.attackMele).buffer());
+    }
+
+    /** Gasta un punto de habilidad en el hechizo del slot (paquete mobaSkill). */
+    skill(slot: number) {
+        this.send(new Writer(250).byte(slot).buffer());
     }
 
     range(x: number, y: number) {

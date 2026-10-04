@@ -701,6 +701,21 @@ export default function MapRenderer({
     const [isDeadWorldActive, setIsDeadWorldActive] = React.useState(false);
     const engineRef = useRef<Engine | null>(null);
     const websocketRef = useRef<WebSocket | null>(null);
+
+    // El HUD del MOBA (components/moba/MobaHud.tsx) envia paquetes por este evento.
+    useEffect(() => {
+        const onSend = (event: Event) => {
+            const socket = websocketRef.current;
+            const data = (event as CustomEvent<ArrayBuffer>).detail;
+
+            if (socket && socket.readyState === WebSocket.OPEN && data) {
+                socket.send(data);
+            }
+        };
+
+        window.addEventListener("mobao:send", onSend);
+        return () => window.removeEventListener("mobao:send", onSend);
+    }, []);
     const npcContextMenuRef = useRef<HTMLDivElement>(null);
     const pingIntervalRef = useRef<number | null>(null);
     const pendingPingRef = useRef<{ token: number; sentAt: number } | null>(

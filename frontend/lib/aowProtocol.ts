@@ -202,6 +202,7 @@ export const SERVER_PACKET_ID = {
     closeTrade: 190,
     marketAction: 239,
     retosAction: 248,
+    mobaSkill: 250,
 } as const;
 
 export interface CharacterSnapshot {
@@ -2123,6 +2124,13 @@ export function createAttackRangePacket(x: number, y: number): ArrayBuffer {
     const writer = new PacketWriter(SERVER_PACKET_ID.attackRange);
     writer.writeByte(x);
     writer.writeByte(y);
+    return writer.toArrayBuffer();
+}
+
+/** MOBA: gasta un punto de habilidad en el hechizo del slot indicado. */
+export function createMobaSkillPacket(slot: number): ArrayBuffer {
+    const writer = new PacketWriter(SERVER_PACKET_ID.mobaSkill);
+    writer.writeByte(slot);
     return writer.toArrayBuffer();
 }
 

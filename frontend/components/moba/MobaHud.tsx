@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import { createMobaSkillPacket } from "../../lib/aowProtocol";
+
 /** Estado de partida que envia el servidor (server/src/moba/match.ts → broadcastState). */
 type MobaState = {
     phase: "running" | "ended";
@@ -11,9 +13,20 @@ type MobaState = {
     team: 0 | 1;
     respawnIn: number;
     size: number;
-    me: { id: number; x: number; y: number; gold: number };
+    me: { id: number; x: number; y: number; gold: number; level: number; xp: number; xpNext: number; maxLevel: number };
+    points: number;
+    skills: Array<{
+        slot: number;
+        spell: number;
+        name: string;
+        rank: number;
+        max: number;
+        ult: boolean;
+        canLevel: boolean;
+        nextReqLevel: number;
+    }>;
     score: Record<"blue" | "red", { towers: number; kills: number; nexus: number }>;
-    heroes: Array<{ id: number; name: string; team: 0 | 1; k: number; d: number; cs: number; dead: boolean }>;
+    heroes: Array<{ id: number; name: string; team: 0 | 1; k: number; d: number; cs: number; lvl: number; dead: boolean }>;
     /** [x, y, tipo(0 heroe,1 minion,2 torre,3 nexo,4 tienda), equipo(0 azul,1 rojo)] */
     ents: Array<[number, number, number, number]>;
 };
@@ -103,6 +116,76 @@ function Minimap({ state }: { state: MobaState }) {
     );
 }
 
+function SkillPanel({ state }: { state: MobaState }) {
+    if (state.skills.length === 0) {
+        return (
+            <div className="pointer-events-auto absolute bottom-2 left-1/2 -translate-x-1/2 rounded-md border border-white/15 bg-black/65 px-3 py-1 text-[11px] text-stone-300">
+                Este heroe pelea con armas (sin habilidades)
+            </div>
+        );
+    }
+
+    const levelUp = (slot: number) =>
+        window.dispatchEvent(new CustomEvent("mobao:send", { detail: createMobaSkillPacket(slot) }));
+
+    return (
+        <div className="pointer-events-auto absolute bottom-2 left-1/2 flex -translate-x-1/2 flex-col items-center gap-1">
+            {state.points > 0 ? (
+                <div className="rounded bg-amber-400/90 px-2 py-0.5 text-[11px] font-semibold text-black">
+                    {state.points} punto{state.points > 1 ? "s" : ""} de habilidad: elegi donde invertirlo
+                </div>
+            ) : null}
+            <div className="flex gap-1 rounded-md border border-white/15 bg-black/70 p-1">
+                {state.skills.map((skill) => (
+                    <div
+                        key={skill.slot}
+                        title={`${skill.name} · rango ${skill.rank}/${skill.max}${skill.ult ? " · definitiva" : ""} · proximo rango: nivel ${skill.nextReqLevel}`}
+                        className={`flex w-[68px] flex-col items-center rounded border px-1 py-0.5 ${
+                            skill.rank === 0 ? "border-white/10 opacity-60" : "border-white/25"
+                        } ${skill.ult ? "bg-purple-900/40" : "bg-white/5"}`}
+                    >
+                        <span className="w-full truncate text-center text-[10px] leading-tight">{skill.name}</span>
+                        <div className="my-0.5 flex gap-[2px]">
+                            {Array.from({ length: skill.max }, (_, i) => (
+                                <span
+                                    key={i}
+                                    className={`h-1.5 w-1.5 rounded-full ${i < skill.rank ? "bg-amber-300" : "bg-white/20"}`}
+                                />
+                            ))}
+                        </div>
+                        <button
+                            type="button"
+                            disabled={!skill.canLevel}
+                            onClick={() => levelUp(skill.slot)}
+                            className={`h-4 w-full rounded text-[11px] font-bold leading-none ${
+                                skill.canLevel
+                                    ? "bg-amber-400 text-black hover:bg-amber-300"
+                                    : "bg-white/10 text-stone-500"
+                            }`}
+                        >
+                            +
+                        </button>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
+
+function LevelBadge({ state }: { state: MobaState }) {
+    const { level, xp, xpNext, maxLevel } = state.me;
+    const pct = level >= maxLevel ? 100 : Math.min(100, Math.round((xp / Math.max(1, xpNext)) * 100));
+
+    return (
+        <div className="flex items-center gap-2 rounded-md border border-white/15 bg-black/65 px-2 py-1 text-xs">
+            <span className="rounded bg-amber-400 px-1.5 font-bold text-black">Nv {level}</span>
+            <div className="h-1.5 w-20 overflow-hidden rounded bg-white/15">
+                <div className="h-full bg-sky-400" style={{ width: `${pct}%` }} />
+            </div>
+        </div>
+    );
+}
+
 export function MobaHud() {
     const [state, setState] = useState<MobaState | null>(null);
     const [showBoard, setShowBoard] = useState(false);
@@ -142,6 +225,7 @@ export function MobaHud() {
 
             {/* Oro y marcador */}
             <div className="pointer-events-auto absolute right-2 top-2 flex flex-col items-end gap-1">
+                <LevelBadge state={state} />
                 <div className="rounded-md border border-white/15 bg-black/65 px-2 py-1 text-xs">
                     <span style={{ color: TEAM_COLOR[mine] }}>Equipo {TEAM_NAME[mine]}</span> · Oro{" "}
                     <span className="text-amber-300">{state.me.gold}</span>
@@ -168,7 +252,7 @@ export function MobaHud() {
                                                 {hero.name}
                                             </span>
                                             <span className="font-mono text-stone-300">
-                                                {hero.k}/{hero.d}/{hero.cs}
+                                                Nv{hero.lvl} · {hero.k}/{hero.d}/{hero.cs}
                                             </span>
                                         </div>
                                     ))}
@@ -178,6 +262,8 @@ export function MobaHud() {
                     </div>
                 ) : null}
             </div>
+
+            <SkillPanel state={state} />
 
             {/* Minimapa */}
             <div className="absolute bottom-2 left-2">

@@ -427,6 +427,7 @@ function Login(this: LoginApi) {
                     race?: number;
                     exactMana?: boolean;
                     level?: number;
+                    autoSkills?: boolean;
                 };
                 const botTemplateId = Number(botPayload.templateId ?? idChar);
                 let spawnMapId = Number(botPayload.mapId ?? 0);
@@ -447,7 +448,8 @@ function Login(this: LoginApi) {
                         slot: slot.slot,
                         race: Number(botPayload.race ?? 1),
                         level: Number(botPayload.level ?? 1),
-                    };
+                        autoSkills: botPayload.autoSkills,
+                    } as typeof botMoba;
                     spawnMapId = slot.mapId;
                     spawnX = Number(botPayload.x ?? 0) || slot.spawn.x;
                     spawnY = Number(botPayload.y ?? 0) || slot.spawn.y;
@@ -1254,8 +1256,8 @@ function Login(this: LoginApi) {
             require("./moba/progression").initHero(newCharacter, mobaStartLevel);
             require("./moba/skills").initSkills(newCharacter);
 
-            if (isSyntheticBot) {
-                // Los bots reparten sus puntos solos; los jugadores eligen en el panel de habilidades.
+            if (isSyntheticBot && (options.moba as { autoSkills?: boolean }).autoSkills !== false) {
+                // Los bots reparten sus puntos solos (salvo autoSkills=false); los jugadores eligen en el panel.
                 require("./moba/skills").autoAssign(newCharacter);
             }
         }
