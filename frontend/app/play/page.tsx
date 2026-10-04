@@ -1531,6 +1531,7 @@ function HomeContent() {
 
     // Pantalla completa del MOBA: el juego ocupa toda la pantalla (con mas tiles visibles) y el HUD queda encima.
     const mobaFullView = isFullscreen && arenaMode && viewport.width > 0 && viewport.height > 0;
+    const mobaFullSize = Math.max(1, Math.min(viewport.width, viewport.height));
 
     const hudScale = useMemo(() => {
         if (!isFullscreen || !viewport.width || !viewport.height) {
@@ -2683,9 +2684,9 @@ function HomeContent() {
                     {mobaFullView ? (
                         <style>{`
                             [data-hud-wrap] { display: contents; }
-                            [data-hud-wrap] > :first-child { position: fixed; left: 8px; top: 8px; z-index: 5; }
+                            [data-hud-wrap] > :first-child { display: none; }
                             [data-hud-row] { display: contents; }
-                            [data-hud-left] { position: fixed; left: 190px; bottom: 8px; width: ${Math.floor(CANVAS_BASE_WIDTH * MOBA_FULLVIEW_HUD_SCALE)}px !important; z-index: 0; }
+                            [data-hud-left] { position: fixed; left: calc(50% - ${Math.floor((CANVAS_BASE_WIDTH * MOBA_FULLVIEW_HUD_SCALE) / 2)}px); bottom: 8px; width: ${Math.floor(CANVAS_BASE_WIDTH * MOBA_FULLVIEW_HUD_SCALE)}px !important; z-index: 0; }
                             [data-hud-row] > :nth-child(2) { position: fixed; right: 8px; bottom: 8px; z-index: 5; }
                         `}</style>
                     ) : null}
@@ -2763,11 +2764,12 @@ function HomeContent() {
                                     mobaFullView
                                         ? {
                                               position: "fixed",
-                                              left: 0,
-                                              top: 0,
-                                              width: `${viewport.width}px`,
-                                              height: `${viewport.height}px`,
+                                              left: `${Math.floor((viewport.width - mobaFullSize) / 2)}px`,
+                                              top: `${Math.floor((viewport.height - mobaFullSize) / 2)}px`,
+                                              width: `${mobaFullSize}px`,
+                                              height: `${mobaFullSize}px`,
                                               zIndex: -1,
+                                              ["--moba-skills-bottom" as string]: "104px",
                                           }
                                         : {
                                               width: `${hudLayout.canvasWidth ?? CANVAS_BASE_WIDTH}px`,
@@ -2783,10 +2785,8 @@ function HomeContent() {
                                 <MapRenderer
                                     embedded
                                     mapNumber={selectedMap}
-                                    width={mobaFullView ? viewport.width : hudLayout.canvasWidth}
-                                    height={mobaFullView ? viewport.height : hudLayout.canvasHeight}
-                                    screenWidth={mobaFullView ? viewport.width : undefined}
-                                    screenHeight={mobaFullView ? viewport.height : undefined}
+                                    width={mobaFullView ? mobaFullSize : hudLayout.canvasWidth}
+                                    height={mobaFullView ? mobaFullSize : hudLayout.canvasHeight}
                                     connection={connection}
                                     equipRequest={equipRequest}
                                     useItemClickRequest={useItemClickRequest}

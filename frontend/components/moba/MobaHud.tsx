@@ -166,7 +166,10 @@ function Minimap({ state }: { state: MobaState }) {
 function SkillPanel({ state }: { state: MobaState }) {
     if (state.skills.length === 0) {
         return (
-            <div className="pointer-events-auto absolute bottom-2 left-1/2 -translate-x-1/2 rounded-md border border-white/15 bg-black/65 px-3 py-1 text-[11px] text-stone-300">
+            <div
+                className="pointer-events-auto absolute left-1/2 -translate-x-1/2 rounded-md border border-white/15 bg-black/65 px-3 py-1 text-[11px] text-stone-300"
+                style={{ bottom: "var(--moba-skills-bottom, 8px)" }}
+            >
                 Este heroe pelea con armas (sin habilidades)
             </div>
         );
@@ -176,7 +179,10 @@ function SkillPanel({ state }: { state: MobaState }) {
         window.dispatchEvent(new CustomEvent("mobao:send", { detail: createMobaSkillPacket(slot) }));
 
     return (
-        <div className="pointer-events-auto absolute bottom-2 left-1/2 flex -translate-x-1/2 flex-col items-center gap-1">
+        <div
+            className="pointer-events-auto absolute left-1/2 flex -translate-x-1/2 flex-col items-center gap-1"
+            style={{ bottom: "var(--moba-skills-bottom, 8px)" }}
+        >
             {state.points > 0 ? (
                 <div className="rounded bg-amber-400/90 px-2 py-0.5 text-[11px] font-semibold text-black">
                     {state.points} punto{state.points > 1 ? "s" : ""} de habilidad: elegi donde invertirlo
