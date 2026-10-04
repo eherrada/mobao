@@ -66,7 +66,7 @@ function handleDebugRequest(request: any, response: any): boolean {
     if (url.pathname === "/debug/state") {
         const map = Number(url.searchParams.get("map") ?? 0);
         const players = Object.values(vars.personajes)
-            .filter((entity: any) => entity && (!map || entity.map === map))
+            .filter((entity: any) => entity && !entity.cerrado && (!map || entity.map === map))
             .map(snapshotEntity);
         const npcs = Object.values(vars.npcs)
             .filter((entity: any) => entity && (!map || entity.map === map))
@@ -99,6 +99,22 @@ function handleDebugRequest(request: any, response: any): boolean {
         const report = match.perfReport();
         if (url.searchParams.get("reset")) match.resetPerf();
         json(response, 200, report);
+        return true;
+    }
+
+    // Lee o ajusta en vivo los multiplicadores de balance (solo desarrollo; los usa tuneBalance.ts).
+    if (url.pathname === "/debug/balance") {
+        const stats = require("./heroes").STATS;
+        const hero = url.searchParams.get("hero");
+
+        if (hero !== null && request.method === "POST" && stats[hero]) {
+            for (const key of ["hp", "phys", "spell"]) {
+                const value = Number(url.searchParams.get(key));
+                if (Number.isFinite(value) && value > 0) stats[hero][key] = value;
+            }
+        }
+
+        json(response, 200, stats);
         return true;
     }
 

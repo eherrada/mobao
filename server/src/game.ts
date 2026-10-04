@@ -751,7 +751,7 @@ function applyMagicBonuses(baseDamage: number, caster: GameCharacter) {
         magicPenetration += Number(item.magicPenetration ?? 0);
     }
 
-    damage = Math.floor(damage * getMagicDamageModifier(caster.idClase));
+    damage = Math.floor(damage * getMagicDamageModifier(caster.idClase) * Number(caster.mobaSpellMult ?? 1));
 
     return { damage, magicPenetration };
 }
@@ -7645,7 +7645,9 @@ function Game(this: GameApi) {
             const dmgUser = funct.randomIntFromInterval(user.minHit, user.maxHit);
 
             const dmg = Math.floor(
-                (3 * dmgArma + (dmgMaxArma / 5) * Math.max(0, user.attrFuerza - 15) + dmgUser) * modClase,
+                (3 * dmgArma + (dmgMaxArma / 5) * Math.max(0, user.attrFuerza - 15) + dmgUser) *
+                    modClase *
+                    Number(user.mobaPhysMult ?? 1),
             );
 
             return dmg;

@@ -10,6 +10,7 @@ export const PACKET = {
     connectCharacter: 212,
     attackMele: 229,
     attackSpell: 243,
+    attackRange: 236,
 } as const;
 
 export const DIR = { up: 1, down: 2, right: 3, left: 4 } as const;
@@ -54,6 +55,7 @@ export type BotOptions = {
     matchId?: string;
     team?: "blue" | "red";
     race?: number;
+    exactMana?: boolean;
 };
 
 export class Bot {
@@ -85,6 +87,7 @@ export class Bot {
                     matchId: this.opts.matchId,
                     team: this.opts.team,
                     race: this.opts.race,
+                    exactMana: this.opts.exactMana,
                 });
                 this.send(new Writer(PACKET.connectCharacter).string(ticket).byte(3).byte(this.opts.templateId).buffer());
                 setTimeout(resolve, 800);
@@ -106,6 +109,10 @@ export class Bot {
 
     melee() {
         this.send(new Writer(PACKET.attackMele).buffer());
+    }
+
+    range(x: number, y: number) {
+        this.send(new Writer(PACKET.attackRange).byte(x).byte(y).buffer());
     }
 
     spell(slot: number, x: number, y: number) {

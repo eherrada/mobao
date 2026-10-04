@@ -365,6 +365,8 @@ export type RuntimeCharacter = {
     mobaMatchId?: string;
     mobaTeam?: "blue" | "red";
     mobaSlot?: number;
+    mobaPhysMult?: number;
+    mobaSpellMult?: number;
     mobaRespawnAt?: number;
     challengeTeam?: 1 | 2 | null;
     challengeLockedUntil?: number;

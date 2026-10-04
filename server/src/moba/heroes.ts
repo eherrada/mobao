@@ -24,6 +24,32 @@ const KITS: Record<number, number[]> = {
     7: [],
 };
 
+/**
+ * Balance del MOBA. Multiplicadores sobre el heroe de plantilla (nivel 50), solo en partidas MOBA:
+ *  hp    vida maxima
+ *  phys  dano fisico (melee y arco)
+ *  spell dano de hechizos
+ * HP_SCALE alarga todos los duelos por igual. Los valores salen de la matriz de duelos
+ * (server/src/scripts/duelMatrix.ts); ver MOBAO.md.
+ */
+const HP_SCALE = Number(process.env.MOBA_HP_SCALE) || 2;
+
+const STATS: Record<number, { hp: number; phys: number; spell: number }> = {
+    0: { hp: 1, phys: 1, spell: 1 },
+    1: { hp: 1, phys: 1, spell: 1 },
+    2: { hp: 1, phys: 1, spell: 1 },
+    3: { hp: 1, phys: 1, spell: 1 },
+    4: { hp: 1, phys: 1, spell: 1 },
+    5: { hp: 1, phys: 1, spell: 1 },
+    6: { hp: 1, phys: 1, spell: 1 },
+    7: { hp: 1, phys: 1, spell: 1 },
+};
+
+function statsFor(templateId: number) {
+    const s = STATS[templateId] ?? { hp: 1, phys: 1, spell: 1 };
+    return { hp: s.hp * HP_SCALE, phys: s.phys, spell: s.spell };
+}
+
 function spellsFor(templateId: number): Record<number, { idSpell: number }> | undefined {
     const kit = KITS[templateId];
 
@@ -37,4 +63,4 @@ function spellsFor(templateId: number): Record<number, { idSpell: number }> | un
     return spells;
 }
 
-module.exports = { spellsFor, KITS };
+module.exports = { spellsFor, statsFor, KITS, STATS };

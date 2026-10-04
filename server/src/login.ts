@@ -256,6 +256,7 @@ export type LoginApi = {
                 y: number;
             };
             markAsBot?: boolean;
+            exactMana?: boolean;
             adminSummonedBot?: {
                 ownerId: EntityId;
                 level: number;
@@ -423,6 +424,7 @@ function Login(this: LoginApi) {
                     team?: string;
                     matchId?: string;
                     race?: number;
+                    exactMana?: boolean;
                 };
                 const botTemplateId = Number(botPayload.templateId ?? idChar);
                 let spawnMapId = Number(botPayload.mapId ?? 0);
@@ -473,6 +475,7 @@ function Login(this: LoginApi) {
                                   }
                                 : undefined,
                         markAsBot: true,
+                        exactMana: Boolean(botPayload.exactMana),
                         moba:
                             botMoba ??
                             (botPayload.team === "blue" || botPayload.team === "red"
@@ -1019,6 +1022,7 @@ function Login(this: LoginApi) {
                 y: number;
             };
             markAsBot?: boolean;
+            exactMana?: boolean;
             adminSummonedBot?: {
                 ownerId: EntityId;
                 level: number;
@@ -1065,9 +1069,13 @@ function Login(this: LoginApi) {
         const baseAttrAgilidad = 18 + vars.balanceRazas[character.idRaza].agilidad;
         const baseAttrInteligencia = 18 + vars.balanceRazas[character.idRaza].inteligencia;
         const baseAttrConstitucion = 18 + vars.balanceRazas[character.idRaza].constitucion;
-        const maxHp = balance.getMaxHpForLevel(character.idClase, baseAttrConstitucion, targetLevel);
+        const mobaStats = options?.moba ? require("./moba/heroes").statsFor(idChar) : undefined;
+        const maxHp = Math.round(
+            balance.getMaxHpForLevel(character.idClase, baseAttrConstitucion, targetLevel) * (mobaStats?.hp ?? 1),
+        );
         const baseMaxMana = balance.getMaxManaForLevel(character.idClase, baseAttrInteligencia, targetLevel);
-        const maxMana = options?.markAsBot ? Math.max(baseMaxMana, LOAD_BOT_MIN_MANA) : baseMaxMana;
+        const maxMana =
+            options?.markAsBot && !options.exactMana ? Math.max(baseMaxMana, LOAD_BOT_MIN_MANA) : baseMaxMana;
         const minHit = balance.getMinHitForLevel(character.idClase, targetLevel);
         const maxHit = balance.getMaxHitForLevel(character.idClase, targetLevel);
 
@@ -1096,6 +1104,8 @@ function Login(this: LoginApi) {
             arenaRoomId: arenaRoomId || null,
             pvpChar: isPvpCharacter,
             mobaTeam: options?.moba?.team,
+            mobaPhysMult: mobaStats?.phys ?? 1,
+            mobaSpellMult: mobaStats?.spell ?? 1,
             mobaMatchId: options?.moba?.matchId,
             mobaSlot: options?.moba?.slot ?? 0,
             botLoad: isSyntheticBot,
