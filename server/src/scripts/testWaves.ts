@@ -19,13 +19,13 @@ async function main() {
     await hero.connect();
     const mapId = (await debugMatches()).find((m) => m.id === matchId)!.mapId as number;
 
-    // Primera oleada: 3 melee + 3 magos por carril y equipo (spawn escalonado ~0,9 s entre minions).
-    await sleep(2000 + 6 * 900 + 1500);
+    // Primera oleada: 2 melee + 2 magos por carril y equipo (spawn escalonado ~0,9 s entre minions).
+    await sleep(2000 + 4 * 900 + 1500);
     let st = await debugState(mapId);
     const ofLane = (kind: string, team: string, lane: string) =>
         st.npcs.filter((n) => n.kind === kind && n.team === team && n.lane === lane && n.hp > 0).length;
 
-    check(ofLane("melee", "blue", "top") >= 3 && ofLane("caster", "blue", "top") >= 3, `oleada 1: 3 melee y 3 magos azules en top (${ofLane("melee", "blue", "top")} / ${ofLane("caster", "blue", "top")})`);
+    check(ofLane("melee", "blue", "top") >= 2 && ofLane("caster", "blue", "top") >= 2, `oleada 1: 2 melee y 2 magos azules en top (${ofLane("melee", "blue", "top")} / ${ofLane("caster", "blue", "top")})`);
     check(st.npcs.filter((n) => n.kind === "cannon").length === 0, "la primera oleada no trae minion de asedio");
 
     // Tras 3 oleadas aparece el minion de asedio.

@@ -13,10 +13,12 @@ const envNumber = (name: string, fallback: number) => {
 };
 
 const TIMING = {
-    waveIntervalMs: envNumber("MOBA_WAVE_MS", 30_000),
-    firstWaveDelayMs: envNumber("MOBA_FIRST_WAVE_MS", 10_000),
-    meleePerWave: envNumber("MOBA_MELEE_PER_WAVE", 3),
-    castersPerWave: envNumber("MOBA_CASTERS_PER_WAVE", 3),
+    // Calibrado por distancia: un carril mide ~400 tiles y el minion avanza 5 tiles/s (cruza en ~80 s, se
+    // encuentran en el medio a los ~40 s): una oleada cada 40 s deja ~1 en camino por lado.
+    waveIntervalMs: envNumber("MOBA_WAVE_MS", 40_000),
+    firstWaveDelayMs: envNumber("MOBA_FIRST_WAVE_MS", 15_000),
+    meleePerWave: envNumber("MOBA_MELEE_PER_WAVE", 2),
+    castersPerWave: envNumber("MOBA_CASTERS_PER_WAVE", 2),
     cannonEveryWaves: envNumber("MOBA_CANNON_EVERY", 3),
     minionSpawnGapMs: 900,
     heroRespawnMs: envNumber("MOBA_RESPAWN_MS", 8_000),
