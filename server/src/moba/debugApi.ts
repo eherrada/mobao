@@ -35,6 +35,7 @@ function snapshotEntity(entity: any) {
         tier: entity.tier ?? null,
         invulnerable: Boolean(entity.invulnerable),
         str: entity.attrFuerza ?? null,
+        weapon: entity.idItemWeapon ?? null,
         campIndex: entity.campIndex ?? null,
         campSlot: entity.campSlot ?? null,
         matchId: entity.mobaMatchId ?? null,

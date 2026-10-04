@@ -50,19 +50,19 @@ const nexus = {
 
 const minion = {
     ...common,
-    hp: 450,
-    maxHp: 450,
-    def: 5,
-    defM: 5,
+    hp: 260,
+    maxHp: 260,
+    def: 3,
+    defM: 3,
     magicDef: 0,
-    minHit: 18,
-    maxHit: 26,
+    minHit: 24,
+    maxHit: 34,
     exp: 60,
     gold: 20,
     stationary: 0,
     structure: "minion",
     aggroRange: 7,
-    attackIntervalMs: 1200,
+    attackIntervalMs: 1000,
     moveIntervalMs: 250,
 };
 

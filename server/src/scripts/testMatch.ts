@@ -107,6 +107,7 @@ async function main() {
     const back = st.players.find((p) => p.name === "BlueNear")!;
     check(!back.dead && back.hp > 0, `el heroe reaparecio (hp ${back.hp}/${back.maxHp})`);
     check(back.x < 60 && back.y > 190, `reaparecio en la base azul (${back.x},${back.y})`);
+    check(back.weapon > 0, `el heroe reaparece con su arma equipada (item ${back.weapon})`);
 
     // --- 7. Destruccion en cadena y victoria ---------------------------------------------------
     await debugPost(`/debug/destroy?id=${outerTop.id}`);

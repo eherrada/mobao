@@ -414,6 +414,10 @@ function respawnHero(match: Match, hero: any) {
 
     if (hero.dead) {
         game.revivirUsuario(hero.id, { hp: hero.maxHp, mana: hero.maxMana });
+        // El servidor reequipa al heroe al revivir; el cliente necesita el inventario actualizado
+        // (si no, cree que no tiene arma y la tecla de ataque no hace nada).
+        handleProtocol.sendMyCharacter(hero);
+        socket.send(client);
     } else {
         hero.hp = hero.maxHp;
         hero.mana = hero.maxMana;
