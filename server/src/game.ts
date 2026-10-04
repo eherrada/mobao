@@ -7041,6 +7041,7 @@ function Game(this: GameApi) {
             if (isHostileSpell && npc.invulnerable) {
                 withUserClient(idUser, (userClient) => {
                     handleProtocol.console("Esta estructura es invulnerable por ahora.", "white", 0, 0, userClient);
+                    handleProtocol.dialog(idUser, "Invulnerable por ahora", "", "#ffb347", 0, userClient);
                 });
                 return 0;
             }
@@ -7048,6 +7049,7 @@ function Game(this: GameApi) {
             if (isHostileSpell && mobaTeams.areAllies(user, npc)) {
                 withUserClient(idUser, (userClient) => {
                     handleProtocol.console("No puedes atacar a tu propio equipo.", "white", 0, 0, userClient);
+                    handleProtocol.dialog(idUser, "¡Es de tu equipo!", "", "#ffb347", 0, userClient);
                 });
                 return 0;
             }
@@ -7671,6 +7673,7 @@ function Game(this: GameApi) {
             if (mobaTeams.areAllies(user, npc)) {
                 withUserClient(idUser, (userClient) => {
                     handleProtocol.console("No puedes atacar a tu propio equipo.", "white", 0, 0, userClient);
+                    handleProtocol.dialog(idUser, "¡Es de tu equipo!", "", "#ffb347", 0, userClient);
                 });
                 return 0;
             }
@@ -7678,6 +7681,7 @@ function Game(this: GameApi) {
             if (npc.invulnerable) {
                 withUserClient(idUser, (userClient) => {
                     handleProtocol.console("Esta estructura es invulnerable por ahora.", "white", 0, 0, userClient);
+                    handleProtocol.dialog(idUser, "Invulnerable por ahora", "", "#ffb347", 0, userClient);
                 });
                 return 0;
             }
