@@ -51,6 +51,7 @@ export const CLIENT_PACKET_ID = {
     panelSnapshot: 53,
     panelSnapshotChunk: 54,
     partyState: 55,
+    mobaState: 82,
     clanState: 56,
     characterStatsSnapshot: 57,
     characterStatsSnapshotChunk: 58,
@@ -783,6 +784,7 @@ export type ParsedServerPacket =
           payload: CharacterStatsSnapshotChunk;
       }
     | { type: "partyState"; payload: PartyHudStateDelta }
+    | { type: "mobaState"; payload: unknown }
     | { type: "clanState"; payload: ClanHudStateDelta }
     | { type: "startCastBar"; payload: { id: number; durationMs: number } }
     | { type: "stopCastBar"; payload: { id: number } }
@@ -1846,6 +1848,16 @@ function parseServerPacketById(
                 return {
                     type: "partyState",
                     payload: JSON.parse(rawMembers) as PartyHudStateDelta,
+                };
+            } catch {
+                return { type: "unknown", payload: { packetId } };
+            }
+        }
+        case CLIENT_PACKET_ID.mobaState: {
+            try {
+                return {
+                    type: "mobaState",
+                    payload: JSON.parse(reader.getString()) as unknown,
                 };
             } catch {
                 return { type: "unknown", payload: { packetId } };

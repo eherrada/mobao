@@ -66,6 +66,27 @@ const minion = {
     moveIntervalMs: 250,
 };
 
+// Mercader de cada base: usa el sistema de comercio de AO (doble click). Precio = valor del objeto.
+const SHOP_ITEMS = [38, 37, 36, 39, 645, 123, 19, 665, 479, 885, 890, 521, 128, 131, 1001, 238, 196];
+
+const shop = {
+    ...common,
+    npcType: 10,
+    idHead: 303,
+    movement: 1,
+    hp: 0,
+    maxHp: 0,
+    minHit: 0,
+    maxHit: 0,
+    def: 0,
+    noRespawn: 1,
+    stationary: 1,
+    invulnerable: 1,
+    structure: "shop",
+    desc: "Compra equipo con el oro de la partida.",
+    objs: SHOP_ITEMS.map((item) => ({ cant: 1, item })),
+};
+
 const templates = [
     { id: 9601, data: { ...tower, name: "Torre Azul", idBody: 554, team: "blue" } },
     { id: 9602, data: { ...tower, name: "Torre Roja", idBody: 181, team: "red" } },
@@ -73,6 +94,7 @@ const templates = [
     { id: 9604, data: { ...nexus, name: "Nexo Rojo", idBody: 394, team: "red" } },
     { id: 9605, data: { ...minion, name: "Minion Azul", idBody: 15, team: "blue" } },
     { id: 9606, data: { ...minion, name: "Minion Rojo", idBody: 170, team: "red" } },
+    { id: 9607, data: { ...shop, name: "Mercader del Nexo", idBody: 180, team: "blue" } },
 ];
 
 async function main() {

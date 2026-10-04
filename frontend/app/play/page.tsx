@@ -14,6 +14,7 @@ import React, {
     useState,
 } from "react";
 import { MapRenderer } from "../../components/game";
+import { MobaHud } from "../../components/moba/MobaHud";
 import AdminIntervalsModal from "../../components/AdminIntervalsModal";
 import BuffStatusSidebar from "../../components/BuffStatusSidebar";
 import InventoryFloatingPanel from "../../components/InventoryFloatingPanel";
@@ -2727,6 +2728,7 @@ function HomeContent() {
                                     hud={hud}
                                     runtimeTiming={runtimeTiming}
                                 />
+                                <MobaHud />
                                 <MapRenderer
                                     embedded
                                     mapNumber={selectedMap}

@@ -1,0 +1,207 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+
+/** Estado de partida que envia el servidor (server/src/moba/match.ts → broadcastState). */
+type MobaState = {
+    phase: "running" | "ended";
+    winner: 0 | 1 | null;
+    elapsed: number;
+    resetIn: number;
+    team: 0 | 1;
+    respawnIn: number;
+    size: number;
+    me: { id: number; x: number; y: number; gold: number };
+    score: Record<"blue" | "red", { towers: number; kills: number; nexus: number }>;
+    heroes: Array<{ id: number; name: string; team: 0 | 1; k: number; d: number; cs: number; dead: boolean }>;
+    /** [x, y, tipo(0 heroe,1 minion,2 torre,3 nexo,4 tienda), equipo(0 azul,1 rojo)] */
+    ents: Array<[number, number, number, number]>;
+};
+
+const TEAM_COLOR = ["#4aa3ff", "#ff5a4a"] as const;
+const TEAM_NAME = ["AZUL", "ROJO"] as const;
+const MINIMAP_SIZE = 150;
+
+// Trazado de carriles para el fondo del minimapa (mismo layout que server/src/scripts/generateMobaMap.ts).
+const LANES: Array<Array<[number, number]>> = [
+    [[30, 225], [24, 225], [24, 24], [225, 24], [225, 30]],
+    [[30, 225], [225, 30]],
+    [[30, 225], [30, 231], [231, 231], [231, 30], [225, 30]],
+];
+
+function formatClock(totalSeconds: number) {
+    const m = Math.floor(totalSeconds / 60);
+    const s = totalSeconds % 60;
+    return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+}
+
+function Minimap({ state }: { state: MobaState }) {
+    const canvasRef = useRef<HTMLCanvasElement | null>(null);
+
+    useEffect(() => {
+        const canvas = canvasRef.current;
+        const ctx = canvas?.getContext("2d");
+
+        if (!canvas || !ctx) return;
+
+        const scale = MINIMAP_SIZE / state.size;
+        const px = (v: number) => (v - 1) * scale;
+
+        ctx.fillStyle = "#0b1410";
+        ctx.fillRect(0, 0, MINIMAP_SIZE, MINIMAP_SIZE);
+
+        // Rio en la diagonal.
+        ctx.strokeStyle = "rgba(70,130,200,0.45)";
+        ctx.lineWidth = Math.max(2, 5 * scale);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(MINIMAP_SIZE, MINIMAP_SIZE);
+        ctx.stroke();
+
+        // Carriles.
+        ctx.strokeStyle = "rgba(190,170,110,0.55)";
+        ctx.lineWidth = Math.max(2, 10 * scale);
+        for (const lane of LANES) {
+            ctx.beginPath();
+            lane.forEach(([x, y], i) => (i === 0 ? ctx.moveTo(px(x), px(y)) : ctx.lineTo(px(x), px(y))));
+            ctx.stroke();
+        }
+
+        for (const [x, y, kind, team] of state.ents) {
+            ctx.fillStyle = TEAM_COLOR[team];
+
+            if (kind === 3) {
+                ctx.fillRect(px(x) - 5, px(y) - 5, 10, 10);
+            } else if (kind === 2) {
+                ctx.fillRect(px(x) - 3, px(y) - 3, 6, 6);
+            } else if (kind === 4) {
+                ctx.fillRect(px(x) - 2, px(y) - 2, 4, 4);
+            } else if (kind === 0) {
+                ctx.beginPath();
+                ctx.arc(px(x), px(y), 4, 0, Math.PI * 2);
+                ctx.fill();
+            } else {
+                ctx.fillRect(px(x) - 1, px(y) - 1, 2, 2);
+            }
+        }
+
+        // Marca propia.
+        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(px(state.me.x), px(state.me.y), 6, 0, Math.PI * 2);
+        ctx.stroke();
+    }, [state]);
+
+    return (
+        <canvas
+            ref={canvasRef}
+            width={MINIMAP_SIZE}
+            height={MINIMAP_SIZE}
+            className="rounded-md border border-white/20 bg-black/60 shadow-lg"
+        />
+    );
+}
+
+export function MobaHud() {
+    const [state, setState] = useState<MobaState | null>(null);
+    const [showBoard, setShowBoard] = useState(false);
+
+    useEffect(() => {
+        const onState = (event: Event) => setState((event as CustomEvent<MobaState>).detail);
+
+        window.addEventListener("mobao:state", onState);
+        return () => window.removeEventListener("mobao:state", onState);
+    }, []);
+
+    if (!state) return null;
+
+    const mine = state.team;
+    const won = state.winner !== null && state.winner === mine;
+    const bluePanel = state.score.blue;
+    const redPanel = state.score.red;
+
+    return (
+        <div className="pointer-events-none absolute inset-0 z-30 select-none text-white">
+            {/* Marcador superior */}
+            <div className="absolute left-1/2 top-2 flex -translate-x-1/2 items-stretch overflow-hidden rounded-md border border-white/15 bg-black/65 text-xs shadow-lg">
+                <div className="flex flex-col px-3 py-1" style={{ borderBottom: `3px solid ${TEAM_COLOR[0]}` }}>
+                    <span className="font-semibold" style={{ color: TEAM_COLOR[0] }}>
+                        {bluePanel.towers}T · {bluePanel.kills}K
+                    </span>
+                    <span className="text-[10px] text-stone-300">Nexo {bluePanel.nexus}%</span>
+                </div>
+                <div className="flex items-center px-3 font-mono text-sm">{formatClock(state.elapsed)}</div>
+                <div className="flex flex-col px-3 py-1 text-right" style={{ borderBottom: `3px solid ${TEAM_COLOR[1]}` }}>
+                    <span className="font-semibold" style={{ color: TEAM_COLOR[1] }}>
+                        {redPanel.kills}K · {redPanel.towers}T
+                    </span>
+                    <span className="text-[10px] text-stone-300">Nexo {redPanel.nexus}%</span>
+                </div>
+            </div>
+
+            {/* Oro y marcador */}
+            <div className="pointer-events-auto absolute right-2 top-2 flex flex-col items-end gap-1">
+                <div className="rounded-md border border-white/15 bg-black/65 px-2 py-1 text-xs">
+                    <span style={{ color: TEAM_COLOR[mine] }}>Equipo {TEAM_NAME[mine]}</span> · Oro{" "}
+                    <span className="text-amber-300">{state.me.gold}</span>
+                </div>
+                <button
+                    type="button"
+                    onClick={() => setShowBoard((v) => !v)}
+                    className="rounded-md border border-white/15 bg-black/65 px-2 py-1 text-[11px] hover:bg-black/80"
+                >
+                    {showBoard ? "Ocultar marcador" : "Marcador"}
+                </button>
+                {showBoard ? (
+                    <div className="w-56 rounded-md border border-white/15 bg-black/80 p-2 text-[11px]">
+                        {[0, 1].map((team) => (
+                            <div key={team} className="mb-1">
+                                <div className="font-semibold" style={{ color: TEAM_COLOR[team] }}>
+                                    {TEAM_NAME[team]}
+                                </div>
+                                {state.heroes
+                                    .filter((hero) => hero.team === team)
+                                    .map((hero) => (
+                                        <div key={hero.id} className="flex justify-between gap-2">
+                                            <span className={hero.dead ? "text-stone-500 line-through" : ""}>
+                                                {hero.name}
+                                            </span>
+                                            <span className="font-mono text-stone-300">
+                                                {hero.k}/{hero.d}/{hero.cs}
+                                            </span>
+                                        </div>
+                                    ))}
+                            </div>
+                        ))}
+                        <div className="text-[10px] text-stone-400">K/D/Minions</div>
+                    </div>
+                ) : null}
+            </div>
+
+            {/* Minimapa */}
+            <div className="absolute bottom-2 left-2">
+                <Minimap state={state} />
+            </div>
+
+            {/* Respawn y fin de partida */}
+            {state.respawnIn > 0 ? (
+                <div className="absolute left-1/2 top-1/3 -translate-x-1/2 rounded-md bg-black/70 px-4 py-2 text-center text-sm">
+                    Reapareces en <span className="font-mono text-lg">{state.respawnIn}</span> s
+                </div>
+            ) : null}
+
+            {state.phase === "ended" ? (
+                <div className="absolute left-1/2 top-1/4 -translate-x-1/2 rounded-lg border border-white/20 bg-black/80 px-6 py-4 text-center">
+                    <div className="text-2xl font-bold" style={{ color: won ? "#7CFC9A" : "#ff8080" }}>
+                        {won ? "¡VICTORIA!" : "DERROTA"}
+                    </div>
+                    <div className="mt-1 text-xs text-stone-300">
+                        Gana el equipo {state.winner !== null ? TEAM_NAME[state.winner] : ""} · nueva partida en{" "}
+                        {state.resetIn} s
+                    </div>
+                </div>
+            ) : null}
+        </div>
+    );
+}

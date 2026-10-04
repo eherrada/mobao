@@ -57,7 +57,6 @@ function spawnMobaNpc(opts: SpawnOptions): any | null {
     npc.tierraInvalida = datNpc.tierraInvalida ?? 0;
     npc.desc = datNpc.desc ?? "";
     npc.drop = [];
-    npc.objs = [];
     npc.cooldownAtaque = Date.now();
 
     // Campos del MOBA.
@@ -77,7 +76,8 @@ function spawnMobaNpc(opts: SpawnOptions): any | null {
     npc.nextMoveAt = 0;
     npc.waypoints = opts.waypoints;
     npc.wpIndex = 1;
-    npc.invulnerable = false;
+    npc.invulnerable = Boolean(datNpc.invulnerable);
+    npc.objs = Array.isArray(datNpc.objs) ? datNpc.objs : [];
 
     vars.npcs[npc.id] = npc;
     vars.areaNpc[npc.id] = [];

@@ -146,7 +146,7 @@ function main() {
     }
 
     // Estructuras: el mapa base NO lleva NPCs; cada partida las crea desde moba.json.
-    type Structure = { kind: "tower" | "nexus"; team: Team; lane?: string; tier?: number; x: number; y: number };
+    type Structure = { kind: "tower" | "nexus" | "shop"; team: Team; lane?: string; tier?: number; x: number; y: number };
     const structures: Structure[] = [];
     const clear = (p: Pt) => {
         for (let dy = -1; dy <= 1; dy++) {
@@ -171,6 +171,10 @@ function main() {
     place({ kind: "tower", team: "blue", tier: 3, x: BLUE_BASE.x - 7, y: BLUE_BASE.y + 7 });
     place({ kind: "tower", team: "red", tier: 3, x: RED_BASE.x - 7, y: RED_BASE.y + 7 });
     place({ kind: "tower", team: "red", tier: 3, x: RED_BASE.x + 7, y: RED_BASE.y - 7 });
+
+    // Tienda de cada equipo, junto al punto de aparicion de los heroes.
+    place({ kind: "shop", team: "blue", x: 21, y: 238 });
+    place({ kind: "shop", team: "red", x: 234, y: 17 });
 
     // Dos torres por carril y equipo: exterior (tier 1, hacia el medio) e interior (tier 2).
     for (const [laneName, lane] of Object.entries(LANES)) {

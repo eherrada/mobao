@@ -239,6 +239,7 @@ module.exports = {
     syncVisibility,
     installProtocolFilters,
     isHiddenEntityFor,
+    isVisibleToTeam,
     isHiddenIdFor,
     isPosHiddenFor,
     VISION_RADIUS,

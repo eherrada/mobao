@@ -109,6 +109,16 @@ function Respawn(this: any) {
                     pjSelected.deathProcessed = true;
                 }
 
+                if (user.mobaMatchId && pjSelected.mobaMatchId === user.mobaMatchId) {
+                    const mobaMatch = require("./moba/match");
+
+                    if (pjSelected.isNpc && pjSelected.structure === "minion") {
+                        mobaMatch.onMinionKill(user);
+                    } else if (!pjSelected.isNpc) {
+                        mobaMatch.onHeroKill(user, pjSelected);
+                    }
+                }
+
                 const challengeCombatDeath = Boolean(challengeManager.getBusyMatchByCharacter(pjSelected));
 
                 if (!pjSelected.isNpc) {

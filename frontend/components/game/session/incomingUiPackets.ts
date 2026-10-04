@@ -6,6 +6,11 @@ export async function handleIncomingUiPacket({
     ctx,
 }: IncomingPacketHandlerArgs): Promise<boolean> {
     switch (packet.type) {
+        case "mobaState":
+            // El HUD del MOBA escucha este evento (components/moba/MobaHud.tsx).
+            window.dispatchEvent(new CustomEvent("mobao:state", { detail: packet.payload }));
+            return true;
+
         case "console":
             if (
                 /Comienzas a pescar\.|Has dejado de pescar\.|La pesca se canceló\.|Debes equiparte la caña de pescar/i.test(

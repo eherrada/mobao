@@ -410,6 +410,7 @@ export type HandleProtocolApi = {
     panelSnapshot: (snapshot: unknown, client: RuntimeClient) => void;
     characterStatsSnapshot: (snapshot: unknown, client: RuntimeClient) => void;
     partyState: (delta: PartyRuntimeStateDelta, client: RuntimeClient) => void;
+    mobaState: (state: unknown, client: RuntimeClient) => void;
     clanState: (delta: ClanRuntimeStateDelta, client: RuntimeClient) => void;
     startCastBar: (idUser: EntityId, durationMs: number, client: RuntimeClient) => void;
     stopCastBar: (idUser: EntityId, client: RuntimeClient) => void;
@@ -1631,6 +1632,12 @@ const handleServer: HandleProtocolApi = {
             pkg.writeString(chunk);
             socket.send(client);
         });
+    },
+
+    mobaState(state, client) {
+        pkg.setPackageID(pkg.clientPacketID.mobaState);
+        pkg.writeString(JSON.stringify(state));
+        socket.send(client);
     },
 
     partyState(delta, client) {

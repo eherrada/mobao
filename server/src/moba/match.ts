@@ -14,7 +14,7 @@ type Team = "blue" | "red";
 type Pt = { x: number; y: number };
 
 type StructureRecord = {
-    def: { kind: "tower" | "nexus"; team: Team; lane?: string; tier?: number; x: number; y: number };
+    def: { kind: "tower" | "nexus" | "shop"; team: Team; lane?: string; tier?: number; x: number; y: number };
     npcId: number;
 };
 
@@ -23,6 +23,7 @@ type Match = {
     mapId: number;
     state: "running" | "ended";
     createdAt: number;
+    startedAt: number;
     nextWaveAt: number;
     waveCount: number;
     resetAt: number;
@@ -188,6 +189,7 @@ function createMatch(id: string): Match {
         mapId,
         state: "running",
         createdAt: now,
+        startedAt: now,
         nextWaveAt: now + config.TIMING.firstWaveDelayMs,
         waveCount: 0,
         resetAt: 0,
@@ -226,7 +228,7 @@ function recomputeInvulnerability(match: Match) {
 
         for (const record of own) {
             const npc = vars.npcs[record.npcId];
-            if (!npc) continue;
+            if (!npc || record.def.kind === "shop") continue;
 
             if (record.def.kind === "nexus") {
                 npc.invulnerable = aliveTier(3).length > 0;
@@ -291,10 +293,23 @@ function endMatch(match: Match, winner: Team) {
     announce(match, `¡Victoria del equipo ${teamLabel(winner)}! Nueva partida en ${Math.round(config.TIMING.resetAfterWinMs / 1000)} s.`, "yellow");
 }
 
+function onHeroKill(killer: any, victim: any) {
+    if (victim.mobaKillCredited) return;
+
+    victim.mobaKillCredited = true;
+    killer.mobaKills = (killer.mobaKills ?? 0) + 1;
+}
+
+function onMinionKill(killer: any) {
+    killer.mobaCs = (killer.mobaCs ?? 0) + 1;
+}
+
 function onHeroDeath(user: any) {
     const match = matches[user.mobaMatchId];
 
     if (!match) return;
+
+    user.mobaDeaths = (user.mobaDeaths ?? 0) + 1;
 
     user.mobaRespawnAt = Date.now() + config.TIMING.heroRespawnMs;
     const client = vars.clients[user.id];
@@ -322,6 +337,7 @@ function respawnHero(match: Match, hero: any) {
     if (!client) return;
 
     hero.mobaRespawnAt = 0;
+    hero.mobaKillCredited = false;
     const spawn = heroSpawnPoint(match, hero.mobaTeam, hero.mobaSlot ?? 0);
 
     if (hero.dead) {
@@ -399,6 +415,7 @@ function resetMatch(match: Match) {
     match.spawnQueue = [];
     match.winner = undefined;
     match.state = "running";
+    match.startedAt = Date.now();
     match.waveCount = 0;
     match.nextWaveAt = Date.now() + config.TIMING.firstWaveDelayMs;
     spawnStructures(match);
@@ -428,6 +445,110 @@ function onHeroDisconnected(user: any) {
 
     if (match && heroesOf(match).filter((hero) => hero.id !== user.id).length === 0) {
         destroyMatch(match);
+    }
+}
+
+const lastStateAt: Record<string, number> = {};
+const KIND_CODE: Record<string, number> = { hero: 0, minion: 1, tower: 2, nexus: 3, shop: 4 };
+
+/** Estado de la partida para el HUD (marcador y minimapa), ~2 veces por segundo. */
+function broadcastState(match: Match, heroes: any[], live: any[], now: number) {
+    if (now - (lastStateAt[match.id] ?? 0) < 500) return;
+
+    lastStateAt[match.id] = now;
+
+    const towers = (team: Team) =>
+        match.structures.filter((s) => s.def.kind === "tower" && s.def.team === team && isAlive(s)).length;
+    const nexusHp = (team: Team) => {
+        const record = match.structures.find((s) => s.def.kind === "nexus" && s.def.team === team);
+        const npc = record ? vars.npcs[record.npcId] : undefined;
+        return npc ? Math.max(0, Math.round((npc.hp / npc.maxHp) * 100)) : 0;
+    };
+    const kills = (team: Team) => heroes.filter((h) => h.mobaTeam === team).reduce((sum, h) => sum + (h.mobaKills ?? 0), 0);
+
+    const entsFor = (team: Team) => {
+        const ents: number[][] = [];
+
+        for (const hero of heroes) {
+            if (hero.dead || hero.cerrado) continue;
+            if (hero.mobaTeam === team || fog.isVisibleToTeam(match.id, team, hero.pos)) {
+                ents.push([hero.pos.x, hero.pos.y, KIND_CODE.hero, hero.mobaTeam === "blue" ? 0 : 1]);
+            }
+        }
+
+        for (const npc of live) {
+            if (npc.hp <= 0 || npc.deathProcessed) continue;
+            const alwaysVisible = npc.structure !== "minion";
+            if (alwaysVisible || npc.team === team || fog.isVisibleToTeam(match.id, team, npc.pos)) {
+                ents.push([npc.pos.x, npc.pos.y, KIND_CODE[npc.structure] ?? 1, npc.team === "blue" ? 0 : 1]);
+            }
+        }
+
+        return ents;
+    };
+
+    const entsByTeam = { blue: entsFor("blue"), red: entsFor("red") };
+    const roster = heroes.map((h) => ({
+        id: h.id,
+        name: h.nameCharacter,
+        team: h.mobaTeam === "blue" ? 0 : 1,
+        k: h.mobaKills ?? 0,
+        d: h.mobaDeaths ?? 0,
+        cs: h.mobaCs ?? 0,
+        dead: Boolean(h.dead),
+    }));
+
+    const base = {
+        phase: match.state,
+        winner: match.winner ? (match.winner === "blue" ? 0 : 1) : null,
+        elapsed: Math.max(0, Math.floor((now - match.startedAt) / 1000)),
+        resetIn: match.state === "ended" ? Math.max(0, Math.ceil((match.resetAt - now) / 1000)) : 0,
+        score: {
+            blue: { towers: towers("blue"), kills: kills("blue"), nexus: nexusHp("blue") },
+            red: { towers: towers("red"), kills: kills("red"), nexus: nexusHp("red") },
+        },
+        heroes: roster,
+        size: config.getMapConfig().size,
+    };
+
+    for (const hero of heroes) {
+        const client = vars.clients[hero.id];
+
+        if (!client || hero.cerrado) continue;
+
+        handleProtocol.mobaState(
+            {
+                ...base,
+                team: hero.mobaTeam === "blue" ? 0 : 1,
+                me: { id: hero.id, x: hero.pos.x, y: hero.pos.y, gold: hero.gold ?? 0 },
+                respawnIn: hero.dead && hero.mobaRespawnAt ? Math.max(0, Math.ceil((hero.mobaRespawnAt - now) / 1000)) : 0,
+                ents: entsByTeam[hero.mobaTeam as Team],
+            },
+            client,
+        );
+    }
+}
+
+const lastGoldAt: Record<string, number> = {};
+
+function grantPassiveGold(match: Match, heroes: any[], now: number) {
+    const last = lastGoldAt[match.id] ?? now;
+
+    if (now - last < 1000) {
+        lastGoldAt[match.id] = last;
+        return;
+    }
+
+    lastGoldAt[match.id] = now;
+    const amount = Math.floor(((now - last) / 1000) * config.TIMING.passiveGoldPerSecond);
+
+    for (const hero of heroes) {
+        const client = vars.clients[hero.id];
+
+        if (!client || hero.dead) continue;
+
+        hero.gold = require("../balance").clampGold(Number(hero.gold ?? 0) + amount);
+        handleProtocol.actGold(hero.gold, client);
     }
 }
 
@@ -478,6 +599,8 @@ function tick() {
         }
 
         fog.syncVisibility(heroes, live);
+        grantPassiveGold(match, heroes, now);
+        broadcastState(match, heroes, live, now);
     }
 }
 
@@ -502,5 +625,7 @@ module.exports = {
     onNpcDestroyed,
     onNpcKilledByNpc,
     onHeroDeath,
+    onHeroKill,
+    onMinionKill,
     onHeroDisconnected,
 };

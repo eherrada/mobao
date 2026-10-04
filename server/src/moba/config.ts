@@ -20,17 +20,19 @@ const TIMING = {
     heroRespawnMs: envNumber("MOBA_RESPAWN_MS", 8_000),
     resetAfterWinMs: envNumber("MOBA_RESET_MS", 15_000),
     teamSize: envNumber("MOBA_TEAM_SIZE", 3),
+    passiveGoldPerSecond: envNumber("MOBA_PASSIVE_GOLD", 8),
 };
 
 const TEMPLATES = {
     tower: { blue: 9601, red: 9602 },
     nexus: { blue: 9603, red: 9604 },
     minion: { blue: 9605, red: 9606 },
+    shop: { blue: 9607, red: 9607 },
 } as const;
 
 type Pt = { x: number; y: number };
 type StructureDef = {
-    kind: "tower" | "nexus";
+    kind: "tower" | "nexus" | "shop";
     team: "blue" | "red";
     lane?: string;
     tier?: number;
