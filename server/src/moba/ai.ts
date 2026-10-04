@@ -77,7 +77,7 @@ function findTargets(npc: any, grid: Grid, range: number): Target[] {
             if (!bucket) continue;
 
             for (const other of bucket) {
-                if (other.id === npc.id || other.invulnerable || !teams.areEnemies(npc, other)) continue;
+                if (other.id === npc.id || other.invulnerable || other.structure === "dummy" || !teams.areEnemies(npc, other)) continue;
 
                 const dist = manhattan(npc.pos, other.pos);
 
@@ -197,6 +197,23 @@ function thinkMinion(npc: any, now: number, grid: Grid) {
     stepToward(npc, goal);
 }
 
+/** Muneco de practica: no ataca, no muere y se cura solo unos segundos despues del ultimo golpe. */
+function thinkDummy(npc: any, now: number) {
+    if (npc.lastSeenHp === undefined) npc.lastSeenHp = npc.hp;
+
+    if (npc.hp < npc.lastSeenHp) npc.lastHitAt = now;
+
+    const nearDeath = npc.hp < npc.maxHp * 0.2;
+    const rested = now - Number(npc.lastHitAt ?? 0) > 2500;
+
+    if (npc.hp < npc.maxHp && (nearDeath || rested)) {
+        npc.hp = npc.maxHp;
+        npcs.broadcastNpcVitals(npc);
+    }
+
+    npc.lastSeenHp = npc.hp;
+}
+
 /** Monstruo neutral: ataca solo a quien lo golpeo, respeta la correa y vuelve a su campamento regenerandose. */
 function thinkJungle(npc: any, now: number) {
     if (npc.paralizado || npc.inmovilizado) return;
@@ -273,6 +290,8 @@ function thinkAll(matchId: string, now: number, matchNpcs: any[]) {
             thinkTower(npc, now, grid);
         } else if (npc.structure === "jungle") {
             thinkJungle(npc, now);
+        } else if (npc.structure === "dummy") {
+            thinkDummy(npc, now);
         }
     }
 }

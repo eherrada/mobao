@@ -14,7 +14,7 @@ type Team = "blue" | "red";
 type Pt = { x: number; y: number };
 
 type StructureRecord = {
-    def: { kind: "tower" | "nexus" | "shop"; team: Team; lane?: string; tier?: number; x: number; y: number };
+    def: { kind: "tower" | "nexus" | "shop" | "dummy"; team: Team; lane?: string; tier?: number; x: number; y: number };
     npcId: number;
 };
 
@@ -271,7 +271,7 @@ function recomputeInvulnerability(match: Match) {
 
         for (const record of own) {
             const npc = vars.npcs[record.npcId];
-            if (!npc || record.def.kind === "shop") continue;
+            if (!npc || record.def.kind === "shop" || record.def.kind === "dummy") continue;
 
             if (record.def.kind === "nexus") {
                 npc.invulnerable = aliveTier(3).length > 0;
@@ -555,7 +555,7 @@ function broadcastState(match: Match, heroes: any[], live: any[], now: number) {
         }
 
         for (const npc of live) {
-            if (npc.hp <= 0 || npc.deathProcessed || npc.structure === "jungle") continue;
+            if (npc.hp <= 0 || npc.deathProcessed || npc.structure === "jungle" || npc.structure === "dummy") continue;
             const alwaysVisible = npc.structure !== "minion";
             if (alwaysVisible || npc.team === team || fog.isVisibleToTeam(match.id, team, npc.pos)) {
                 ents.push([npc.pos.x, npc.pos.y, KIND_CODE[npc.structure] ?? 1, npc.team === "blue" ? 0 : 1]);

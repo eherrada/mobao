@@ -118,6 +118,19 @@ const jungleBig = {
     buff: 1,
 };
 
+const dummy = {
+    ...common,
+    hp: 6000,
+    maxHp: 6000,
+    def: 0,
+    defM: 0,
+    magicDef: 0,
+    minHit: 0,
+    maxHit: 0,
+    stationary: 1,
+    structure: "dummy",
+};
+
 const templates = [
     { id: 9601, data: { ...tower, name: "Torre Azul", idBody: 554, team: "blue" } },
     { id: 9602, data: { ...tower, name: "Torre Roja", idBody: 181, team: "red" } },
@@ -127,6 +140,7 @@ const templates = [
     { id: 9606, data: { ...minion, name: "Minion Rojo", idBody: 170, team: "red" } },
     { id: 9608, data: { ...jungleSmall, name: "Lobo de la Jungla", idBody: 10 } },
     { id: 9609, data: { ...jungleBig, name: "Ogro de la Jungla", idBody: 76 } },
+    { id: 9610, data: { ...dummy, name: "Muñeco de Práctica", idBody: 196, team: "red" } },
     { id: 9607, data: { ...shop, name: "Mercader del Nexo", idBody: 180, team: "blue" } },
 ];
 
