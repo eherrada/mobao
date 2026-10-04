@@ -42,3 +42,15 @@ export const PVP_CHARACTER_TEMPLATES = [
 
 /** Mapa base del modo MOBA (3v3, 3 carriles). */
 export const MOBA_MAP_ID = 600;
+
+/** Rol y kit de cada heroe en el MOBA (ver server/src/moba/heroes.ts). */
+export const MOBA_HERO_ROLES: Record<number, { role: string; kit: string }> = {
+    0: { role: "Mago · dano en rafaga", kit: "Apocalipsis, Descarga Electrica, Tormenta de Fuego, Inmovilizar, Celeridad" },
+    1: { role: "Clerigo · sanador", kit: "Curar Heridas, Remover Paralisis, Paralizar, Inmovilizar, Fuerza, Celeridad" },
+    2: { role: "Guerrero · tanque", kit: "Mas vida y golpes fuertes cuerpo a cuerpo (sin mana)" },
+    3: { role: "Asesino · emboscada", kit: "Invisibilidad, Celeridad, Fuerza, Proyectil Magico, Inmovilizar" },
+    4: { role: "Bardo · apoyo", kit: "Curar, Fuerza y Celeridad para el equipo, Inmovilizar, Tormenta de Fuego" },
+    5: { role: "Druida · control", kit: "Paralizar, Inmovilizar, Curar Heridas Graves, Tormenta de Fuego" },
+    6: { role: "Paladin · combatiente", kit: "Curar, Remover Paralisis, Inmovilizar, Proyectil Magico, Fuerza" },
+    7: { role: "Cazador · tirador", kit: "Ataque a distancia con arco (sin mana)" },
+};

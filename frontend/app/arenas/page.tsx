@@ -8,6 +8,7 @@ import { useAuthRedirect } from "../../hooks/useAuthRedirect";
 import {
     PVP_CHARACTER_TEMPLATES,
     MOBA_MAP_ID,
+    MOBA_HERO_ROLES,
     type ArenaGameTicketResponse,
     type ArenaRoomDetails,
     type ArenaRoomsResponse,
@@ -621,6 +622,27 @@ function ArenasPageContent() {
                                                         <p className="text-lg font-semibold text-white">
                                                             {template.name}
                                                         </p>
+                                                        {activeRoom.mapId ===
+                                                        MOBA_MAP_ID ? (
+                                                            <>
+                                                                <p className="mt-1 text-xs uppercase tracking-[0.18em] text-amber-200/80">
+                                                                    {
+                                                                        MOBA_HERO_ROLES[
+                                                                            template
+                                                                                .id
+                                                                        ]?.role
+                                                                    }
+                                                                </p>
+                                                                <p className="mt-1 text-xs text-stone-300">
+                                                                    {
+                                                                        MOBA_HERO_ROLES[
+                                                                            template
+                                                                                .id
+                                                                        ]?.kit
+                                                                    }
+                                                                </p>
+                                                            </>
+                                                        ) : null}
                                                     </button>
                                                 );
                                             },

@@ -1024,6 +1024,14 @@ function Login(this: LoginApi) {
             throw new Error(`Plantilla PvP invalida: ${idChar}`);
         }
 
+        if (options?.moba) {
+            const mobaSpells = require("./moba/heroes").spellsFor(idChar);
+
+            if (mobaSpells) {
+                character.spells = mobaSpells;
+            }
+        }
+
         const isAdminSummonedBot = Boolean(options?.adminSummonedBot);
         const targetLevel = Math.max(
             1,
