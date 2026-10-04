@@ -16,7 +16,7 @@ type Team = "blue" | "red";
 type Pt = { x: number; y: number };
 
 type StructureRecord = {
-    def: { kind: "tower" | "nexus" | "shop" | "dummy"; team: Team; lane?: string; tier?: number; x: number; y: number };
+    def: { kind: "tower" | "nexus" | "shop" | "dummy" | "barracks"; team: Team; lane?: string; tier?: number; x: number; y: number };
     npcId: number;
 };
 
@@ -281,7 +281,7 @@ function recomputeInvulnerability(match: Match) {
 
         for (const record of own) {
             const npc = vars.npcs[record.npcId];
-            if (!npc || record.def.kind === "shop" || record.def.kind === "dummy") continue;
+            if (!npc || record.def.kind === "shop" || record.def.kind === "dummy" || record.def.kind === "barracks") continue;
 
             if (record.def.kind === "nexus") {
                 npc.invulnerable = aliveTier(3).length > 0;
@@ -508,9 +508,37 @@ function queueWave(match: Match, now: number) {
     }
 }
 
+/** Indice del primer punto del carril que queda ADELANTE del punto dado (para no mandar al minion hacia atras). */
+function nextWaypointIndex(path: Pt[], from: Pt): number {
+    let bestSegment = 1;
+    let bestGap = Infinity;
+
+    for (let i = 1; i < path.length; i++) {
+        const a = path[i - 1];
+        const b = path[i];
+        // Distancia (Chebyshev) del punto al segmento a-b.
+        const dx = b.x - a.x;
+        const dy = b.y - a.y;
+        const len2 = dx * dx + dy * dy;
+        const t = len2 === 0 ? 0 : Math.max(0, Math.min(1, ((from.x - a.x) * dx + (from.y - a.y) * dy) / len2));
+        const gap = Math.max(Math.abs(from.x - (a.x + t * dx)), Math.abs(from.y - (a.y + t * dy)));
+
+        if (gap < bestGap) {
+            bestGap = gap;
+            bestSegment = i;
+        }
+    }
+
+    // Si ya esta casi en el final del segmento, apuntar al siguiente.
+    const end = path[bestSegment];
+    return manhattan(from, end) <= 3 ? Math.min(path.length - 1, bestSegment + 1) : bestSegment;
+}
+
 function spawnMinion(match: Match, team: Team, laneName: string, kind: "melee" | "caster" | "cannon" = "melee") {
     const path = laneForTeam(laneName, team);
-    const start = findFreeNear(match.mapId, pointAlong(path, 0.07), 6);
+    const barracks = match.structures.find((s) => s.def.kind === "barracks" && s.def.team === team && s.def.lane === laneName);
+    const origin = barracks ? { x: barracks.def.x, y: barracks.def.y } : pointAlong(path, 0.07);
+    const start = findFreeNear(match.mapId, origin, 6);
 
     if (!start) return;
 
@@ -527,6 +555,7 @@ function spawnMinion(match: Match, team: Team, laneName: string, kind: "melee" |
 
     if (npc) {
         match.npcIds.add(npc.id);
+        npc.wpIndex = nextWaypointIndex(path, start);
 
         // Cada oleada es un poco mas fuerte (como en LoL, los minions escalan con el tiempo).
         const scale = 1 + Math.min(1.2, match.waveCount * 0.04);

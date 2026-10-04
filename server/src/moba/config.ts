@@ -38,13 +38,14 @@ const TEMPLATES = {
     cannon: { blue: 9613, red: 9614 },
     shop: { blue: 9607, red: 9607 },
     dummy: { blue: 9610, red: 9610 },
+    barracks: { blue: 9615, red: 9616 },
     jungleSmall: 9608,
     jungleBig: 9609,
 } as const;
 
 type Pt = { x: number; y: number };
 type StructureDef = {
-    kind: "tower" | "nexus" | "shop" | "dummy";
+    kind: "tower" | "nexus" | "shop" | "dummy" | "barracks";
     team: "blue" | "red";
     lane?: string;
     tier?: number;

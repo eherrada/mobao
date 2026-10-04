@@ -75,7 +75,7 @@ function isHiddenEntityFor(viewerId: number | string, entity: any): boolean {
     const entityTeam = teams.teamOf(entity);
 
     if (!entityTeam || entityTeam === viewer.mobaTeam) return false;
-    if (entity.structure === "tower" || entity.structure === "nexus") return false;
+    if (entity.structure === "tower" || entity.structure === "nexus" || entity.structure === "barracks") return false;
 
     return !isVisibleToTeam(viewer.mobaMatchId, viewer.mobaTeam, entity.pos);
 }

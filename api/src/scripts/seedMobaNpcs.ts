@@ -169,6 +169,21 @@ const dummy = {
     structure: "dummy",
 };
 
+// Barracas: punto de aparicion de los minions de cada carril (decorativas e invulnerables).
+const barracks = {
+    ...common,
+    hp: 5000,
+    maxHp: 5000,
+    def: 0,
+    defM: 0,
+    magicDef: 0,
+    minHit: 0,
+    maxHit: 0,
+    stationary: 1,
+    invulnerable: 1,
+    structure: "barracks",
+};
+
 const templates = [
     { id: 9601, data: { ...tower, name: "Torre Azul", idBody: 554, team: "blue" } },
     { id: 9602, data: { ...tower, name: "Torre Roja", idBody: 181, team: "red" } },
@@ -183,6 +198,8 @@ const templates = [
     { id: 9612, data: { ...casterMinion, name: "Minion Mago Rojo", idBody: 129, idHead: 202, team: "red" } },
     { id: 9613, data: { ...cannonMinion, name: "Minion de Asedio Azul", idBody: 76, team: "blue" } },
     { id: 9614, data: { ...cannonMinion, name: "Minion de Asedio Rojo", idBody: 205, team: "red" } },
+    { id: 9615, data: { ...barracks, name: "Barraca Azul", idBody: 543, team: "blue" } },
+    { id: 9616, data: { ...barracks, name: "Barraca Roja", idBody: 153, team: "red" } },
     { id: 9607, data: { ...shop, name: "Mercader del Nexo", idBody: 180, team: "blue" } },
 ];
 
