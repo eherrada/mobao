@@ -32,6 +32,7 @@ function snapshotEntity(entity: any) {
         team: entity.team ?? entity.mobaTeam ?? null,
         structure: entity.structure ?? null,
         lane: entity.lane ?? null,
+        kind: entity.minionKind || null,
         tier: entity.tier ?? null,
         invulnerable: Boolean(entity.invulnerable),
         str: entity.attrFuerza ?? null,

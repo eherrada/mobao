@@ -63,7 +63,45 @@ const minion = {
     structure: "minion",
     aggroRange: 7,
     attackIntervalMs: 1000,
-    moveIntervalMs: 250,
+    moveIntervalMs: 200,
+    minionKind: "melee",
+};
+
+// Minion mago: ataca a distancia (alcance 5) y se queda detras de los de cuerpo a cuerpo.
+const casterMinion = {
+    ...minion,
+    hp: 170,
+    maxHp: 170,
+    def: 0,
+    defM: 0,
+    minHit: 22,
+    maxHit: 30,
+    exp: 50,
+    gold: 55,
+    aggroRange: 7,
+    attackRange: 5,
+    attackIntervalMs: 1300,
+    projectileSpell: 2, // Dardo Magico (efecto visual)
+    minionKind: "caster",
+};
+
+// Minion de asedio: aparece cada 3 oleadas; mucho mas vida, alcance 6 y golpe fuerte.
+const cannonMinion = {
+    ...minion,
+    hp: 700,
+    maxHp: 700,
+    def: 8,
+    defM: 8,
+    minHit: 46,
+    maxHit: 62,
+    exp: 120,
+    gold: 180,
+    aggroRange: 8,
+    attackRange: 6,
+    attackIntervalMs: 1500,
+    moveIntervalMs: 260,
+    projectileSpell: 23, // Descarga Electrica (efecto visual)
+    minionKind: "cannon",
 };
 
 // Mercader de cada base: usa el sistema de comercio de AO (doble click). Precio = valor del objeto.
@@ -141,6 +179,10 @@ const templates = [
     { id: 9608, data: { ...jungleSmall, name: "Lobo de la Jungla", idBody: 10 } },
     { id: 9609, data: { ...jungleBig, name: "Ogro de la Jungla", idBody: 76 } },
     { id: 9610, data: { ...dummy, name: "Muñeco de Práctica", idBody: 196, team: "red" } },
+    { id: 9611, data: { ...casterMinion, name: "Minion Mago Azul", idBody: 130, idHead: 6, team: "blue" } },
+    { id: 9612, data: { ...casterMinion, name: "Minion Mago Rojo", idBody: 129, idHead: 202, team: "red" } },
+    { id: 9613, data: { ...cannonMinion, name: "Minion de Asedio Azul", idBody: 76, team: "blue" } },
+    { id: 9614, data: { ...cannonMinion, name: "Minion de Asedio Rojo", idBody: 205, team: "red" } },
     { id: 9607, data: { ...shop, name: "Mercader del Nexo", idBody: 180, team: "blue" } },
 ];
 

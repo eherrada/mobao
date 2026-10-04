@@ -76,6 +76,7 @@ function spawnMobaNpc(opts: SpawnOptions): any | null {
     npc.moveIntervalMs = Number(datNpc.moveIntervalMs ?? 400);
     npc.aggroRange = Number(datNpc.aggroRange ?? 7);
     npc.projectileSpell = Number(datNpc.projectileSpell ?? 0);
+    npc.minionKind = String(datNpc.minionKind ?? "");
     npc.nextAttackAt = 0;
     npc.nextMoveAt = 0;
     npc.waypoints = opts.waypoints;

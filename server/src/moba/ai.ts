@@ -106,8 +106,58 @@ function setHeadingToward(npc: any, target: Pt) {
               : vars.direcciones.up;
 }
 
-/** Un paso (4 direcciones) hacia la meta, rodeando obstaculos y evitando retroceder. */
-function stepToward(npc: any, goal: Pt): boolean {
+/**
+ * Un paso (4 direcciones) hacia la meta. Sin pasos al azar ni retrocesos: si el camino directo esta ocupado se
+ * rodea por el lado que mas acerca a la meta y, si tampoco se puede, se espera (asi la fila de minions no tiembla).
+ */
+function stepToward(npc: any, goal: Pt, allowSidestep = true): boolean {
+    const dx0 = goal.x - npc.pos.x;
+    const dy0 = goal.y - npc.pos.y;
+    const sx0 = Math.sign(dx0);
+    const sy0 = Math.sign(dy0);
+    const primaryDirs: Array<[number, number]> = [];
+
+    if (Math.abs(dx0) >= Math.abs(dy0)) {
+        if (sx0) primaryDirs.push([sx0, 0]);
+        if (sy0) primaryDirs.push([0, sy0]);
+    } else {
+        if (sy0) primaryDirs.push([0, sy0]);
+        if (sx0) primaryDirs.push([sx0, 0]);
+    }
+
+    for (const [ax, ay] of primaryDirs) {
+        const pos = { x: npc.pos.x + ax, y: npc.pos.y + ay };
+
+        if (game.legalPosNpc(pos.x, pos.y, npc.map, false, false)) {
+            npcs.moveNpcByPos(npc.id, pos);
+            return npc.pos.x === pos.x && npc.pos.y === pos.y;
+        }
+    }
+
+    if (!allowSidestep) return false;
+
+    // Lateral: el que deja mas cerca de la meta, nunca el que vuelve al tile anterior.
+    const last = npc.lastChasePos as Pt | undefined;
+    const sides = ([[0, 1], [0, -1], [1, 0], [-1, 0]] as Array<[number, number]>)
+        .filter(([ax, ay]) => !primaryDirs.some(([bx, by]) => bx === ax && by === ay))
+        .map(([ax, ay]) => ({ ax, ay, pos: { x: npc.pos.x + ax, y: npc.pos.y + ay } }))
+        .filter((c) => !(last && c.pos.x === last.x && c.pos.y === last.y))
+        .sort((a, b) => manhattan(a.pos, goal) - manhattan(b.pos, goal));
+
+    for (const c of sides) {
+        if (manhattan(c.pos, goal) > manhattan(npc.pos, goal) + 1) continue;
+
+        if (game.legalPosNpc(c.pos.x, c.pos.y, npc.map, false, false)) {
+            npcs.moveNpcByPos(npc.id, c.pos);
+            return npc.pos.x === c.pos.x && npc.pos.y === c.pos.y;
+        }
+    }
+
+    return false;
+}
+
+/** Version anterior (con pasos al azar), conservada solo como referencia. */
+function stepTowardLegacy(npc: any, goal: Pt): boolean {
     const dx = goal.x - npc.pos.x;
     const dy = goal.y - npc.pos.y;
     const sx = Math.sign(dx);
@@ -179,15 +229,22 @@ function thinkMinion(npc: any, now: number, grid: Grid) {
     const target = targets[0];
 
     if (target) {
-        if (target.dist <= 1) {
+        // Los de distancia atacan desde su alcance (con proyectil); los de melee, pegados al objetivo.
+        if (target.dist <= npc.attackRange) {
             if (now >= npc.nextAttackAt) {
                 npc.nextAttackAt = now + npc.attackIntervalMs;
+
+                if (npc.attackRange > 1 && npc.projectileSpell > 0) {
+                    npcs.sendNpcProjectile(npc, target.entity, npc.projectileSpell);
+                }
+
                 strike(npc, target);
             }
             return;
         }
 
-        stepToward(npc, target.entity.pos);
+        // Si esta cerca y el camino esta ocupado, espera en vez de dar vueltas alrededor.
+        stepToward(npc, target.entity.pos, target.dist > npc.attackRange + 2);
         return;
     }
 

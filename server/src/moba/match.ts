@@ -32,7 +32,7 @@ type Match = {
     winner?: Team;
     npcIds: Set<number>;
     structures: StructureRecord[];
-    spawnQueue: Array<{ at: number; team: Team; lane: string }>;
+    spawnQueue: Array<{ at: number; team: Team; lane: string; kind: "melee" | "caster" | "cannon" }>;
     jungleRespawns: Array<{ at: number; camp: number; slot: number }>;
 };
 
@@ -485,23 +485,37 @@ function joinMatch(matchId: string, preferredTeam?: Team) {
 function queueWave(match: Match, now: number) {
     match.waveCount++;
 
+    // Como en LoL: primero los de cuerpo a cuerpo, despues los magos, y cada N oleadas un minion de asedio.
+    const gap = config.TIMING.minionSpawnGapMs;
+    const withCannon = config.TIMING.cannonEveryWaves > 0 && match.waveCount % config.TIMING.cannonEveryWaves === 0;
+
     for (const lane of Object.keys(config.getMapConfig().lanes)) {
         for (const team of ["blue", "red"] as Team[]) {
-            for (let i = 0; i < config.TIMING.minionsPerWave; i++) {
-                match.spawnQueue.push({ at: now + i * config.TIMING.minionSpawnGapMs, team, lane });
+            let slot = 0;
+
+            for (let i = 0; i < config.TIMING.meleePerWave; i++) {
+                match.spawnQueue.push({ at: now + slot++ * gap, team, lane, kind: "melee" });
+            }
+
+            for (let i = 0; i < config.TIMING.castersPerWave; i++) {
+                match.spawnQueue.push({ at: now + slot++ * gap, team, lane, kind: "caster" });
+            }
+
+            if (withCannon) {
+                match.spawnQueue.push({ at: now + slot++ * gap, team, lane, kind: "cannon" });
             }
         }
     }
 }
 
-function spawnMinion(match: Match, team: Team, laneName: string) {
+function spawnMinion(match: Match, team: Team, laneName: string, kind: "melee" | "caster" | "cannon" = "melee") {
     const path = laneForTeam(laneName, team);
     const start = findFreeNear(match.mapId, pointAlong(path, 0.07), 6);
 
     if (!start) return;
 
     const npc = spawnMobaNpc({
-        templateId: config.TEMPLATES.minion[team],
+        templateId: (kind === "cannon" ? config.TEMPLATES.cannon : kind === "caster" ? config.TEMPLATES.caster : config.TEMPLATES.minion)[team],
         mapId: match.mapId,
         x: start.x,
         y: start.y,
@@ -805,7 +819,7 @@ function tickInner() {
         if (match.spawnQueue.length > 0) {
             const due = match.spawnQueue.filter((s) => s.at <= now);
             match.spawnQueue = match.spawnQueue.filter((s) => s.at > now);
-            for (const s of due) spawnMinion(match, s.team, s.lane);
+            for (const s of due) spawnMinion(match, s.team, s.lane, s.kind);
         }
 
         const live: any[] = [];
