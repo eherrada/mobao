@@ -86,6 +86,7 @@ const SHELL_HORIZONTAL_PADDING = 24;
 const SHELL_HORIZONTAL_PADDING_FULLSCREEN = 16;
 const COLUMN_SECTION_GAP = 12;
 const MAX_FULLSCREEN_HUD_SCALE = 1.5;
+const MOBA_FULLVIEW_HUD_SCALE = 0.8;
 const FULLSCREEN_HINT_DURATION_MS = 2600;
 const FULLSCREEN_PROMPT_MAX_WIDTH = 1200;
 const FULLSCREEN_PROMPT_MAX_HEIGHT = 900;
@@ -1528,9 +1529,16 @@ function HomeContent() {
         });
     }, []);
 
+    // Pantalla completa del MOBA: el juego ocupa toda la pantalla (con mas tiles visibles) y el HUD queda encima.
+    const mobaFullView = isFullscreen && arenaMode && viewport.width > 0 && viewport.height > 0;
+
     const hudScale = useMemo(() => {
         if (!isFullscreen || !viewport.width || !viewport.height) {
             return 1;
+        }
+
+        if (mobaFullView) {
+            return MOBA_FULLVIEW_HUD_SCALE;
         }
 
         const leftColumnBaseHeight =
@@ -1562,6 +1570,7 @@ function HomeContent() {
     }, [
         isDesktopConsoleLayout,
         isFullscreen,
+        mobaFullView,
         macroBarSize.height,
         rightColumnSize.height,
         rightColumnSize.width,
@@ -1573,9 +1582,6 @@ function HomeContent() {
         viewport.height,
         viewport.width,
     ]);
-
-    // Pantalla completa del MOBA: el juego ocupa toda la pantalla (con mas tiles visibles) y el HUD queda encima.
-    const mobaFullView = isFullscreen && arenaMode && viewport.width > 0 && viewport.height > 0;
 
     const hudLayout = useMemo<HudLayout>(() => {
         if (!viewport.width || !viewport.height) {
@@ -2670,9 +2676,19 @@ function HomeContent() {
                 }}
             >
                 <div
+                    data-hud-wrap
                     className="pointer-events-auto flex flex-col"
                     style={{ gap: `${HUD_GAP}px` }}
                 >
+                    {mobaFullView ? (
+                        <style>{`
+                            [data-hud-wrap] { display: contents; }
+                            [data-hud-wrap] > :first-child { position: fixed; left: 8px; top: 8px; z-index: 5; }
+                            [data-hud-row] { display: contents; }
+                            [data-hud-left] { position: fixed; left: 190px; bottom: 8px; width: ${Math.floor(CANVAS_BASE_WIDTH * MOBA_FULLVIEW_HUD_SCALE)}px !important; z-index: 0; }
+                            [data-hud-row] > :nth-child(2) { position: fixed; right: 8px; bottom: 8px; z-index: 5; }
+                        `}</style>
+                    ) : null}
                     {isDesktopConsoleLayout ? (
                         <ScaledHudFrame
                             scale={hudScale}
@@ -2729,10 +2745,12 @@ function HomeContent() {
                     ) : null}
 
                     <div
+                        data-hud-row
                         className="flex items-start"
                         style={{ gap: `${HUD_GAP}px` }}
                     >
                         <div
+                            data-hud-left
                             className="flex flex-col"
                             style={{
                                 width: `${hudLayout.canvasWidth ?? CANVAS_BASE_WIDTH}px`,
