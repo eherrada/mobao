@@ -31,24 +31,63 @@ function aliveHeroes(matchId: string): any[] {
     return result;
 }
 
-/** Candidatos enemigos en rango, ordenados por prioridad (minions > heroes > estructuras). */
-function findTargets(npc: any, matchNpcs: any[], heroes: any[], range: number): Target[] {
-    const targets: Target[] = [];
+/**
+ * Indice espacial por celdas: las consultas de objetivos cuestan O(entidades cercanas) en vez de O(todas).
+ * Se reconstruye en cada tick de IA (es un dato derivado, no estado del juego).
+ */
+const GRID_CELL = 8;
+const GRID_COLS = 64;
 
-    for (const other of matchNpcs) {
-        if (other.id === npc.id || other.hp <= 0 || other.deathProcessed || other.invulnerable) continue;
-        if (!teams.areEnemies(npc, other)) continue;
-        const dist = manhattan(npc.pos, other.pos);
-        if (dist > range) continue;
-        const penalty = other.structure === "minion" ? 0 : 5;
-        targets.push({ entity: other, isNpc: true, dist, score: dist + penalty });
+type Grid = Map<number, any[]>;
+
+function cellKey(x: number, y: number) {
+    return Math.floor(y / GRID_CELL) * GRID_COLS + Math.floor(x / GRID_CELL);
+}
+
+function buildGrid(matchNpcs: any[], heroes: any[]): Grid {
+    const grid: Grid = new Map();
+    const add = (entity: any) => {
+        const key = cellKey(entity.pos.x, entity.pos.y);
+        const bucket = grid.get(key);
+        if (bucket) bucket.push(entity);
+        else grid.set(key, [entity]);
+    };
+
+    for (const npc of matchNpcs) {
+        if (npc.hp > 0 && !npc.deathProcessed) add(npc);
     }
 
-    for (const hero of heroes) {
-        if (!teams.areEnemies(npc, hero)) continue;
-        const dist = manhattan(npc.pos, hero.pos);
-        if (dist > range) continue;
-        targets.push({ entity: hero, isNpc: false, dist, score: dist + 2 });
+    for (const hero of heroes) add(hero);
+
+    return grid;
+}
+
+/** Candidatos enemigos en rango, ordenados por prioridad (minions > heroes > estructuras). */
+function findTargets(npc: any, grid: Grid, range: number): Target[] {
+    const targets: Target[] = [];
+    const minCx = Math.floor((npc.pos.x - range) / GRID_CELL);
+    const maxCx = Math.floor((npc.pos.x + range) / GRID_CELL);
+    const minCy = Math.floor((npc.pos.y - range) / GRID_CELL);
+    const maxCy = Math.floor((npc.pos.y + range) / GRID_CELL);
+
+    for (let cy = minCy; cy <= maxCy; cy++) {
+        for (let cx = minCx; cx <= maxCx; cx++) {
+            const bucket = grid.get(cy * GRID_COLS + cx);
+
+            if (!bucket) continue;
+
+            for (const other of bucket) {
+                if (other.id === npc.id || other.invulnerable || !teams.areEnemies(npc, other)) continue;
+
+                const dist = manhattan(npc.pos, other.pos);
+
+                if (dist > range) continue;
+
+                const isNpc = Boolean(other.isNpc);
+                const penalty = isNpc ? (other.structure === "minion" ? 0 : 5) : 2;
+                targets.push({ entity: other, isNpc, dist, score: dist + penalty });
+            }
+        }
     }
 
     return targets.sort((a, b) => a.score - b.score);
@@ -124,13 +163,13 @@ function strike(attacker: any, target: Target) {
     }
 }
 
-function thinkMinion(npc: any, now: number, matchNpcs: any[], heroes: any[]) {
+function thinkMinion(npc: any, now: number, grid: Grid) {
     if (npc.paralizado || npc.inmovilizado) return;
 
     if (now < npc.nextMoveAt) return;
     npc.nextMoveAt = now + npc.moveIntervalMs;
 
-    const targets = findTargets(npc, matchNpcs, heroes, npc.aggroRange);
+    const targets = findTargets(npc, grid, npc.aggroRange);
     const target = targets[0];
 
     if (target) {
@@ -202,10 +241,10 @@ function thinkJungle(npc: any, now: number) {
     }
 }
 
-function thinkTower(npc: any, now: number, matchNpcs: any[], heroes: any[]) {
+function thinkTower(npc: any, now: number, grid: Grid) {
     if (now < npc.nextAttackAt) return;
 
-    const targets = findTargets(npc, matchNpcs, heroes, npc.attackRange);
+    const targets = findTargets(npc, grid, npc.attackRange);
     const target = targets[0];
 
     if (!target) return;
@@ -223,14 +262,15 @@ function thinkTower(npc: any, now: number, matchNpcs: any[], heroes: any[]) {
 /** Un tick de IA para todos los NPCs de la partida. */
 function thinkAll(matchId: string, now: number, matchNpcs: any[]) {
     const heroes = aliveHeroes(matchId);
+    const grid = buildGrid(matchNpcs, heroes);
 
     for (const npc of matchNpcs) {
         if (npc.hp <= 0 || npc.deathProcessed) continue;
 
         if (npc.structure === "minion") {
-            thinkMinion(npc, now, matchNpcs, heroes);
+            thinkMinion(npc, now, grid);
         } else if (npc.structure === "tower") {
-            thinkTower(npc, now, matchNpcs, heroes);
+            thinkTower(npc, now, grid);
         } else if (npc.structure === "jungle") {
             thinkJungle(npc, now);
         }

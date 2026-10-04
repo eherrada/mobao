@@ -88,6 +88,14 @@ function handleDebugRequest(request: any, response: any): boolean {
         return true;
     }
 
+    if (url.pathname === "/debug/perf") {
+        const match = require("./match");
+        const report = match.perfReport();
+        if (url.searchParams.get("reset")) match.resetPerf();
+        json(response, 200, report);
+        return true;
+    }
+
     if (url.pathname === "/debug/matches") {
         json(response, 200, require("./match").describe());
         return true;

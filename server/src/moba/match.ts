@@ -219,6 +219,7 @@ function spawnCamps(match: Match) {
 }
 
 function createMatch(id: string): Match {
+    const startedAtMs = process.hrtime.bigint();
     const mapId = allocateMapId();
     createInstanceMap(mapId);
 
@@ -241,6 +242,7 @@ function createMatch(id: string): Match {
     matches[id] = match;
     spawnStructures(match);
     spawnCamps(match);
+    console.log(`[moba] partida "${id}" creada en mapa ${mapId} (${(Number(process.hrtime.bigint() - startedAtMs) / 1e6).toFixed(1)} ms)`);
     return match;
 }
 
@@ -601,6 +603,39 @@ function broadcastState(match: Match, heroes: any[], live: any[], now: number) {
     }
 }
 
+const lastRegenAt: Record<string, number> = {};
+const FOUNTAIN_RADIUS = 12;
+
+/** Los heroes vivos cerca de su punto de aparicion se curan rapido (fuente de la base). */
+function regenAtFountain(match: Match, heroes: any[], now: number) {
+    if (now - (lastRegenAt[match.id] ?? 0) < 1000) return;
+
+    lastRegenAt[match.id] = now;
+    const spawns = config.getMapConfig().spawn;
+
+    for (const hero of heroes) {
+        const client = vars.clients[hero.id];
+        const spawn = spawns[hero.mobaTeam as Team];
+
+        if (!client || hero.dead || !spawn || manhattan(hero.pos, spawn) > FOUNTAIN_RADIUS) continue;
+        if (hero.hp >= hero.maxHp && hero.mana >= hero.maxMana) continue;
+
+        hero.hp = Math.min(hero.maxHp, hero.hp + Math.ceil(hero.maxHp * 0.1));
+        hero.mana = Math.min(hero.maxMana, hero.mana + Math.ceil(hero.maxMana * 0.1));
+        handleProtocol.updateHP(hero.hp, client);
+        handleProtocol.updateMana(hero.mana, client);
+
+        game.loopAreaPos(match.mapId, hero.pos, (viewer: any) => {
+            const viewerClient = vars.clients[viewer.id];
+
+            if (!viewerClient || viewer.id === hero.id) return;
+
+            handleProtocol.entityVitalsDelta(hero.id, hero.hp, hero.maxHp, hero.mana, hero.maxMana, viewerClient);
+            socket.send(viewerClient);
+        });
+    }
+}
+
 const lastGoldAt: Record<string, number> = {};
 
 function grantPassiveGold(match: Match, heroes: any[], now: number) {
@@ -624,7 +659,45 @@ function grantPassiveGold(match: Match, heroes: any[], now: number) {
     }
 }
 
+// Metricas de rendimiento (ventana movil) para /debug/perf y decisiones de optimizacion.
+const perf = { samples: [] as number[], max: 0 };
+const loopDelay = require("node:perf_hooks").monitorEventLoopDelay({ resolution: 10 });
+loopDelay.enable();
+
+function recordTickDuration(ms: number) {
+    perf.samples.push(ms);
+    if (perf.samples.length > 200) perf.samples.shift();
+    perf.max = Math.max(perf.max, ms);
+}
+
+function perfReport() {
+    const s = perf.samples;
+    const avg = s.length ? s.reduce((a, b) => a + b, 0) / s.length : 0;
+    const sorted = [...s].sort((a, b) => a - b);
+    return {
+        tickAvgMs: Number(avg.toFixed(3)),
+        tickP95Ms: Number((sorted[Math.floor(sorted.length * 0.95)] ?? 0).toFixed(3)),
+        tickMaxMs: Number(perf.max.toFixed(3)),
+        eventLoopP99Ms: Number((loopDelay.percentile(99) / 1e6).toFixed(2)),
+        eventLoopMaxMs: Number((loopDelay.max / 1e6).toFixed(2)),
+        matches: Object.keys(matches).length,
+        npcs: Object.keys(vars.npcs).length,
+    };
+}
+
+function resetPerf() {
+    perf.samples = [];
+    perf.max = 0;
+    loopDelay.reset();
+}
+
 function tick() {
+    const startedAt = process.hrtime.bigint();
+    tickInner();
+    recordTickDuration(Number(process.hrtime.bigint() - startedAt) / 1e6);
+}
+
+function tickInner() {
     const now = Date.now();
 
     for (const id in matches) {
@@ -678,6 +751,7 @@ function tick() {
 
         fog.syncVisibility(heroes, live);
         grantPassiveGold(match, heroes, now);
+        regenAtFountain(match, heroes, now);
         broadcastState(match, heroes, live, now);
     }
 }
@@ -700,6 +774,8 @@ module.exports = {
     getMatch,
     tick,
     describe,
+    perfReport,
+    resetPerf,
     onNpcDestroyed,
     onNpcKilledByNpc,
     onHeroDeath,
