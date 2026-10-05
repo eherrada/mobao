@@ -2055,7 +2055,7 @@ function processUserMovement(ws: RuntimeClient, heading: number, moveId: number,
 
     user.pos.x = posX;
     user.pos.y = posY;
-    user.nextWalkAt = now + vars.timing.walkStepMs;
+    user.nextWalkAt = now + (user.mobaMatchId ? require("./moba/abilities").walkStepMs(user) : vars.timing.walkStepMs);
     user.stateVersion = Number(user.stateVersion ?? 0) + 1;
     user.lastMovementActivityAt = now;
 
@@ -3353,6 +3353,10 @@ function attackMele(ws: RuntimeClient) {
             return;
         }
 
+        if (user.mobaMatchId && require("./moba/abilities").isStunned(user)) {
+            return;
+        }
+
         if (isChallengeCombatLocked(user)) {
             handleProtocol.console("[Retos] Espera a que termine la cuenta regresiva.", "white", 0, 0, ws);
             return;
@@ -3543,6 +3547,10 @@ function attackRange(ws: RuntimeClient) {
 
         if (isChallengeCombatLocked(user)) {
             handleProtocol.console("[Retos] Espera a que termine la cuenta regresiva.", "white", 0, 0, ws);
+            return;
+        }
+
+        if (user.mobaMatchId && require("./moba/abilities").isStunned(user)) {
             return;
         }
 
@@ -3785,7 +3793,12 @@ function attackSpell(ws: RuntimeClient) {
 
         cancelPendingReviveCast(ws, user, "Se canceló el resucitar al lanzar otro hechizo.");
 
-        if (user.idClase === vars.clases.guerrero || user.idClase === vars.clases.cazador) {
+        if (user.mobaMatchId && require("./moba/abilities").isStunned(user)) {
+            handleProtocol.console("Estás aturdido.", "white", 0, 0, ws);
+            return;
+        }
+
+        if (!user.mobaMatchId && (user.idClase === vars.clases.guerrero || user.idClase === vars.clases.cazador)) {
             handleProtocol.console("Tu clase no puede usar hechizos.", "white", 0, 0, ws);
             return;
         }
@@ -3828,6 +3841,16 @@ function attackSpell(ws: RuntimeClient) {
         const idPos = pkg.getByte();
 
         if (!user.spells[idPos]) {
+            return;
+        }
+
+        if (user.mobaMatchId && require("./moba/abilities").isTechSlot(user, idPos)) {
+            // Tecnica propia del MOBA (moba/abilities.ts): usa el intervalo global de arriba, mas su costo de recurso.
+            if (pkg.canReadBytes(2)) {
+                const techPos = { x: pkg.getByte(), y: pkg.getByte() };
+                require("./moba/abilities").castTech(ws, user, idPos, techPos);
+            }
+
             return;
         }
 

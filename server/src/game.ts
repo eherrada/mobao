@@ -7744,6 +7744,10 @@ function Game(this: GameApi) {
                     }
 
                     npc.hp -= dmg;
+
+                    if (user.mobaMatchId) {
+                        require("./moba/specs").onBasicHit(user, npc, dmg);
+                    }
                 }
 
                 let stabResult: StabResult = {
@@ -7997,6 +8001,10 @@ function Game(this: GameApi) {
                 }
 
                 userAttacked.hp -= dmg;
+
+                if (user.mobaMatchId) {
+                    require("./moba/specs").onBasicHit(user, userAttacked, dmg);
+                }
 
                 stabResult = {
                     stabbed: false,

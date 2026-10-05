@@ -63,6 +63,10 @@ function snapshotEntity(entity: any) {
         respawnAt: entity.mobaRespawnAt ?? 0,
         npcTemplate: entity.templateNpcIndex ?? null,
         dead: Boolean(entity.dead),
+        // Habilidades (moba/abilities.ts): build, cooldowns, escudo, controles, rasgo, recurso.
+        mob: entity.mobaAbilities ? require("./abilities").debugInfo(entity) : entity.isNpc && entity.mobaFx ? require("./abilities").debugNpcInfo(entity) : null,
+        paralyzed: Boolean(entity.paralizado),
+        rooted: Boolean(entity.inmovilizado),
     };
 }
 
@@ -268,6 +272,10 @@ function handleDebugRequest(request: any, response: any): boolean {
                 raceId: me.idRaza,
                 points: skills.availablePoints(me),
                 skills: skills.describe(me),
+                abilityState: me.mobaAbilities ? require("./abilities").stateFor(me) : null,
+                mobDebug: me.mobaAbilities ? require("./abilities").debugInfo(me) : null,
+                paralyzed: Boolean(me.paralizado),
+                rooted: Boolean(me.inmovilizado),
                 inv: Object.entries(me.inv ?? {}).map(([slot, it]: [string, any]) => ({ slot: Number(slot), item: it.idItem, qty: it.cant, equipped: Boolean(it.equipped) })),
                 recalling: Boolean(me.mobaRecall),
             },
@@ -323,7 +331,36 @@ function handleDebugRequest(request: any, response: any): boolean {
             return true;
         }
 
-        hero.hp = Number(url.searchParams.get("hp") ?? hero.hp);
+        // Salteando escudo y reduccion de dano (son parte del setter de hp de los heroes del MOBA).
+        require("./abilities").rawSetHp(hero, Number(url.searchParams.get("hp") ?? hero.hp));
+        json(response, 200, snapshotEntity(hero));
+        return true;
+    }
+
+    // Dano directo a un heroe por el mismo camino que cualquier otro (escudo y reduccion de dano incluidos).
+    if (url.pathname === "/debug/hero-damage" && request.method === "POST") {
+        const hero = vars.personajes[String(url.searchParams.get("id"))];
+
+        if (!hero) {
+            json(response, 404, { error: "hero not found" });
+            return true;
+        }
+
+        hero.hp -= Number(url.searchParams.get("amount") ?? 0);
+        json(response, 200, snapshotEntity(hero));
+        return true;
+    }
+
+    // Fija el recurso (mana/furia/energia) de un heroe (tests de costos).
+    if (url.pathname === "/debug/hero-mana" && request.method === "POST") {
+        const hero = vars.personajes[String(url.searchParams.get("id"))];
+
+        if (!hero) {
+            json(response, 404, { error: "hero not found" });
+            return true;
+        }
+
+        hero.mana = Math.min(hero.maxMana, Number(url.searchParams.get("mana") ?? hero.mana));
         json(response, 200, snapshotEntity(hero));
         return true;
     }

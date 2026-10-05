@@ -223,9 +223,17 @@ function thinkMinion(npc: any, now: number, grid: Grid) {
     if (npc.paralizado || npc.inmovilizado) return;
 
     if (now < npc.nextMoveAt) return;
-    npc.nextMoveAt = now + npc.moveIntervalMs;
+    npc.nextMoveAt = now + npc.moveIntervalMs * require("./abilities").npcSlowFactor(npc, now);
 
     const targets = findTargets(npc, grid, npc.aggroRange);
+
+    // Provocacion (Grito de guerra): el minion ataca a quien lo provoco mientras lo tenga a su alcance.
+    if (npc.mobaTaunt && npc.mobaTaunt.until > now) {
+        const idx = targets.findIndex((t) => t.entity.id === npc.mobaTaunt.id);
+
+        if (idx > 0) targets.unshift(targets.splice(idx, 1)[0]);
+    }
+
     const target = targets[0];
 
     if (target) {
@@ -281,7 +289,7 @@ function thinkDummy(npc: any, now: number) {
 function thinkJungle(npc: any, now: number, campAggro: Map<string, number>) {
     if (npc.paralizado || npc.inmovilizado) return;
     if (now < npc.nextMoveAt) return;
-    npc.nextMoveAt = now + npc.moveIntervalMs;
+    npc.nextMoveAt = now + npc.moveIntervalMs * require("./abilities").npcSlowFactor(npc, now);
 
     const home: Pt = npc.homePos;
 

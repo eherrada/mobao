@@ -42,8 +42,12 @@ function applyLevelStats(hero: any) {
     const manaRatio = hero.maxMana > 0 ? hero.mana / hero.maxMana : 1;
 
     hero.level = ao;
-    hero.maxHp = Math.round(balance.getMaxHpForLevel(hero.idClase, hero.attrConstitucion, ao) * stats.hp);
+    hero.maxHp = Math.round(
+        balance.getMaxHpForLevel(hero.idClase, hero.attrConstitucion, ao) * stats.hp * Number(hero.mobaHpMult ?? 1),
+    );
     hero.maxMana = balance.getMaxManaForLevel(hero.idClase, hero.attrInteligencia, ao);
+    // Guerrero y Cazador no tienen mana de AO: usan una barra propia (Furia / Energia) de 100.
+    require("./abilities").afterLevelStats(hero);
     hero.minHit = balance.getMinHitForLevel(hero.idClase, ao);
     hero.maxHit = balance.getMaxHitForLevel(hero.idClase, ao);
 

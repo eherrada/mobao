@@ -59,6 +59,8 @@ export type BotOptions = {
     level?: number;
     autoSkills?: boolean;
     gearTier?: number;
+    /** Build de habilidades { abilities: string[4], ult, spec, kit }; invalido = build por defecto. */
+    build?: unknown;
 };
 
 export class Bot {
@@ -94,6 +96,7 @@ export class Bot {
                     level: this.opts.level,
                     autoSkills: this.opts.autoSkills,
                     gearTier: this.opts.gearTier,
+                    build: this.opts.build,
                 });
                 this.send(new Writer(PACKET.connectCharacter).string(ticket).byte(3).byte(this.opts.templateId).buffer());
                 setTimeout(resolve, 800);

@@ -269,6 +269,8 @@ export type LoginApi = {
                 slot: number;
                 race?: number;
                 level?: number;
+                /** Build de habilidades (moba/abilities.ts). Se valida en el servidor; invalido = build por defecto. */
+                build?: unknown;
             };
         },
     ) => Promise<void>;
@@ -430,6 +432,7 @@ function Login(this: LoginApi) {
                     level?: number;
                     autoSkills?: boolean;
                     gearTier?: number;
+                    build?: unknown;
                 };
                 const botTemplateId = Number(botPayload.templateId ?? idChar);
                 let spawnMapId = Number(botPayload.mapId ?? 0);
@@ -452,6 +455,7 @@ function Login(this: LoginApi) {
                         level: Number(botPayload.level ?? 1),
                         autoSkills: botPayload.autoSkills,
                         gearTier: botPayload.gearTier,
+                        build: botPayload.build,
                     } as typeof botMoba;
                     spawnMapId = slot.mapId;
                     spawnX = Number(botPayload.x ?? 0) || slot.spawn.x;
@@ -539,7 +543,14 @@ function Login(this: LoginApi) {
                         let mobaOptions:
                             | {
                                   spawn: { mapId: number; x: number; y: number };
-                                  moba: { matchId: string; team: "blue" | "red"; slot: number; race?: number; level?: number };
+                                  moba: {
+                                      matchId: string;
+                                      team: "blue" | "red";
+                                      slot: number;
+                                      race?: number;
+                                      level?: number;
+                                      build?: unknown;
+                                  };
                               }
                             | undefined;
 
@@ -552,6 +563,7 @@ function Login(this: LoginApi) {
                                     team: slot.team,
                                     slot: slot.slot,
                                     race: Number(arenaResult.arena?.pvpRaceId ?? 1),
+                                    build: (arenaResult.arena as { pvpBuild?: unknown } | undefined)?.pvpBuild,
                                 },
                             };
                         }
@@ -1044,6 +1056,7 @@ function Login(this: LoginApi) {
                 slot: number;
                 race?: number;
                 level?: number;
+                build?: unknown;
             };
         },
     ) => {
@@ -1053,8 +1066,11 @@ function Login(this: LoginApi) {
             throw new Error(`Plantilla PvP invalida: ${idChar}`);
         }
 
+        // Build de habilidades del MOBA (validado: ids del pool del campeon, sin repetidos; si no, el por defecto).
+        const mobaBuild = options?.moba ? require("./moba/abilities").resolveBuild(idChar, options.moba.build) : undefined;
+
         if (options?.moba) {
-            const mobaSpells = require("./moba/heroes").spellsFor(idChar);
+            const mobaSpells = require("./moba/heroes").spellsFor(idChar, mobaBuild);
 
             if (mobaSpells) {
                 character.spells = mobaSpells;
@@ -1274,6 +1290,11 @@ function Login(this: LoginApi) {
         if (options?.moba) {
             require("./moba/progression").initHero(newCharacter, mobaStartLevel);
             require("./moba/skills").initSkills(newCharacter);
+
+            if (mobaBuild) {
+                require("./moba/abilities").initHero(newCharacter, mobaBuild);
+            }
+
             game.autoEquipInventory(ws.id);
 
             if (isSyntheticBot && (options.moba as { autoSkills?: boolean }).autoSkills !== false) {

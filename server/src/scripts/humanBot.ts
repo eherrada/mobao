@@ -39,7 +39,18 @@ type View = {
         team: string;
         points: number;
         recalling: boolean;
-        skills: Array<{ slot: number; rank: number; ult: boolean; canLevel: boolean; spell: number }>;
+        skills: Array<{
+            slot: number;
+            rank: number;
+            ult: boolean;
+            canLevel: boolean;
+            spell: number;
+            cdLeftMs?: number;
+            cost?: number;
+            range?: number;
+            tags?: string[];
+            target?: string;
+        }>;
         inv: Array<{ slot: number; item: number; qty: number; equipped: boolean }>;
     };
     entities: Ent[];
@@ -49,7 +60,8 @@ const HOST = "http://127.0.0.1:7666";
 const STEP_MS = 205;
 const MELEE_MS = 1050;
 const SPELL_MS = 1100;
-const CASTER_TEMPLATES = new Set([0, 1, 3, 4, 5, 6]);
+// Todos los heroes tienen habilidades (el Guerrero y el Cazador usan tecnicas con Furia/Energia).
+const CASTER_TEMPLATES = new Set([0, 1, 2, 3, 4, 5, 6, 7]);
 const RANGED_BOW = 7;
 
 let walkable: boolean[][] | null = null;
@@ -416,13 +428,22 @@ export class HumanBot {
         const ranged = this.templateId === RANGED_BOW;
         const caster = CASTER_TEMPLATES.has(this.templateId);
 
-        // Hechizos primero (el mago y los clerigos castean casi siempre).
-        if (caster && d <= 7 && now - this.lastSpell > SPELL_MS && v.me.mana > 30) {
-            const castable = v.me.skills.filter((s) => s.rank > 0);
+        // Habilidades primero: solo las ofensivas que estan aprendidas, sin cooldown, con recurso y al alcance.
+        // Las tecnicas de cuerpo a cuerpo (rango 1) se lanzan pegado al objetivo; las de area/self, sobre uno mismo.
+        if (caster && now - this.lastSpell > SPELL_MS) {
+            const castable = v.me.skills.filter(
+                (s) =>
+                    s.rank > 0 &&
+                    (s.cdLeftMs ?? 0) <= 0 &&
+                    (s.cost ?? 0) <= v.me.mana &&
+                    (s.tags ?? ["dano"]).some((t) => t === "dano" || t === "control") &&
+                    d <= Math.min(7, s.range ?? 7),
+            );
 
             if (castable.length) {
                 const pick = castable[Math.floor(Math.random() * castable.length)];
-                this.bot.spell(pick.slot, target.x, target.y);
+                const onSelf = pick.target === "self" || pick.target === "area";
+                this.bot.spell(pick.slot, onSelf ? myPos.x : target.x, onSelf ? myPos.y : target.y);
                 this.lastSpell = now;
                 this.stats.spells++;
             }

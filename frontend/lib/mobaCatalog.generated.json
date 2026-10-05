@@ -1,0 +1,2091 @@
+{
+  "version": 1,
+  "champions": {
+    "0": {
+      "templateId": 0,
+      "name": "Mago",
+      "role": "Daño en ráfaga",
+      "resource": "mana",
+      "pool": [
+        {
+          "id": "ao_23",
+          "name": "Descarga Eléctrica",
+          "desc": "Daño mágico muy alto a un objetivo.",
+          "tags": [
+            "dano"
+          ],
+          "target": "point",
+          "range": 8,
+          "cooldownMs": 0,
+          "costBase": 460,
+          "costPct": false,
+          "resource": "mana",
+          "icon": "zap",
+          "maxRank": 5,
+          "kind": "aoSpell",
+          "spellId": 23
+        },
+        {
+          "id": "ao_15",
+          "name": "Tormenta de Fuego",
+          "desc": "Daño mágico fuerte a un objetivo.",
+          "tags": [
+            "dano"
+          ],
+          "target": "point",
+          "range": 8,
+          "cooldownMs": 0,
+          "costBase": 150,
+          "costPct": false,
+          "resource": "mana",
+          "icon": "flame",
+          "maxRank": 5,
+          "kind": "aoSpell",
+          "spellId": 15
+        },
+        {
+          "id": "ao_8",
+          "name": "Proyectil Mágico",
+          "desc": "Daño mágico barato a un objetivo.",
+          "tags": [
+            "dano"
+          ],
+          "target": "point",
+          "range": 8,
+          "cooldownMs": 0,
+          "costBase": 45,
+          "costPct": false,
+          "resource": "mana",
+          "icon": "wand-sparkles",
+          "maxRank": 5,
+          "kind": "aoSpell",
+          "spellId": 8
+        },
+        {
+          "id": "ao_24",
+          "name": "Inmovilizar",
+          "desc": "Inmoviliza al objetivo (no puede moverse).",
+          "tags": [
+            "control"
+          ],
+          "target": "point",
+          "range": 8,
+          "cooldownMs": 0,
+          "costBase": 300,
+          "costPct": false,
+          "resource": "mana",
+          "icon": "link",
+          "maxRank": 5,
+          "kind": "aoSpell",
+          "spellId": 24
+        },
+        {
+          "id": "ao_18",
+          "name": "Celeridad",
+          "desc": "Aumenta tu agilidad por un rato.",
+          "tags": [
+            "utilidad"
+          ],
+          "target": "self",
+          "range": 8,
+          "cooldownMs": 0,
+          "costBase": 40,
+          "costPct": false,
+          "resource": "mana",
+          "icon": "wind",
+          "maxRank": 5,
+          "kind": "aoSpell",
+          "spellId": 18
+        },
+        {
+          "id": "muro_fuego",
+          "name": "Muro de fuego",
+          "desc": "Una zona de fuego que quema a los enemigos que la cruzan.",
+          "tags": [
+            "dano",
+            "control"
+          ],
+          "target": "point",
+          "range": 8,
+          "cooldownMs": 0,
+          "costBase": 20,
+          "costPct": true,
+          "resource": "mana",
+          "icon": "flame-kindling",
+          "maxRank": 5,
+          "kind": "tech",
+          "spellId": 15
+        },
+        {
+          "id": "parpadeo",
+          "name": "Parpadeo",
+          "desc": "Te teletransportás hasta 5 tiles hacia donde apuntás.",
+          "tags": [
+            "movilidad"
+          ],
+          "target": "line",
+          "range": 5,
+          "cooldownMs": 10000,
+          "costBase": 8,
+          "costPct": true,
+          "resource": "mana",
+          "icon": "move-diagonal",
+          "maxRank": 5,
+          "kind": "tech",
+          "spellId": 18
+        },
+        {
+          "id": "escudo_arcano",
+          "name": "Escudo arcano",
+          "desc": "Una barrera de maná que absorbe daño unos segundos.",
+          "tags": [
+            "escudo"
+          ],
+          "target": "self",
+          "range": 1,
+          "cooldownMs": 0,
+          "costBase": 12,
+          "costPct": true,
+          "resource": "mana",
+          "icon": "shield-plus",
+          "maxRank": 5,
+          "kind": "tech",
+          "spellId": 3
+        }
+      ],
+      "ults": [
+        {
+          "id": "ao_25",
+          "name": "Apocalipsis",
+          "desc": "El hechizo más poderoso de AO: daño mágico enorme.",
+          "tags": [
+            "dano"
+          ],
+          "target": "point",
+          "range": 8,
+          "cooldownMs": 0,
+          "costBase": 1000,
+          "costPct": false,
+          "resource": "mana",
+          "icon": "skull",
+          "maxRank": 3,
+          "kind": "aoSpell",
+          "spellId": 25
+        },
+        {
+          "id": "meteoros",
+          "name": "Lluvia de meteoros",
+          "desc": "Una gran zona donde caen meteoros: daño mágico y ralentización.",
+          "tags": [
+            "dano",
+            "control"
+          ],
+          "target": "point",
+          "range": 8,
+          "cooldownMs": 40000,
+          "costBase": 40,
+          "costPct": true,
+          "resource": "mana",
+          "icon": "meteor",
+          "maxRank": 3,
+          "kind": "tech",
+          "spellId": 23
+        }
+      ],
+      "specs": [
+        {
+          "id": "archimago",
+          "name": "Archimago",
+          "desc": "+12 % daño de hechizos y regeneración de maná x1,5, a cambio de 8 % menos de vida.",
+          "spell": 1.12,
+          "hp": 0.92,
+          "regen": 1.5
+        },
+        {
+          "id": "piromante",
+          "name": "Piromante",
+          "desc": "Tu daño mágico de habilidades deja una quemadura (25 % extra en 3 s).",
+          "burn": 0.25
+        },
+        {
+          "id": "barrera_arcana",
+          "name": "Barrera arcana",
+          "desc": "Al bajar de 40 % de vida se crea un escudo del 18 % de tu vida (cada 25 s).",
+          "emergencyShield": {
+            "below": 0.4,
+            "pct": 0.18,
+            "cdMs": 25000
+          }
+        }
+      ],
+      "kits": [
+        {
+          "id": "ofensivo",
+          "name": "Kit ofensivo",
+          "desc": "+6 % de daño físico y de hechizos.",
+          "phys": 1.06,
+          "spell": 1.06
+        },
+        {
+          "id": "defensivo",
+          "name": "Kit defensivo",
+          "desc": "+8 % de vida, 3 % menos de daño recibido y 4 pociones rojas extra.",
+          "hp": 1.08,
+          "dr": 0.03,
+          "redPotions": 4
+        },
+        {
+          "id": "utilidad",
+          "name": "Kit de utilidad",
+          "desc": "+4 % de velocidad, regeneración de recurso x1,15 y 6 pociones azules extra.",
+          "speed": 0.04,
+          "regen": 1.15,
+          "bluePotions": 6
+        }
+      ],
+      "defaultBuild": {
+        "abilities": [
+          "ao_23",
+          "ao_15",
+          "ao_8",
+          "ao_24"
+        ],
+        "ult": "ao_25",
+        "spec": "archimago",
+        "kit": "ofensivo"
+      }
+    },
+    "1": {
+      "templateId": 1,
+      "name": "Clérigo",
+      "role": "Sanador",
+      "resource": "mana",
+      "pool": [
+        {
+          "id": "ao_5",
+          "name": "Curar Heridas Graves",
+          "desc": "Cura bastante vida a un aliado (o a vos).",
+          "tags": [
+            "curacion"
+          ],
+          "target": "ally",
+          "range": 8,
+          "cooldownMs": 0,
+          "costBase": 40,
+          "costPct": false,
+          "resource": "mana",
+          "icon": "heart-pulse",
+          "maxRank": 5,
+          "kind": "aoSpell",
+          "spellId": 5
+        },
+        {
+          "id": "ao_3",
+          "name": "Curar Heridas Leves",
+          "desc": "Cura poca vida a un aliado (o a vos). Barato.",
+          "tags": [
+            "curacion"
+          ],
+          "target": "ally",
+          "range": 8,
+          "cooldownMs": 0,
+          "costBase": 10,
+          "costPct": false,
+          "resource": "mana",
+          "icon": "heart-pulse",
+          "maxRank": 5,
+          "kind": "aoSpell",
+          "spellId": 3
+        },
+        {
+          "id": "ao_10",
+          "name": "Remover Parálisis",
+          "desc": "Libera a un aliado de la parálisis o inmovilización.",
+          "tags": [
+            "utilidad"
+          ],
+          "target": "ally",
+          "range": 8,
+          "cooldownMs": 0,
+          "costBase": 300,
+          "costPct": false,
+          "resource": "mana",
+          "icon": "sparkles",
+          "maxRank": 5,
+          "kind": "aoSpell",
+          "spellId": 10
+        },
+        {
+          "id": "ao_24",
+          "name": "Inmovilizar",
+          "desc": "Inmoviliza al objetivo (no puede moverse).",
+          "tags": [
+            "control"
+          ],
+          "target": "point",
+          "range": 8,
+          "cooldownMs": 0,
+          "costBase": 300,
+          "costPct": false,
+          "resource": "mana",
+          "icon": "link",
+          "maxRank": 5,
+          "kind": "aoSpell",
+          "spellId": 24
+        },
+        {
+          "id": "ao_20",
+          "name": "Fuerza",
+          "desc": "Aumenta tu fuerza por un rato.",
+          "tags": [
+            "utilidad"
+          ],
+          "target": "self",
+          "range": 8,
+          "cooldownMs": 0,
+          "costBase": 50,
+          "costPct": false,
+          "resource": "mana",
+          "icon": "dumbbell",
+          "maxRank": 5,
+          "kind": "aoSpell",
+          "spellId": 20
+        },
+        {
+          "id": "ao_18",
+          "name": "Celeridad",
+          "desc": "Aumenta tu agilidad por un rato.",
+          "tags": [
+            "utilidad"
+          ],
+          "target": "self",
+          "range": 8,
+          "cooldownMs": 0,
+          "costBase": 40,
+          "costPct": false,
+          "resource": "mana",
+          "icon": "wind",
+          "maxRank": 5,
+          "kind": "aoSpell",
+          "spellId": 18
+        },
+        {
+          "id": "ao_15",
+          "name": "Tormenta de Fuego",
+          "desc": "Daño mágico fuerte a un objetivo.",
+          "tags": [
+            "dano"
+          ],
+          "target": "point",
+          "range": 8,
+          "cooldownMs": 0,
+          "costBase": 150,
+          "costPct": false,
+          "resource": "mana",
+          "icon": "flame",
+          "maxRank": 5,
+          "kind": "aoSpell",
+          "spellId": 15
+        },
+        {
+          "id": "escudo_sagrado",
+          "name": "Escudo sagrado",
+          "desc": "Protegés a un aliado con un escudo que absorbe daño.",
+          "tags": [
+            "escudo"
+          ],
+          "target": "ally",
+          "range": 8,
+          "cooldownMs": 0,
+          "costBase": 10,
+          "costPct": true,
+          "resource": "mana",
+          "icon": "shield-plus",
+          "maxRank": 5,
+          "kind": "tech",
+          "spellId": 3
+        },
+        {
+          "id": "sanacion_area",
+          "name": "Sanación en área",
+          "desc": "Curás a todos los aliados cercanos (y a vos).",
+          "tags": [
+            "curacion"
+          ],
+          "target": "area",
+          "range": 1,
+          "cooldownMs": 0,
+          "costBase": 18,
+          "costPct": true,
+          "resource": "mana",
+          "icon": "heart-handshake",
+          "maxRank": 5,
+          "kind": "tech",
+          "spellId": 5
+        }
+      ],
+      "ults": [
+        {
+          "id": "ao_9",
+          "name": "Paralizar",
+          "desc": "Paraliza al objetivo (no puede moverse) con la duración de AO.",
+          "tags": [
+            "control"
+          ],
+          "target": "point",
+          "range": 8,
+          "cooldownMs": 0,
+          "costBase": 400,
+          "costPct": false,
+          "resource": "mana",
+          "icon": "snowflake",
+          "maxRank": 3,
+          "kind": "aoSpell",
+          "spellId": 9
+        },
+        {
+          "id": "intervencion_divina",
+          "name": "Intervención divina",
+          "desc": "Curás mucho, protegés y liberás de controles a tus aliados cercanos.",
+          "tags": [
+            "curacion",
+            "escudo",
+            "utilidad"
+          ],
+          "target": "area",
+          "range": 1,
+          "cooldownMs": 45000,
+          "costBase": 50,
+          "costPct": true,
+          "resource": "mana",
+          "icon": "sparkles",
+          "maxRank": 3,
+          "kind": "tech",
+          "spellId": 5
+        }
+      ],
+      "specs": [
+        {
+          "id": "luz_sanadora",
+          "name": "Luz sanadora",
+          "desc": "Tus curaciones son un 25 % más fuertes.",
+          "heal": 1.25
+        },
+        {
+          "id": "castigador",
+          "name": "Castigador",
+          "desc": "+10 % daño de hechizos y 8 % de robo de vida.",
+          "spell": 1.1,
+          "lifesteal": 0.08
+        },
+        {
+          "id": "devoto",
+          "name": "Devoto",
+          "desc": "Cada 5 s un escudo del 4 % de vida para vos y tus aliados cercanos, y +5 % de vida.",
+          "hp": 1.05,
+          "auraShield": {
+            "pct": 0.04,
+            "radius": 7,
+            "everyMs": 5000
+          }
+        }
+      ],
+      "kits": [
+        {
+          "id": "ofensivo",
+          "name": "Kit ofensivo",
+          "desc": "+6 % de daño físico y de hechizos.",
+          "phys": 1.06,
+          "spell": 1.06
+        },
+        {
+          "id": "defensivo",
+          "name": "Kit defensivo",
+          "desc": "+8 % de vida, 3 % menos de daño recibido y 4 pociones rojas extra.",
+          "hp": 1.08,
+          "dr": 0.03,
+          "redPotions": 4
+        },
+        {
+          "id": "utilidad",
+          "name": "Kit de utilidad",
+          "desc": "+4 % de velocidad, regeneración de recurso x1,15 y 6 pociones azules extra.",
+          "speed": 0.04,
+          "regen": 1.15,
+          "bluePotions": 6
+        }
+      ],
+      "defaultBuild": {
+        "abilities": [
+          "ao_5",
+          "ao_3",
+          "ao_10",
+          "ao_24"
+        ],
+        "ult": "ao_9",
+        "spec": "luz_sanadora",
+        "kit": "ofensivo"
+      }
+    },
+    "2": {
+      "templateId": 2,
+      "name": "Guerrero",
+      "role": "Tanque",
+      "resource": "furia",
+      "pool": [
+        {
+          "id": "tajo_giratorio",
+          "name": "Tajo giratorio",
+          "desc": "Un tajo en círculo: daña a todos los enemigos pegados a vos.",
+          "tags": [
+            "dano"
+          ],
+          "target": "area",
+          "range": 1,
+          "cooldownMs": 0,
+          "costBase": 20,
+          "costPct": true,
+          "resource": "furia",
+          "icon": "axe",
+          "maxRank": 5,
+          "kind": "tech",
+          "spellId": 15
+        },
+        {
+          "id": "carga",
+          "name": "Carga",
+          "desc": "Embestís hasta 4 tiles en línea recta y aturdís al primero que choques.",
+          "tags": [
+            "movilidad",
+            "control",
+            "dano"
+          ],
+          "target": "line",
+          "range": 4,
+          "cooldownMs": 9000,
+          "costBase": 25,
+          "costPct": true,
+          "resource": "furia",
+          "icon": "chevrons-right",
+          "maxRank": 5,
+          "kind": "tech",
+          "spellId": 18
+        },
+        {
+          "id": "grito_guerra",
+          "name": "Grito de guerra",
+          "desc": "Vos y tus aliados cercanos ganan escudo y menos daño; los NPC enemigos te atacan a vos.",
+          "tags": [
+            "escudo",
+            "utilidad"
+          ],
+          "target": "area",
+          "range": 1,
+          "cooldownMs": 0,
+          "costBase": 30,
+          "costPct": true,
+          "resource": "furia",
+          "icon": "megaphone",
+          "maxRank": 5,
+          "kind": "tech",
+          "spellId": 3
+        },
+        {
+          "id": "golpe_aplastante",
+          "name": "Golpe aplastante",
+          "desc": "Un golpe brutal al objetivo de enfrente que además lo ralentiza.",
+          "tags": [
+            "dano",
+            "control"
+          ],
+          "target": "point",
+          "range": 1,
+          "cooldownMs": 0,
+          "costBase": 35,
+          "costPct": true,
+          "resource": "furia",
+          "icon": "hammer",
+          "maxRank": 5,
+          "kind": "tech",
+          "spellId": 8
+        },
+        {
+          "id": "estampida",
+          "name": "Estampida",
+          "desc": "Saltás hasta 5 tiles y al caer dañás y ralentizás a los de alrededor.",
+          "tags": [
+            "movilidad",
+            "dano",
+            "control"
+          ],
+          "target": "line",
+          "range": 5,
+          "cooldownMs": 10000,
+          "costBase": 20,
+          "costPct": true,
+          "resource": "furia",
+          "icon": "move-up-right",
+          "maxRank": 5,
+          "kind": "tech",
+          "spellId": 18
+        },
+        {
+          "id": "segundo_aliento",
+          "name": "Segundo aliento",
+          "desc": "Recuperás una parte de tu vida máxima.",
+          "tags": [
+            "curacion"
+          ],
+          "target": "self",
+          "range": 1,
+          "cooldownMs": 0,
+          "costBase": 35,
+          "costPct": true,
+          "resource": "furia",
+          "icon": "heart",
+          "maxRank": 5,
+          "kind": "tech",
+          "spellId": 5
+        },
+        {
+          "id": "escudazo",
+          "name": "Escudazo",
+          "desc": "Golpeás con el escudo: poco daño, un aturdimiento muy corto y empujás al objetivo 1 tile.",
+          "tags": [
+            "control",
+            "dano"
+          ],
+          "target": "point",
+          "range": 1,
+          "cooldownMs": 0,
+          "costBase": 30,
+          "costPct": true,
+          "resource": "furia",
+          "icon": "shield-alert",
+          "maxRank": 5,
+          "kind": "tech",
+          "spellId": 24
+        },
+        {
+          "id": "desgarrar",
+          "name": "Desgarrar",
+          "desc": "Un tajo que deja una herida sangrante varios segundos.",
+          "tags": [
+            "dano"
+          ],
+          "target": "point",
+          "range": 1,
+          "cooldownMs": 0,
+          "costBase": 20,
+          "costPct": true,
+          "resource": "furia",
+          "icon": "droplets",
+          "maxRank": 5,
+          "kind": "tech",
+          "spellId": 8
+        }
+      ],
+      "ults": [
+        {
+          "id": "ejecucion",
+          "name": "Ejecución",
+          "desc": "Golpe devastador; mucho más fuerte contra enemigos con poca vida.",
+          "tags": [
+            "dano"
+          ],
+          "target": "point",
+          "range": 1,
+          "cooldownMs": 30000,
+          "costBase": 50,
+          "costPct": true,
+          "resource": "furia",
+          "icon": "skull",
+          "maxRank": 3,
+          "kind": "tech",
+          "spellId": 8
+        },
+        {
+          "id": "furia_imparable",
+          "name": "Furia imparable",
+          "desc": "Por unos segundos pegás más fuerte, te curás con cada golpe y recibís menos daño.",
+          "tags": [
+            "utilidad",
+            "dano"
+          ],
+          "target": "self",
+          "range": 1,
+          "cooldownMs": 40000,
+          "costBase": 40,
+          "costPct": true,
+          "resource": "furia",
+          "icon": "flame",
+          "maxRank": 3,
+          "kind": "tech",
+          "spellId": 20
+        }
+      ],
+      "specs": [
+        {
+          "id": "coloso",
+          "name": "Coloso",
+          "desc": "+20 % de vida y 10 % menos de daño recibido, pero te movés 10 % más lento.",
+          "hp": 1.2,
+          "dr": 0.1,
+          "speed": -0.1
+        },
+        {
+          "id": "berserker",
+          "name": "Berserker",
+          "desc": "10 % de robo de vida y hasta +35 % de daño cuanto menos vida tenés.",
+          "lifesteal": 0.1,
+          "lowHpDmg": 0.35
+        },
+        {
+          "id": "guardian",
+          "name": "Guardián",
+          "desc": "Cada 4 s un escudo del 5 % de vida para tus aliados cercanos y para vos, y 4 % menos daño recibido.",
+          "dr": 0.04,
+          "auraShield": {
+            "pct": 0.05,
+            "radius": 6,
+            "everyMs": 4000
+          }
+        }
+      ],
+      "kits": [
+        {
+          "id": "ofensivo",
+          "name": "Kit ofensivo",
+          "desc": "+6 % de daño físico y de hechizos.",
+          "phys": 1.06,
+          "spell": 1.06
+        },
+        {
+          "id": "defensivo",
+          "name": "Kit defensivo",
+          "desc": "+8 % de vida, 3 % menos de daño recibido y 4 pociones rojas extra.",
+          "hp": 1.08,
+          "dr": 0.03,
+          "redPotions": 4
+        },
+        {
+          "id": "utilidad",
+          "name": "Kit de utilidad",
+          "desc": "+4 % de velocidad, regeneración de recurso x1,15 y 6 pociones azules extra.",
+          "speed": 0.04,
+          "regen": 1.15,
+          "bluePotions": 6
+        }
+      ],
+      "defaultBuild": {
+        "abilities": [
+          "tajo_giratorio",
+          "carga",
+          "grito_guerra",
+          "golpe_aplastante"
+        ],
+        "ult": "ejecucion",
+        "spec": "coloso",
+        "kit": "ofensivo"
+      }
+    },
+    "3": {
+      "templateId": 3,
+      "name": "Asesino",
+      "role": "Emboscada",
+      "resource": "energia",
+      "pool": [
+        {
+          "id": "punalada",
+          "name": "Puñalada",
+          "desc": "Te teletransportás junto a tu objetivo y lo apuñalás.",
+          "tags": [
+            "movilidad",
+            "dano"
+          ],
+          "target": "point",
+          "range": 6,
+          "cooldownMs": 7000,
+          "costBase": 20,
+          "costPct": true,
+          "resource": "energia",
+          "icon": "zap",
+          "maxRank": 5,
+          "kind": "tech",
+          "spellId": 8
+        },
+        {
+          "id": "humo",
+          "name": "Humo",
+          "desc": "Te escondés en una bomba de humo: invisible y más rápido unos segundos.",
+          "tags": [
+            "utilidad",
+            "movilidad"
+          ],
+          "target": "self",
+          "range": 1,
+          "cooldownMs": 18000,
+          "costBase": 30,
+          "costPct": true,
+          "resource": "energia",
+          "icon": "cloud",
+          "maxRank": 5,
+          "kind": "tech",
+          "spellId": 14
+        },
+        {
+          "id": "veneno",
+          "name": "Veneno",
+          "desc": "Un corte con daga envenenada: daño inicial y veneno en el tiempo.",
+          "tags": [
+            "dano"
+          ],
+          "target": "point",
+          "range": 1,
+          "cooldownMs": 0,
+          "costBase": 15,
+          "costPct": true,
+          "resource": "energia",
+          "icon": "flask-conical",
+          "maxRank": 5,
+          "kind": "tech",
+          "spellId": 8
+        },
+        {
+          "id": "abanico_dagas",
+          "name": "Abanico de dagas",
+          "desc": "Lanzás dagas en abanico: daña a todos los enemigos del cono.",
+          "tags": [
+            "dano"
+          ],
+          "target": "line",
+          "range": 4,
+          "cooldownMs": 0,
+          "costBase": 25,
+          "costPct": true,
+          "resource": "energia",
+          "icon": "fan",
+          "maxRank": 5,
+          "kind": "tech",
+          "spellId": 15
+        },
+        {
+          "id": "golpe_bajo",
+          "name": "Golpe bajo",
+          "desc": "Un golpe a las piernas: daño y ralentización fuerte.",
+          "tags": [
+            "dano",
+            "control"
+          ],
+          "target": "point",
+          "range": 1,
+          "cooldownMs": 0,
+          "costBase": 18,
+          "costPct": true,
+          "resource": "energia",
+          "icon": "footprints",
+          "maxRank": 5,
+          "kind": "tech",
+          "spellId": 24
+        },
+        {
+          "id": "ao_18",
+          "name": "Celeridad",
+          "desc": "Aumenta tu agilidad por un rato.",
+          "tags": [
+            "utilidad"
+          ],
+          "target": "self",
+          "range": 8,
+          "cooldownMs": 0,
+          "costBase": 40,
+          "costPct": false,
+          "resource": "energia",
+          "icon": "wind",
+          "maxRank": 5,
+          "kind": "aoSpell",
+          "spellId": 18
+        },
+        {
+          "id": "ao_20",
+          "name": "Fuerza",
+          "desc": "Aumenta tu fuerza por un rato.",
+          "tags": [
+            "utilidad"
+          ],
+          "target": "self",
+          "range": 8,
+          "cooldownMs": 0,
+          "costBase": 50,
+          "costPct": false,
+          "resource": "energia",
+          "icon": "dumbbell",
+          "maxRank": 5,
+          "kind": "aoSpell",
+          "spellId": 20
+        },
+        {
+          "id": "ao_8",
+          "name": "Proyectil Mágico",
+          "desc": "Daño mágico barato a un objetivo.",
+          "tags": [
+            "dano"
+          ],
+          "target": "point",
+          "range": 8,
+          "cooldownMs": 0,
+          "costBase": 45,
+          "costPct": false,
+          "resource": "energia",
+          "icon": "wand-sparkles",
+          "maxRank": 5,
+          "kind": "aoSpell",
+          "spellId": 8
+        },
+        {
+          "id": "ao_24",
+          "name": "Inmovilizar",
+          "desc": "Inmoviliza al objetivo (no puede moverse).",
+          "tags": [
+            "control"
+          ],
+          "target": "point",
+          "range": 8,
+          "cooldownMs": 0,
+          "costBase": 300,
+          "costPct": false,
+          "resource": "energia",
+          "icon": "link",
+          "maxRank": 5,
+          "kind": "aoSpell",
+          "spellId": 24
+        }
+      ],
+      "ults": [
+        {
+          "id": "ejecutar",
+          "name": "Ejecutar",
+          "desc": "Un golpe mortal contra el objetivo de enfrente; muchísimo más fuerte si le queda poca vida.",
+          "tags": [
+            "dano"
+          ],
+          "target": "point",
+          "range": 1,
+          "cooldownMs": 30000,
+          "costBase": 50,
+          "costPct": true,
+          "resource": "energia",
+          "icon": "skull",
+          "maxRank": 3,
+          "kind": "tech",
+          "spellId": 8
+        },
+        {
+          "id": "ao_14",
+          "name": "Invisibilidad",
+          "desc": "Te vuelve invisible hasta que ataques o te golpeen.",
+          "tags": [
+            "utilidad"
+          ],
+          "target": "self",
+          "range": 8,
+          "cooldownMs": 0,
+          "costBase": 500,
+          "costPct": false,
+          "resource": "energia",
+          "icon": "eye-off",
+          "maxRank": 3,
+          "kind": "aoSpell",
+          "spellId": 14
+        }
+      ],
+      "specs": [
+        {
+          "id": "sombra",
+          "name": "Sombra",
+          "desc": "+8 % de velocidad; al matar recuperás todo tu recurso y 10 % de vida.",
+          "speed": 0.08,
+          "onKillResource": 1,
+          "onKillHeal": 0.1
+        },
+        {
+          "id": "envenenador",
+          "name": "Envenenador",
+          "desc": "Tus golpes y habilidades ralentizan (20 %) y el daño envenena (+25 % en 3 s).",
+          "slowOnHit": {
+            "pct": 0.2,
+            "ms": 1500
+          },
+          "burn": 0.25
+        },
+        {
+          "id": "cazarrecompensas",
+          "name": "Cazarrecompensas",
+          "desc": "+5 % de daño físico y +30 % de daño contra enemigos con poca vida.",
+          "phys": 1.05,
+          "execBonus": 0.3
+        }
+      ],
+      "kits": [
+        {
+          "id": "ofensivo",
+          "name": "Kit ofensivo",
+          "desc": "+6 % de daño físico y de hechizos.",
+          "phys": 1.06,
+          "spell": 1.06
+        },
+        {
+          "id": "defensivo",
+          "name": "Kit defensivo",
+          "desc": "+8 % de vida, 3 % menos de daño recibido y 4 pociones rojas extra.",
+          "hp": 1.08,
+          "dr": 0.03,
+          "redPotions": 4
+        },
+        {
+          "id": "utilidad",
+          "name": "Kit de utilidad",
+          "desc": "+4 % de velocidad, regeneración de recurso x1,15 y 6 pociones azules extra.",
+          "speed": 0.04,
+          "regen": 1.15,
+          "bluePotions": 6
+        }
+      ],
+      "defaultBuild": {
+        "abilities": [
+          "punalada",
+          "veneno",
+          "ao_18",
+          "abanico_dagas"
+        ],
+        "ult": "ejecutar",
+        "spec": "cazarrecompensas",
+        "kit": "ofensivo"
+      }
+    },
+    "4": {
+      "templateId": 4,
+      "name": "Bardo",
+      "role": "Apoyo",
+      "resource": "mana",
+      "pool": [
+        {
+          "id": "ao_3",
+          "name": "Curar Heridas Leves",
+          "desc": "Cura poca vida a un aliado (o a vos). Barato.",
+          "tags": [
+            "curacion"
+          ],
+          "target": "ally",
+          "range": 8,
+          "cooldownMs": 0,
+          "costBase": 10,
+          "costPct": false,
+          "resource": "mana",
+          "icon": "heart-pulse",
+          "maxRank": 5,
+          "kind": "aoSpell",
+          "spellId": 3
+        },
+        {
+          "id": "ao_5",
+          "name": "Curar Heridas Graves",
+          "desc": "Cura bastante vida a un aliado (o a vos).",
+          "tags": [
+            "curacion"
+          ],
+          "target": "ally",
+          "range": 8,
+          "cooldownMs": 0,
+          "costBase": 40,
+          "costPct": false,
+          "resource": "mana",
+          "icon": "heart-pulse",
+          "maxRank": 5,
+          "kind": "aoSpell",
+          "spellId": 5
+        },
+        {
+          "id": "ao_20",
+          "name": "Fuerza",
+          "desc": "Aumenta tu fuerza por un rato.",
+          "tags": [
+            "utilidad"
+          ],
+          "target": "self",
+          "range": 8,
+          "cooldownMs": 0,
+          "costBase": 50,
+          "costPct": false,
+          "resource": "mana",
+          "icon": "dumbbell",
+          "maxRank": 5,
+          "kind": "aoSpell",
+          "spellId": 20
+        },
+        {
+          "id": "ao_18",
+          "name": "Celeridad",
+          "desc": "Aumenta tu agilidad por un rato.",
+          "tags": [
+            "utilidad"
+          ],
+          "target": "self",
+          "range": 8,
+          "cooldownMs": 0,
+          "costBase": 40,
+          "costPct": false,
+          "resource": "mana",
+          "icon": "wind",
+          "maxRank": 5,
+          "kind": "aoSpell",
+          "spellId": 18
+        },
+        {
+          "id": "ao_24",
+          "name": "Inmovilizar",
+          "desc": "Inmoviliza al objetivo (no puede moverse).",
+          "tags": [
+            "control"
+          ],
+          "target": "point",
+          "range": 8,
+          "cooldownMs": 0,
+          "costBase": 300,
+          "costPct": false,
+          "resource": "mana",
+          "icon": "link",
+          "maxRank": 5,
+          "kind": "aoSpell",
+          "spellId": 24
+        },
+        {
+          "id": "cancion_velocidad",
+          "name": "Canción de velocidad",
+          "desc": "Una melodía que acelera a tus aliados cercanos.",
+          "tags": [
+            "utilidad",
+            "movilidad"
+          ],
+          "target": "area",
+          "range": 1,
+          "cooldownMs": 0,
+          "costBase": 10,
+          "costPct": true,
+          "resource": "mana",
+          "icon": "music",
+          "maxRank": 5,
+          "kind": "tech",
+          "spellId": 18
+        },
+        {
+          "id": "himno_escudo",
+          "name": "Himno de escudo",
+          "desc": "Un himno que da un escudo a tus aliados cercanos.",
+          "tags": [
+            "escudo"
+          ],
+          "target": "area",
+          "range": 1,
+          "cooldownMs": 0,
+          "costBase": 14,
+          "costPct": true,
+          "resource": "mana",
+          "icon": "music-2",
+          "maxRank": 5,
+          "kind": "tech",
+          "spellId": 3
+        },
+        {
+          "id": "disonancia",
+          "name": "Disonancia",
+          "desc": "Un acorde estridente: daño mágico y ralentización a los enemigos cercanos.",
+          "tags": [
+            "dano",
+            "control"
+          ],
+          "target": "area",
+          "range": 1,
+          "cooldownMs": 0,
+          "costBase": 14,
+          "costPct": true,
+          "resource": "mana",
+          "icon": "audio-waveform",
+          "maxRank": 5,
+          "kind": "tech",
+          "spellId": 15
+        }
+      ],
+      "ults": [
+        {
+          "id": "ao_15",
+          "name": "Tormenta de Fuego",
+          "desc": "Daño mágico fuerte a un objetivo.",
+          "tags": [
+            "dano"
+          ],
+          "target": "point",
+          "range": 8,
+          "cooldownMs": 0,
+          "costBase": 150,
+          "costPct": false,
+          "resource": "mana",
+          "icon": "flame",
+          "maxRank": 3,
+          "kind": "aoSpell",
+          "spellId": 15
+        },
+        {
+          "id": "concierto_epico",
+          "name": "Concierto épico",
+          "desc": "Curás, protegés y acelerás a tus aliados cercanos.",
+          "tags": [
+            "curacion",
+            "escudo",
+            "utilidad"
+          ],
+          "target": "area",
+          "range": 1,
+          "cooldownMs": 40000,
+          "costBase": 45,
+          "costPct": true,
+          "resource": "mana",
+          "icon": "mic-vocal",
+          "maxRank": 3,
+          "kind": "tech",
+          "spellId": 5
+        }
+      ],
+      "specs": [
+        {
+          "id": "maestro_ritmo",
+          "name": "Maestro del ritmo",
+          "desc": "+6 % de velocidad y regeneración de maná x1,3.",
+          "speed": 0.06,
+          "regen": 1.3
+        },
+        {
+          "id": "trovador",
+          "name": "Trovador",
+          "desc": "Curaciones y escudos un 20 % más fuertes.",
+          "heal": 1.2,
+          "shield": 1.2
+        },
+        {
+          "id": "juglar",
+          "name": "Juglar",
+          "desc": "+10 % de daño de hechizos y tus golpes ralentizan un poco.",
+          "spell": 1.1,
+          "slowOnHit": {
+            "pct": 0.15,
+            "ms": 1200
+          }
+        }
+      ],
+      "kits": [
+        {
+          "id": "ofensivo",
+          "name": "Kit ofensivo",
+          "desc": "+6 % de daño físico y de hechizos.",
+          "phys": 1.06,
+          "spell": 1.06
+        },
+        {
+          "id": "defensivo",
+          "name": "Kit defensivo",
+          "desc": "+8 % de vida, 3 % menos de daño recibido y 4 pociones rojas extra.",
+          "hp": 1.08,
+          "dr": 0.03,
+          "redPotions": 4
+        },
+        {
+          "id": "utilidad",
+          "name": "Kit de utilidad",
+          "desc": "+4 % de velocidad, regeneración de recurso x1,15 y 6 pociones azules extra.",
+          "speed": 0.04,
+          "regen": 1.15,
+          "bluePotions": 6
+        }
+      ],
+      "defaultBuild": {
+        "abilities": [
+          "ao_5",
+          "ao_20",
+          "disonancia",
+          "ao_18"
+        ],
+        "ult": "ao_15",
+        "spec": "trovador",
+        "kit": "ofensivo"
+      }
+    },
+    "5": {
+      "templateId": 5,
+      "name": "Druida",
+      "role": "Control",
+      "resource": "mana",
+      "pool": [
+        {
+          "id": "ao_9",
+          "name": "Paralizar",
+          "desc": "Paraliza al objetivo (no puede moverse) con la duración de AO.",
+          "tags": [
+            "control"
+          ],
+          "target": "point",
+          "range": 8,
+          "cooldownMs": 0,
+          "costBase": 400,
+          "costPct": false,
+          "resource": "mana",
+          "icon": "snowflake",
+          "maxRank": 5,
+          "kind": "aoSpell",
+          "spellId": 9
+        },
+        {
+          "id": "ao_24",
+          "name": "Inmovilizar",
+          "desc": "Inmoviliza al objetivo (no puede moverse).",
+          "tags": [
+            "control"
+          ],
+          "target": "point",
+          "range": 8,
+          "cooldownMs": 0,
+          "costBase": 300,
+          "costPct": false,
+          "resource": "mana",
+          "icon": "link",
+          "maxRank": 5,
+          "kind": "aoSpell",
+          "spellId": 24
+        },
+        {
+          "id": "ao_5",
+          "name": "Curar Heridas Graves",
+          "desc": "Cura bastante vida a un aliado (o a vos).",
+          "tags": [
+            "curacion"
+          ],
+          "target": "ally",
+          "range": 8,
+          "cooldownMs": 0,
+          "costBase": 40,
+          "costPct": false,
+          "resource": "mana",
+          "icon": "heart-pulse",
+          "maxRank": 5,
+          "kind": "aoSpell",
+          "spellId": 5
+        },
+        {
+          "id": "ao_8",
+          "name": "Proyectil Mágico",
+          "desc": "Daño mágico barato a un objetivo.",
+          "tags": [
+            "dano"
+          ],
+          "target": "point",
+          "range": 8,
+          "cooldownMs": 0,
+          "costBase": 45,
+          "costPct": false,
+          "resource": "mana",
+          "icon": "wand-sparkles",
+          "maxRank": 5,
+          "kind": "aoSpell",
+          "spellId": 8
+        },
+        {
+          "id": "ao_20",
+          "name": "Fuerza",
+          "desc": "Aumenta tu fuerza por un rato.",
+          "tags": [
+            "utilidad"
+          ],
+          "target": "self",
+          "range": 8,
+          "cooldownMs": 0,
+          "costBase": 50,
+          "costPct": false,
+          "resource": "mana",
+          "icon": "dumbbell",
+          "maxRank": 5,
+          "kind": "aoSpell",
+          "spellId": 20
+        },
+        {
+          "id": "raices",
+          "name": "Raíces",
+          "desc": "Raíces que brotan del suelo e inmovilizan a quien las pise.",
+          "tags": [
+            "control"
+          ],
+          "target": "point",
+          "range": 8,
+          "cooldownMs": 0,
+          "costBase": 16,
+          "costPct": true,
+          "resource": "mana",
+          "icon": "sprout",
+          "maxRank": 5,
+          "kind": "tech",
+          "spellId": 24
+        },
+        {
+          "id": "enjambre",
+          "name": "Enjambre",
+          "desc": "Una nube de insectos pica a los enemigos cercanos durante unos segundos.",
+          "tags": [
+            "dano"
+          ],
+          "target": "area",
+          "range": 1,
+          "cooldownMs": 0,
+          "costBase": 16,
+          "costPct": true,
+          "resource": "mana",
+          "icon": "bug",
+          "maxRank": 5,
+          "kind": "tech",
+          "spellId": 15
+        },
+        {
+          "id": "forma_corteza",
+          "name": "Forma de corteza",
+          "desc": "Tu piel se endurece: recibís menos daño y te curás un poco.",
+          "tags": [
+            "escudo",
+            "curacion"
+          ],
+          "target": "self",
+          "range": 1,
+          "cooldownMs": 15000,
+          "costBase": 15,
+          "costPct": true,
+          "resource": "mana",
+          "icon": "trees",
+          "maxRank": 5,
+          "kind": "tech",
+          "spellId": 3
+        }
+      ],
+      "ults": [
+        {
+          "id": "ao_15",
+          "name": "Tormenta de Fuego",
+          "desc": "Daño mágico fuerte a un objetivo.",
+          "tags": [
+            "dano"
+          ],
+          "target": "point",
+          "range": 8,
+          "cooldownMs": 0,
+          "costBase": 150,
+          "costPct": false,
+          "resource": "mana",
+          "icon": "flame",
+          "maxRank": 3,
+          "kind": "aoSpell",
+          "spellId": 15
+        },
+        {
+          "id": "ira_naturaleza",
+          "name": "Ira de la naturaleza",
+          "desc": "Una zona enorme donde la tierra ataca e inmoviliza a los enemigos.",
+          "tags": [
+            "dano",
+            "control"
+          ],
+          "target": "point",
+          "range": 8,
+          "cooldownMs": 40000,
+          "costBase": 45,
+          "costPct": true,
+          "resource": "mana",
+          "icon": "leaf",
+          "maxRank": 3,
+          "kind": "tech",
+          "spellId": 23
+        }
+      ],
+      "specs": [
+        {
+          "id": "guardian_bosque",
+          "name": "Guardián del bosque",
+          "desc": "+12 % de vida y 6 % menos de daño recibido.",
+          "hp": 1.12,
+          "dr": 0.06
+        },
+        {
+          "id": "cazador_naturaleza",
+          "name": "Cazador de la naturaleza",
+          "desc": "Tu daño de habilidades quema (+25 %) y ralentiza (20 %).",
+          "burn": 0.25,
+          "slowOnHit": {
+            "pct": 0.2,
+            "ms": 1500
+          }
+        },
+        {
+          "id": "chaman",
+          "name": "Chamán",
+          "desc": "Curaciones x1,2, regeneración de maná x1,3 y los controles duran 15 % más.",
+          "heal": 1.2,
+          "regen": 1.3,
+          "cc": 1.15
+        }
+      ],
+      "kits": [
+        {
+          "id": "ofensivo",
+          "name": "Kit ofensivo",
+          "desc": "+6 % de daño físico y de hechizos.",
+          "phys": 1.06,
+          "spell": 1.06
+        },
+        {
+          "id": "defensivo",
+          "name": "Kit defensivo",
+          "desc": "+8 % de vida, 3 % menos de daño recibido y 4 pociones rojas extra.",
+          "hp": 1.08,
+          "dr": 0.03,
+          "redPotions": 4
+        },
+        {
+          "id": "utilidad",
+          "name": "Kit de utilidad",
+          "desc": "+4 % de velocidad, regeneración de recurso x1,15 y 6 pociones azules extra.",
+          "speed": 0.04,
+          "regen": 1.15,
+          "bluePotions": 6
+        }
+      ],
+      "defaultBuild": {
+        "abilities": [
+          "ao_9",
+          "ao_24",
+          "ao_5",
+          "ao_8"
+        ],
+        "ult": "ao_15",
+        "spec": "guardian_bosque",
+        "kit": "ofensivo"
+      }
+    },
+    "6": {
+      "templateId": 6,
+      "name": "Paladín",
+      "role": "Combatiente",
+      "resource": "mana",
+      "pool": [
+        {
+          "id": "golpe_sagrado",
+          "name": "Golpe sagrado",
+          "desc": "Golpe con tu arma bendecida: daña al objetivo y te cura un poco.",
+          "tags": [
+            "dano",
+            "curacion"
+          ],
+          "target": "point",
+          "range": 1,
+          "cooldownMs": 0,
+          "costBase": 20,
+          "costPct": true,
+          "resource": "mana",
+          "icon": "sword",
+          "maxRank": 5,
+          "kind": "tech",
+          "spellId": 8
+        },
+        {
+          "id": "escudo_divino",
+          "name": "Escudo divino",
+          "desc": "Un escudo de luz que absorbe daño unos segundos.",
+          "tags": [
+            "escudo"
+          ],
+          "target": "self",
+          "range": 1,
+          "cooldownMs": 0,
+          "costBase": 30,
+          "costPct": true,
+          "resource": "mana",
+          "icon": "shield",
+          "maxRank": 5,
+          "kind": "tech",
+          "spellId": 3
+        },
+        {
+          "id": "juicio",
+          "name": "Juicio",
+          "desc": "Aturdís brevemente al objetivo cercano.",
+          "tags": [
+            "control",
+            "dano"
+          ],
+          "target": "point",
+          "range": 2,
+          "cooldownMs": 6000,
+          "costBase": 30,
+          "costPct": true,
+          "resource": "mana",
+          "icon": "gavel",
+          "maxRank": 5,
+          "kind": "tech",
+          "spellId": 24
+        },
+        {
+          "id": "aura_coraje",
+          "name": "Aura de coraje",
+          "desc": "Vos y tus aliados cercanos pegan más y reciben menos daño unos segundos.",
+          "tags": [
+            "utilidad"
+          ],
+          "target": "area",
+          "range": 1,
+          "cooldownMs": 0,
+          "costBase": 30,
+          "costPct": true,
+          "resource": "mana",
+          "icon": "sun",
+          "maxRank": 5,
+          "kind": "tech",
+          "spellId": 20
+        },
+        {
+          "id": "ao_3",
+          "name": "Curar Heridas Leves",
+          "desc": "Cura poca vida a un aliado (o a vos). Barato.",
+          "tags": [
+            "curacion"
+          ],
+          "target": "ally",
+          "range": 8,
+          "cooldownMs": 0,
+          "costBase": 10,
+          "costPct": false,
+          "resource": "mana",
+          "icon": "heart-pulse",
+          "maxRank": 5,
+          "kind": "aoSpell",
+          "spellId": 3
+        },
+        {
+          "id": "ao_5",
+          "name": "Curar Heridas Graves",
+          "desc": "Cura bastante vida a un aliado (o a vos).",
+          "tags": [
+            "curacion"
+          ],
+          "target": "ally",
+          "range": 8,
+          "cooldownMs": 0,
+          "costBase": 40,
+          "costPct": false,
+          "resource": "mana",
+          "icon": "heart-pulse",
+          "maxRank": 5,
+          "kind": "aoSpell",
+          "spellId": 5
+        },
+        {
+          "id": "ao_10",
+          "name": "Remover Parálisis",
+          "desc": "Libera a un aliado de la parálisis o inmovilización.",
+          "tags": [
+            "utilidad"
+          ],
+          "target": "ally",
+          "range": 8,
+          "cooldownMs": 0,
+          "costBase": 300,
+          "costPct": false,
+          "resource": "mana",
+          "icon": "sparkles",
+          "maxRank": 5,
+          "kind": "aoSpell",
+          "spellId": 10
+        },
+        {
+          "id": "ao_8",
+          "name": "Proyectil Mágico",
+          "desc": "Daño mágico barato a un objetivo.",
+          "tags": [
+            "dano"
+          ],
+          "target": "point",
+          "range": 8,
+          "cooldownMs": 0,
+          "costBase": 45,
+          "costPct": false,
+          "resource": "mana",
+          "icon": "wand-sparkles",
+          "maxRank": 5,
+          "kind": "aoSpell",
+          "spellId": 8
+        },
+        {
+          "id": "ao_20",
+          "name": "Fuerza",
+          "desc": "Aumenta tu fuerza por un rato.",
+          "tags": [
+            "utilidad"
+          ],
+          "target": "self",
+          "range": 8,
+          "cooldownMs": 0,
+          "costBase": 50,
+          "costPct": false,
+          "resource": "mana",
+          "icon": "dumbbell",
+          "maxRank": 5,
+          "kind": "aoSpell",
+          "spellId": 20
+        }
+      ],
+      "ults": [
+        {
+          "id": "martillo_redencion",
+          "name": "Martillo de redención",
+          "desc": "Un martillazo en área: daña y aturde a los enemigos y cura a tus aliados cercanos.",
+          "tags": [
+            "dano",
+            "curacion",
+            "control"
+          ],
+          "target": "area",
+          "range": 1,
+          "cooldownMs": 35000,
+          "costBase": 50,
+          "costPct": true,
+          "resource": "mana",
+          "icon": "hammer",
+          "maxRank": 3,
+          "kind": "tech",
+          "spellId": 15
+        },
+        {
+          "id": "ao_24",
+          "name": "Inmovilizar",
+          "desc": "Inmoviliza al objetivo (no puede moverse).",
+          "tags": [
+            "control"
+          ],
+          "target": "point",
+          "range": 8,
+          "cooldownMs": 0,
+          "costBase": 300,
+          "costPct": false,
+          "resource": "mana",
+          "icon": "link",
+          "maxRank": 3,
+          "kind": "aoSpell",
+          "spellId": 24
+        }
+      ],
+      "specs": [
+        {
+          "id": "cruzado",
+          "name": "Cruzado",
+          "desc": "+8 % de daño físico y 6 % de robo de vida.",
+          "phys": 1.08,
+          "lifesteal": 0.06
+        },
+        {
+          "id": "protector",
+          "name": "Protector",
+          "desc": "8 % menos de daño recibido y un escudo periódico (4 % cada 5 s) para aliados cercanos.",
+          "dr": 0.08,
+          "auraShield": {
+            "pct": 0.04,
+            "radius": 6,
+            "everyMs": 5000
+          }
+        },
+        {
+          "id": "inquisidor",
+          "name": "Inquisidor",
+          "desc": "+12 % de daño de hechizos y tus controles duran 25 % más.",
+          "spell": 1.12,
+          "cc": 1.25
+        }
+      ],
+      "kits": [
+        {
+          "id": "ofensivo",
+          "name": "Kit ofensivo",
+          "desc": "+6 % de daño físico y de hechizos.",
+          "phys": 1.06,
+          "spell": 1.06
+        },
+        {
+          "id": "defensivo",
+          "name": "Kit defensivo",
+          "desc": "+8 % de vida, 3 % menos de daño recibido y 4 pociones rojas extra.",
+          "hp": 1.08,
+          "dr": 0.03,
+          "redPotions": 4
+        },
+        {
+          "id": "utilidad",
+          "name": "Kit de utilidad",
+          "desc": "+4 % de velocidad, regeneración de recurso x1,15 y 6 pociones azules extra.",
+          "speed": 0.04,
+          "regen": 1.15,
+          "bluePotions": 6
+        }
+      ],
+      "defaultBuild": {
+        "abilities": [
+          "golpe_sagrado",
+          "escudo_divino",
+          "ao_5",
+          "ao_10"
+        ],
+        "ult": "martillo_redencion",
+        "spec": "cruzado",
+        "kit": "ofensivo"
+      }
+    },
+    "7": {
+      "templateId": 7,
+      "name": "Cazador",
+      "role": "Tirador",
+      "resource": "energia",
+      "pool": [
+        {
+          "id": "disparo_certero",
+          "name": "Disparo certero",
+          "desc": "Una flecha en línea recta que golpea al primero que encuentra.",
+          "tags": [
+            "dano"
+          ],
+          "target": "line",
+          "range": 9,
+          "cooldownMs": 0,
+          "costBase": 20,
+          "costPct": true,
+          "resource": "energia",
+          "icon": "crosshair",
+          "maxRank": 5,
+          "kind": "tech",
+          "spellId": 8
+        },
+        {
+          "id": "lluvia_flechas",
+          "name": "Lluvia de flechas",
+          "desc": "Una zona donde caen flechas unos segundos, dañando y ralentizando.",
+          "tags": [
+            "dano",
+            "control"
+          ],
+          "target": "point",
+          "range": 8,
+          "cooldownMs": 0,
+          "costBase": 30,
+          "costPct": true,
+          "resource": "energia",
+          "icon": "cloud-rain",
+          "maxRank": 5,
+          "kind": "tech",
+          "spellId": 15
+        },
+        {
+          "id": "trampa",
+          "name": "Trampa",
+          "desc": "Dejás una trampa invisible: inmoviliza y daña al primer enemigo que pase.",
+          "tags": [
+            "control",
+            "dano"
+          ],
+          "target": "point",
+          "range": 5,
+          "cooldownMs": 0,
+          "costBase": 20,
+          "costPct": true,
+          "resource": "energia",
+          "icon": "triangle-alert",
+          "maxRank": 5,
+          "kind": "tech",
+          "spellId": 24
+        },
+        {
+          "id": "voltereta",
+          "name": "Voltereta",
+          "desc": "Saltás hasta 4 tiles hacia el lado contrario al que apuntás.",
+          "tags": [
+            "movilidad"
+          ],
+          "target": "line",
+          "range": 4,
+          "cooldownMs": 8000,
+          "costBase": 15,
+          "costPct": true,
+          "resource": "energia",
+          "icon": "undo-2",
+          "maxRank": 5,
+          "kind": "tech",
+          "spellId": 18
+        },
+        {
+          "id": "disparo_ralentizante",
+          "name": "Disparo ralentizante",
+          "desc": "Flecha que daña poco y ralentiza mucho.",
+          "tags": [
+            "dano",
+            "control"
+          ],
+          "target": "line",
+          "range": 8,
+          "cooldownMs": 0,
+          "costBase": 18,
+          "costPct": true,
+          "resource": "energia",
+          "icon": "snail",
+          "maxRank": 5,
+          "kind": "tech",
+          "spellId": 24
+        },
+        {
+          "id": "camuflaje",
+          "name": "Camuflaje",
+          "desc": "Te volvés invisible un rato (invisibilidad de AO).",
+          "tags": [
+            "utilidad"
+          ],
+          "target": "self",
+          "range": 1,
+          "cooldownMs": 20000,
+          "costBase": 35,
+          "costPct": true,
+          "resource": "energia",
+          "icon": "eye-off",
+          "maxRank": 5,
+          "kind": "tech",
+          "spellId": 14
+        },
+        {
+          "id": "disparo_multiple",
+          "name": "Disparo múltiple",
+          "desc": "Una ráfaga en abanico: daña a todos los enemigos en un cono corto.",
+          "tags": [
+            "dano"
+          ],
+          "target": "line",
+          "range": 5,
+          "cooldownMs": 0,
+          "costBase": 25,
+          "costPct": true,
+          "resource": "energia",
+          "icon": "fan",
+          "maxRank": 5,
+          "kind": "tech",
+          "spellId": 15
+        }
+      ],
+      "ults": [
+        {
+          "id": "flecha_cazadora",
+          "name": "Flecha cazadora",
+          "desc": "Flecha de largo alcance con gran daño; letal contra enemigos con poca vida.",
+          "tags": [
+            "dano"
+          ],
+          "target": "line",
+          "range": 14,
+          "cooldownMs": 35000,
+          "costBase": 50,
+          "costPct": true,
+          "resource": "energia",
+          "icon": "target",
+          "maxRank": 3,
+          "kind": "tech",
+          "spellId": 23
+        },
+        {
+          "id": "tormenta_flechas",
+          "name": "Tormenta de flechas",
+          "desc": "Una enorme zona de flechas que castiga a quien se quede dentro.",
+          "tags": [
+            "dano",
+            "control"
+          ],
+          "target": "point",
+          "range": 8,
+          "cooldownMs": 40000,
+          "costBase": 60,
+          "costPct": true,
+          "resource": "energia",
+          "icon": "cloud-lightning",
+          "maxRank": 3,
+          "kind": "tech",
+          "spellId": 15
+        }
+      ],
+      "specs": [
+        {
+          "id": "francotirador",
+          "name": "Francotirador",
+          "desc": "+10 % de daño físico y +30 % de daño contra enemigos con poca vida.",
+          "phys": 1.1,
+          "execBonus": 0.3
+        },
+        {
+          "id": "acechador",
+          "name": "Acechador",
+          "desc": "+10 % de velocidad; al matar recuperás la mitad de tu energía.",
+          "speed": 0.1,
+          "onKillResource": 0.5
+        },
+        {
+          "id": "trampero",
+          "name": "Trampero",
+          "desc": "Tus controles duran 30 % más y tus disparos ralentizan un poco.",
+          "cc": 1.3,
+          "slowOnHit": {
+            "pct": 0.15,
+            "ms": 1000
+          }
+        }
+      ],
+      "kits": [
+        {
+          "id": "ofensivo",
+          "name": "Kit ofensivo",
+          "desc": "+6 % de daño físico y de hechizos.",
+          "phys": 1.06,
+          "spell": 1.06
+        },
+        {
+          "id": "defensivo",
+          "name": "Kit defensivo",
+          "desc": "+8 % de vida, 3 % menos de daño recibido y 4 pociones rojas extra.",
+          "hp": 1.08,
+          "dr": 0.03,
+          "redPotions": 4
+        },
+        {
+          "id": "utilidad",
+          "name": "Kit de utilidad",
+          "desc": "+4 % de velocidad, regeneración de recurso x1,15 y 6 pociones azules extra.",
+          "speed": 0.04,
+          "regen": 1.15,
+          "bluePotions": 6
+        }
+      ],
+      "defaultBuild": {
+        "abilities": [
+          "disparo_certero",
+          "lluvia_flechas",
+          "trampa",
+          "voltereta"
+        ],
+        "ult": "flecha_cazadora",
+        "spec": "francotirador",
+        "kit": "ofensivo"
+      }
+    }
+  }
+}

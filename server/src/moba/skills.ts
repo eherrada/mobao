@@ -25,7 +25,10 @@ type SkillView = {
     nextReqLevel: number;
 };
 
+/** Con builds (hero.mobaAbilities) la definitiva siempre es el slot 5; sin build vale el hechizo ULT_SPELL del heroe. */
 function isUlt(hero: any, slot: number): boolean {
+    if (hero.mobaAbilities) return slot === require("./abilities").ULT_SLOT;
+
     const spell = hero.spells?.[slot]?.idSpell;
     return Boolean(spell) && ULT_SPELL[hero.mobaTemplateId ?? -1] === spell;
 }
@@ -80,29 +83,43 @@ function rankMultiplier(hero: any, slot: number): number {
     return 0.75 + (0.25 * (rank - 1)) / (max - 1);
 }
 
-/** Reparte los puntos disponibles (bots y atajo de pruebas): primero la definitiva, despues el orden del kit. */
+/** Costo relativo de la habilidad del slot (las baratas se aprenden primero: sirven desde el nivel 1). */
+function cheapness(hero: any, slot: number): number {
+    return hero.mobaAbilities ? require("./abilities").costRatio(hero, slot) : slot;
+}
+
+/**
+ * Reparte los puntos disponibles (bots y atajo de pruebas): primero la definitiva y despues las habilidades
+ * comunes en orden de slot, de a un punto por vuelta (empezando por las mas baratas).
+ */
 function autoAssign(hero: any) {
     const slots = Object.keys(hero.spells ?? {})
         .map(Number)
         .sort((a, b) => a - b);
-    const preferred: number[] = require("./heroes").SKILL_ORDER[hero.mobaTemplateId ?? -1] ?? [];
-    const rankOf = (slot: number) => {
-        const index = preferred.indexOf(hero.spells[slot].idSpell);
-        return index < 0 ? 999 : index;
-    };
-    const basics = slots.filter((s) => !isUlt(hero, s)).sort((a, b) => rankOf(a) - rankOf(b) || a - b);
-    const ordered = [...slots.filter((s) => isUlt(hero, s)), ...basics];
+    const ults = slots.filter((s) => isUlt(hero, s));
+    const basics = slots.filter((s) => !isUlt(hero, s) && s <= 5);
 
     let guard = 200;
     while (availablePoints(hero) > 0 && guard-- > 0) {
-        const next = ordered.find((slot) => canLevel(hero, slot));
+        const next =
+            ults.find((slot) => canLevel(hero, slot)) ??
+            [...basics]
+                .sort(
+                    (a, b) =>
+                        Number(hero.mobaRanks?.[a] ?? 0) - Number(hero.mobaRanks?.[b] ?? 0) ||
+                        cheapness(hero, a) - cheapness(hero, b) ||
+                        a - b,
+                )
+                .find((slot) => canLevel(hero, slot));
 
-        if (!next) break;
+        if (next === undefined) break;
         levelUp(hero, next);
     }
 }
 
 function describe(hero: any): SkillView[] {
+    if (hero.mobaAbilities) return require("./abilities").describeSkills(hero);
+
     return Object.keys(hero.spells ?? {})
         .map(Number)
         .sort((a, b) => a - b)
@@ -126,6 +143,8 @@ function describe(hero: any): SkillView[] {
 
 module.exports = {
     initSkills,
+    maxRank,
+    requiredLevel,
     canLevel,
     levelUp,
     rankMultiplier,

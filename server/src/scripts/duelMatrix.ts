@@ -8,69 +8,81 @@
 import { Bot, DIR, debugMatches, debugState, sleep } from "./botClient";
 
 export const NAMES = ["Mago", "Clerigo", "Guerrero", "Asesino", "Bardo", "Druida", "Paladin", "Cazador"];
-const COST: Record<number, number> = { 25: 1000, 23: 460, 15: 150, 8: 45, 5: 40, 3: 10, 9: 400, 24: 300 };
+
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { CHAMPIONS } = require("../moba/abilityCatalog");
 
 type Ctx = { me: any; foe: any };
 type Policy = (bot: Bot, ctx: Ctx, tick: number) => void;
 
-// Hechizos de cada kit en orden de slot (server/src/moba/heroes.ts, KITS).
-const KIT: Record<number, number[]> = {
-    0: [25, 23, 15, 24, 8, 18],
-    1: [5, 3, 10, 9, 24, 20, 18, 15],
-    3: [14, 18, 20, 8, 24],
-    4: [3, 5, 20, 18, 24, 15],
-    5: [9, 24, 5, 15, 8, 20],
-    6: [3, 5, 10, 24, 8, 20],
-};
-const slotOf = (hero: number, spell: number) => KIT[hero].indexOf(spell) + 1;
+const defOf = (hero: number, id: string) => [...CHAMPIONS[hero].pool, ...CHAMPIONS[hero].ults].find((a: any) => a.id === id);
 
-/** Puede lanzarlo: aprendio la habilidad (rango > 0) y alcanza el mana. */
-function canCast(hero: number, ctx: Ctx, spell: number): boolean {
-    const slot = slotOf(hero, spell);
-    return slot > 0 && Number(ctx.me.ranks?.[slot] ?? 0) > 0 && Number(ctx.me.mana ?? 0) >= COST[spell];
+/** Habilidades del build por defecto del heroe: [{ slot, def }] (slot 5 = definitiva). */
+function buildSlots(hero: number): Array<{ slot: number; def: any }> {
+    const b = CHAMPIONS[hero].defaultBuild;
+
+    return [...b.abilities, b.ult].map((id: string, i: number) => ({ slot: i + 1, def: defOf(hero, id) }));
 }
 
-function castFirst(bot: Bot, hero: number, ctx: Ctx, order: number[]): boolean {
-    for (const spell of order) {
-        if (canCast(hero, ctx, spell)) {
-            bot.spell(slotOf(hero, spell), ctx.foe.x, ctx.foe.y);
-            return true;
-        }
-    }
-    return false;
+/** Puede lanzarla: aprendida (rango > 0), sin cooldown propio y con recurso suficiente. */
+function ready(ctx: Ctx, slot: number, def: any): boolean {
+    const cost = def.costPct ? Math.ceil((def.costBase / 100) * Number(ctx.me.maxMana ?? 0)) : def.costBase;
+
+    return Number(ctx.me.ranks?.[slot] ?? 0) > 0 && Number(ctx.me.mana ?? 0) >= cost && !((ctx.me.mob?.cds ?? {})[def.id] > 0);
 }
 
-function healIfLow(bot: Bot, hero: number, ctx: Ctx, below: number): boolean {
-    if (ctx.me.hp >= ctx.me.maxHp * below) return false;
+const adjacent = (ctx: Ctx) => Math.abs(ctx.me.x - ctx.foe.x) + Math.abs(ctx.me.y - ctx.foe.y) <= 1;
 
-    for (const spell of [5, 3]) {
-        if (canCast(hero, ctx, spell)) {
-            bot.spell(slotOf(hero, spell), ctx.me.x, ctx.me.y);
-            return true;
+/**
+ * Politica generica: cura/protege si baja de la vida indicada, si no lanza la mejor habilidad ofensiva disponible
+ * (la definitiva primero) y si no, golpea (cuerpo a cuerpo o con el arco). Las tecnicas de rango 1 exigen estar pegado.
+ */
+function policyFor(hero: number, healBelow: number, ranged = false): Policy {
+    const slots = buildSlots(hero);
+
+    return (bot, ctx) => {
+        const low = ctx.me.hp < ctx.me.maxHp * healBelow;
+
+        if (low) {
+            const support = slots.find((s) => s.def.tags.some((t: string) => t === "curacion" || t === "escudo") && s.def.target !== "point" && ready(ctx, s.slot, s.def));
+
+            if (support) {
+                bot.spell(support.slot, ctx.me.x, ctx.me.y);
+                return;
+            }
         }
-    }
-    return false;
+
+        const offense = [...slots]
+            .reverse()
+            .find(
+                (s) =>
+                    s.def.tags.some((t: string) => t === "dano" || t === "control") &&
+                    !["ao_9", "ao_24"].includes(s.def.id) &&
+                    ready(ctx, s.slot, s.def) &&
+                    (s.def.range > 1 || adjacent(ctx)) &&
+                    !(s.def.dash && s.def.dash.mode === "away"),
+            );
+
+        if (offense) {
+            const self = offense.def.target === "self" || offense.def.target === "area";
+            bot.spell(offense.slot, self ? ctx.me.x : ctx.foe.x, self ? ctx.me.y : ctx.foe.y);
+            return;
+        }
+
+        if (ranged) bot.range(ctx.foe.x, ctx.foe.y);
+        else bot.melee();
+    };
 }
 
 const POLICIES: Record<number, Policy> = {
-    0: (bot, ctx) => {
-        if (!castFirst(bot, 0, ctx, [25, 23, 15, 8])) bot.melee();
-    },
-    1: (bot, ctx) => {
-        if (!healIfLow(bot, 1, ctx, 0.5) && !castFirst(bot, 1, ctx, [15])) bot.melee();
-    },
-    2: (bot) => bot.melee(),
-    3: (bot) => bot.melee(),
-    4: (bot, ctx) => {
-        if (!healIfLow(bot, 4, ctx, 0.5) && !castFirst(bot, 4, ctx, [15])) bot.melee();
-    },
-    5: (bot, ctx) => {
-        if (!healIfLow(bot, 5, ctx, 0.5) && !castFirst(bot, 5, ctx, [15, 8])) bot.melee();
-    },
-    6: (bot, ctx) => {
-        if (!healIfLow(bot, 6, ctx, 0.45)) bot.melee();
-    },
-    7: (bot, ctx) => bot.range(ctx.foe.x, ctx.foe.y),
+    0: policyFor(0, 0),
+    1: policyFor(1, 0.5),
+    2: policyFor(2, 0),
+    3: policyFor(3, 0),
+    4: policyFor(4, 0.5),
+    5: policyFor(5, 0.5),
+    6: policyFor(6, 0.45),
+    7: policyFor(7, 0, true),
 };
 
 type Result = { a: number; b: number; winner: "a" | "b" | "draw"; ms: number; hpLeft: number };

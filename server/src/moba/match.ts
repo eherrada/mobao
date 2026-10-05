@@ -11,6 +11,8 @@ const fog = require("./fog");
 const progression = require("./progression");
 const skills = require("./skills");
 const buffs = require("./buffs");
+const abilities = require("./abilities");
+const specs = require("./specs");
 const { spawnMobaNpc } = require("./npcFactory");
 
 type Team = "blue" | "red";
@@ -391,6 +393,7 @@ function onHeroKill(killer: any, victim: any) {
     killer.mobaKills = (killer.mobaKills ?? 0) + 1;
     progression.grantGold(killer, KILL_GOLD);
     progression.awardXpNear(killer.mobaTeam, victim.pos, victim.map, 90 + 30 * Number(victim.mobaLevel ?? 1));
+    specs.onKill(killer, victim);
 }
 
 /** Un heroe mato a un NPC: oro para el, experiencia compartida con los aliados cercanos. */
@@ -406,6 +409,8 @@ function onNpcKilledByHero(npc: any, killer: any) {
     if (npc.structure === "jungle") {
         onJungleKill(killer, npc);
     }
+
+    specs.onKill(killer, npc);
 }
 
 function onHeroDeath(user: any) {
@@ -415,6 +420,7 @@ function onHeroDeath(user: any) {
 
     user.mobaDeaths = (user.mobaDeaths ?? 0) + 1;
     buffs.clearHero(match, user);
+    abilities.onDeath(user);
 
     const respawnMs = progression.respawnMs(Number(user.mobaLevel ?? 1));
     user.mobaRespawnAt = Date.now() + respawnMs;
@@ -634,6 +640,10 @@ function resetMatch(match: Match) {
         respawnHero(match, hero);
     }
 
+    abilities.clearMatch(match.id);
+
+    for (const hero of heroesOf(match)) hero.mobaCd = {};
+
     announce(match, "¡Comienza una nueva partida!", "green");
 }
 
@@ -645,6 +655,7 @@ function destroyMatch(match: Match) {
 
     delete matches[match.id];
     fog.clearMatch(match.id);
+    abilities.clearMatch(match.id);
     delete vars.mapData[match.mapId];
     delete vars.mapa[match.mapId];
 }
@@ -753,6 +764,7 @@ function broadcastState(match: Match, heroes: any[], live: any[], now: number) {
                     xp: hero.mobaXp ?? 0,
                     xpNext: progression.xpToNext(hero.mobaLevel ?? 1),
                     maxLevel: progression.MAX_LEVEL,
+                    ...(hero.mobaAbilities ? abilities.stateFor(hero, now) : {}),
                 },
                 skills: skills.describe(hero),
                 buffs: buffs.describe(match, hero, now),
@@ -927,6 +939,7 @@ function tickInner() {
         ai.thinkAll(match.id, now, live);
 
         buffs.tick(match, heroes, now);
+        abilities.tick(match, heroes, now);
 
         for (const hero of heroes) {
             if (hero.dead && hero.mobaRespawnAt && now >= hero.mobaRespawnAt) {

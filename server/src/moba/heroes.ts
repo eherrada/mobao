@@ -38,14 +38,14 @@ const HEAL_SCALE = Number(process.env.MOBA_HEAL_SCALE) || 3;
 
 const STATS: Record<number, { hp: number; phys: number; spell: number }> = {
     // Resultado de scripts/tuneBalance.ts (media de las ultimas rondas, niveles 1/6/12/18).
-    0: { hp: 1.25, phys: 1.25, spell: 1.25 },
-    1: { hp: 1.2, phys: 1.2, spell: 1.2 },
-    2: { hp: 0.8, phys: 0.8, spell: 0.8 },
+    0: { hp: 1.23, phys: 1.23, spell: 1.23 },
+    1: { hp: 1.23, phys: 1.23, spell: 1.23 },
+    2: { hp: 0.91, phys: 0.91, spell: 0.91 },
     3: { hp: 0.96, phys: 0.96, spell: 0.96 },
-    4: { hp: 1.06, phys: 1.06, spell: 1.06 },
-    5: { hp: 1.07, phys: 1.07, spell: 1.07 },
-    6: { hp: 1.15, phys: 1.15, spell: 1.15 },
-    7: { hp: 0.88, phys: 0.88, spell: 0.88 },
+    4: { hp: 1.18, phys: 1.18, spell: 1.18 },
+    5: { hp: 1.25, phys: 1.25, spell: 1.25 },
+    6: { hp: 0.88, phys: 0.88, spell: 0.88 },
+    7: { hp: 0.9, phys: 0.9, spell: 0.9 },
 };
 
 function statsFor(templateId: number) {
@@ -65,7 +65,17 @@ const SKILL_ORDER: Record<number, number[]> = {
     7: [],
 };
 
-function spellsFor(templateId: number): Record<number, { idSpell: number }> | undefined {
+/**
+ * Hechizos del heroe (slot -> {idSpell}). Con build (moba/abilities.ts): 1-4 habilidades normales y 5 la definitiva.
+ * Sin build se usa el kit clasico de KITS (referencia historica de la build por defecto).
+ */
+function spellsFor(templateId: number, build?: unknown): Record<number, { idSpell: number }> | undefined {
+    if (build) {
+        const fromBuild = require("./abilities").spellsFor(templateId, build);
+
+        if (fromBuild) return fromBuild;
+    }
+
     const kit = KITS[templateId];
 
     if (!kit) return undefined;

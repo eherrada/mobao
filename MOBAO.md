@@ -32,19 +32,86 @@ macros asignables a la tecla que quieras, y todos los controles son configurable
 
 ## Héroes
 
-Los héroes son las 8 clases de AO (plantillas PvP, nivel 50, sin persistencia). Los kits solo aplican en el MOBA
-(`server/src/moba/heroes.ts`).
+Los héroes son las 8 clases de AO (plantillas PvP, nivel 50, sin persistencia). Cada uno tiene un **pool** de
+habilidades de donde se arma el build (ver "Habilidades y builds"). Build por defecto:
 
-| Héroe | Rol | Kit |
+| Héroe | Rol | Recurso | Build por defecto (slots 1-4 + definitiva) |
+|---|---|---|---|
+| Mago | Daño en ráfaga | Maná | Descarga Eléctrica, Tormenta de Fuego, Proyectil Mágico, Inmovilizar + **Apocalipsis** |
+| Clérigo | Sanador | Maná | Curar Graves, Curar Leves, Remover Parálisis, Inmovilizar + **Paralizar** |
+| Guerrero | Tanque | Furia | Tajo giratorio, Carga, Grito de guerra, Golpe aplastante + **Ejecución** |
+| Asesino | Emboscada | Energía | Puñalada, Veneno, Celeridad, Abanico de dagas + **Ejecutar** |
+| Bardo | Apoyo | Maná | Curar Graves, Fuerza, Disonancia, Celeridad + **Tormenta de Fuego** |
+| Druida | Control | Maná | Paralizar, Inmovilizar, Curar Graves, Proyectil Mágico + **Tormenta de Fuego** |
+| Paladín | Combatiente | Maná | Golpe sagrado, Escudo divino, Curar Graves, Remover Parálisis + **Martillo de redención** |
+| Cazador | Tirador | Energía | Disparo certero, Lluvia de flechas, Trampa, Voltereta + **Flecha cazadora** |
+
+## Habilidades y builds
+
+Código: `server/src/moba/abilityCatalog.ts` (datos puros), `abilities.ts` (motor), `specs.ts` (rasgos pasivos).
+
+**Esencia Argentum.** Los hechizos icónicos de AO se mantienen tal cual en los pools (`kind: "aoSpell"`): se lanzan a un
+tile apuntado a mano, cuestan maná de AO y usan los efectos y duraciones de AO (Paralizar/Inmovilizar duran lo que
+dura el control de AO, Remover Parálisis los libera, etc.). **No tienen cooldown propio**: el límite es el maná y el
+intervalo global de acción (~850 ms entre hechizos, intervalo de arma); los combos hechizo + golpe funcionan como en AO.
+Las **técnicas nuevas** (`kind: "tech"`) usan el mismo modelo: costo de recurso + intervalo global. Solo la movilidad
+(dash) y las definitivas tienen un cooldown propio moderado (6-45 s, -5 % por rango). El stunlock se evita con
+duraciones cortas, costo de recurso y una regla de duración: un aturdimiento recibido dentro de los 4 s de otro dura la
+mitad (no es un cooldown individual).
+
+**Recursos** (hero.mana / maxMana, el HUD ya los muestra): Maná (AO), **Furia** (Guerrero) y **Energía** (Cazador y
+Asesino). En AO no existe stamina, así que Furia y Energía del Guerrero/Cazador son una barra propia de 100; la Energía
+del Asesino es su reserva de maná de AO (sus Celeridad/Fuerza/Inmovilizar/Invisibilidad cuestan maná de AO). El costo de
+una técnica es un **porcentaje** del máximo del recurso (`costPct`); el de un hechizo de AO es el maná de AO. Regeneración
+por segundo: Furia 3 %, Energía 6 % (más el 1 % pasivo del MOBA); el maná como antes; los rasgos la escalan. Los golpes
+básicos dan +6 de Furia / +4 de Energía. Constantes en `REGEN_PER_SEC` (abilities.ts).
+
+**Efectos del motor:** daño físico (a partir del golpe del arma: el equipo importa; las técnicas del Cazador no gastan
+flechas) y mágico, con bonus por vida faltante y ejecución; curación; escudo (absorbe daño de cualquier fuente: se
+aplica en un setter de `hero.hp`, igual que la reducción de daño); aturdir (no se mueve, ataca ni lanza), inmovilizar
+(usa el control de AO), ralentizar (cambia el intervalo de paso), empujar, dash/blink (con `game.telep`; frena contra
+obstáculos y entidades), proyectil en línea (golpea al primero: un aliado lo bloquea), cono, zonas con ticks, trampas
+(el primer enemigo que pase), daño en el tiempo (ignora armadura plana), buffs (daño, velocidad, robo de vida, reducción
+de daño), invisibilidad de AO y provocación a minions. Todo respeta equipos (nada daña aliados, las curaciones solo van
+a aliados), estados (muerto, aturdido) y el fog (los envíos usan los filtros de `handleProtocol`).
+
+**Build** = `{ abilities: string[4], ult: string, spec: string, kit: string }`. Cada campeón tiene un pool de 7-9
+habilidades normales, 2 definitivas, 3 especializaciones y 3 kits de inicio. El build ocupa los slots 1-4 (normales) y
+5 (definitiva, que se desbloquea en los niveles 6/11/16 como siempre). Se valida en el servidor: ids válidos del pool de
+ese campeón, sin repetidos; si algo es inválido se usa el build por defecto. Entra por el ticket real como
+`pvpBuild` (`arenaResult.arena.pvpBuild`, objeto JSON) y por el payload del bot de prueba como `build`.
+
+| Campeón | Pool normal | Definitivas |
 |---|---|---|
-| Mago | Daño en ráfaga | Apocalipsis, Descarga Eléctrica, Tormenta de Fuego, Inmovilizar, Proyectil Mágico, Celeridad |
-| Clérigo | Sanador | Curar Graves/Leves, Remover Parálisis, Paralizar, Inmovilizar, Fuerza, Celeridad, Tormenta de Fuego |
-| Guerrero | Tanque | Más vida y golpes cuerpo a cuerpo (sin mana) |
-| Asesino | Emboscada | Invisibilidad, Celeridad, Fuerza, Proyectil Mágico, Inmovilizar (+ apuñalar) |
-| Bardo | Apoyo | Curar, Fuerza y Celeridad para el equipo, Inmovilizar, Tormenta de Fuego |
-| Druida | Control | Paralizar, Inmovilizar, Curar Graves, Tormenta de Fuego, Proyectil Mágico, Fuerza |
-| Paladín | Combatiente | Curar, Remover Parálisis, Inmovilizar, Proyectil Mágico, Fuerza |
-| Cazador | Tirador | Arco a distancia (sin mana) |
+| Mago | AO: Descarga Eléctrica, Tormenta de Fuego, Proyectil Mágico, Inmovilizar, Celeridad. Nuevas: Muro de fuego (zona), Parpadeo (blink), Escudo arcano | AO Apocalipsis, Lluvia de meteoros |
+| Clérigo | AO: Curar Graves, Curar Leves, Remover Parálisis, Inmovilizar, Fuerza, Celeridad, Tormenta de Fuego. Nuevas: Escudo sagrado, Sanación en área | AO Paralizar, Intervención divina |
+| Guerrero | Tajo giratorio, Carga, Grito de guerra, Golpe aplastante, Estampida, Segundo aliento, Escudazo, Desgarrar | Ejecución, Furia imparable |
+| Asesino | Puñalada, Humo, Veneno, Abanico de dagas, Golpe bajo + AO: Celeridad, Fuerza, Proyectil Mágico, Inmovilizar | Ejecutar, AO Invisibilidad |
+| Bardo | AO: Curar Leves/Graves, Fuerza, Celeridad, Inmovilizar. Nuevas: Canción de velocidad, Himno de escudo, Disonancia | AO Tormenta de Fuego, Concierto épico |
+| Druida | AO: Paralizar, Inmovilizar, Curar Graves, Proyectil Mágico, Fuerza. Nuevas: Raíces, Enjambre, Forma de corteza | AO Tormenta de Fuego, Ira de la naturaleza |
+| Paladín | Golpe sagrado, Escudo divino, Juicio, Aura de coraje + AO: Curar Leves/Graves, Remover Parálisis, Proyectil Mágico, Fuerza | Martillo de redención, AO Inmovilizar |
+| Cazador | Disparo certero, Lluvia de flechas, Trampa, Voltereta, Disparo ralentizante, Camuflaje, Disparo múltiple | Flecha cazadora, Tormenta de flechas |
+
+**Especializaciones** (una por build; efectos reales, `specs.ts`): Mago Archimago / Piromante / Barrera arcana; Clérigo Luz
+sanadora / Castigador / Devoto; Guerrero Coloso (+20 % vida, -10 % daño recibido, -10 % velocidad) / Berserker (robo de
+vida y más daño con poca vida) / Guardián (escudo de aura para aliados); Asesino Sombra / Envenenador / Cazarrecompensas;
+Bardo Maestro del ritmo / Trovador / Juglar; Druida Guardián del bosque / Cazador de la naturaleza / Chamán; Paladín
+Cruzado / Protector / Inquisidor; Cazador Francotirador / Acechador / Trampero. **Kits de inicio**: ofensivo (+6 % daño),
+defensivo (+8 % vida, -3 % daño recibido, +4 pociones rojas) y utilidad (+4 % velocidad, regeneración x1,15, +6 pociones azules).
+
+### Contrato de datos (para HUD y lobby)
+
+- `frontend/lib/mobaCatalog.generated.json` (lo genera `cd server && npm run export-ability-catalog`):
+  `champions[templateId] = { templateId, name, role, resource, pool, ults, specs, kits, defaultBuild }`,
+  `AbilityDef = { id, name, desc, tags[], target, range, cooldownMs, costBase, costPct, resource, icon, maxRank, kind, spellId }`
+  (`icon` es un nombre de ícono lucide; `spellId` es el hechizo de AO que muestra el panel de hechizos del cliente
+  para esa habilidad: el real si es de AO, uno de "imagen" si es una técnica). Hay que re-exportarlo cuando cambie el catálogo.
+- `mobaState.skills[]` (cada ~500 ms): `{ slot, spell, name, rank, max, ult, canLevel, nextReqLevel, id, desc, cdLeftMs, cdTotalMs,
+  cost, resource, range, target, icon, tags, kind }`. `cost` ya viene en unidades del recurso. Hechizos de AO: `cdTotalMs = 0`.
+- `mobaState.me` suma `resource` (`mana|furia|energia`), `shield`, `spec { id, name, desc }`, `stunned`, `rooted`, `slowPct`, `dr`.
+- Lanzamiento: sin cambios (`attackSpell`: slot, x, y). El servidor calcula la dirección hacia el tile clickeado.
+- `/debug/state` (campo `mob` de cada jugador: build, abilities, cds, shield, stunLeftMs, speedMult, dr, resource) y `/debug/view`
+  (`me.skills`, `abilityState`, `mobDebug`) exponen todo para los tests.
 
 ## Progresión, habilidades, equipo y razas
 
@@ -94,7 +161,17 @@ cd server && npx tsx src/scripts/duelMatrix.ts 1 1 18    # raza, repeticiones, n
 cd server && npx tsx src/scripts/tuneBalance.ts 1 6 1    # afina los multiplicadores en vivo y los imprime
 ```
 
-Estado: las medias de victoria quedaron entre ~40 % y ~65 % y los duelos duran 5–20 s (`MOBA_HP_SCALE=2` los alarga;
+**Con las habilidades y builds por defecto** (raza 1, niveles 6/12/18, 56 duelos por nivel, política genérica de los bots
+en `duelMatrix.ts` que lanza la mejor habilidad ofensiva disponible y cura/protege con poca vida), `STATS` quedó en
+Mago 1,23 · Clérigo 1,23 · Guerrero 0,91 · Asesino 0,96 · Bardo 1,18 · Druida 1,25 · Paladín 0,88 · Cazador 0,90. Winrate medio
+medido con los valores previos al último retoque (Druida +0,07, Paladín −0,04, Asesino −0,04, sin re-medir):
+Mago 48 % · Clérigo 48 % · Guerrero 50 % · Asesino 59 % · Bardo 40 % · Druida 34 % · Paladín 68 % · Cazador 53 %
+(todos entre ~34 % y ~68 %, Guerrero y Cazador incluidos). Limitaciones: el Mago depende de su maná y oscila mucho con el
+nivel (0 % a nivel 6, 86 % a nivel 18); los duelos con una sola repetición por par son ruidosos (±20 puntos entre rondas),
+el Bardo y el Clérigo son apoyos y los 1v1 no los miden bien, y las build alternativas no se miden. Conviene reafinar con
+partidas reales (`tuneBalance.ts` mueve vida, daño físico y de hechizos a la vez).
+
+Estado previo (antes de las habilidades): las medias de victoria quedaron entre ~40 % y ~65 % y los duelos duran 5–20 s (`MOBA_HP_SCALE=2` los alarga;
 `MOBA_HEAL_SCALE=3` escala las curaciones). Limitaciones conocidas: las políticas de los bots son simples (el Mago, que
 depende de su maná, es el más sensible al nivel) y las razas se miden aparte (`duelMatrix.ts <raza>`). Conviene reafinar
 con partidas reales.
@@ -144,6 +221,7 @@ cd server && npm run test:moba
 | `testRaces` | cada raza cambia vida/maná, cabeza y (enanos/gnomos) armadura |
 | `testProgression` | nivel 1 al empezar, XP y oro por kills reales, subida de nivel, nivel 18 = nivel AO 50 |
 | `testSkills` | sin puntos no se lanza, el paquete gasta el punto, rangos y requisito de nivel de la definitiva |
+| `testAbilities` | catálogo (pools, definitivas, rasgos, kits), builds válidos/inválidos, kits utilizables de los 8 campeones, daño, rango, curación, escudo que absorbe, aturdir/inmovilizar, ralentizar, empujar, dash y obstáculos, skillshot y aliados, zonas, trampa, DoT, cooldown propio y recast, recurso gastado/regenerado, hechizos de AO sin cooldown, rasgos |
 | `testShop` | equipo inicial básico, la tienda filtra por clase, comprar descuenta oro y equipar mejora el arma |
 | `testJungle` | monstruos solo contra el agresor, buff, reaparición |
 | `testMinions` | los minions de ambos equipos se encuentran y pelean |
@@ -221,8 +299,11 @@ que hoy crea un sprite por tile (~100–130 mil a 255×255) y es el límite prá
 ## Limitaciones conocidas / próximos pasos
 
 - Sprites provisorios: torres, nexo, minions y monstruos reutilizan cuerpos de NPCs de AO.
-- Combate al estilo AO: hechizos por tile con hitscan y cooldown global (no hay skillshots ni cooldown por
-  habilidad). Es el siguiente gran paso si se quiere sentir más "MOBA".
+- El panel de hechizos del cliente muestra, para las técnicas nuevas, el hechizo de AO "de imagen" (`spellId`);
+  el nombre/ícono reales vienen del paquete `mobaState`. Conviene verificar que el panel/barra de macros del
+  cliente deje lanzar a Guerrero y Cazador (el servidor ya lo permite en el MOBA).
+- Los efectos de suelo (zonas, trampas) no tienen sprite propio: las zonas de flechas envían proyectiles visuales y el
+  resto anima impactos sobre quien está dentro.
 - La tienda vende equipo; no hay objetos activos ni efectos especiales (anillos, pasivas) todavía.
 - La visión compartida del equipo se refleja en el minimapa, pero los enemigos que ve un aliado lejano (fuera
   del área de 31×31 del cliente) no se envían como entidades.

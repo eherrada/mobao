@@ -76,8 +76,11 @@ function recompute(match: any, hero: any, now: number) {
         spell += b.def.spell * b.stacks;
     }
 
-    hero.mobaPhysMult = hero.mobaBasePhys * (1 + phys);
-    hero.mobaSpellMult = hero.mobaBaseSpell * (1 + spell);
+    // Buffs de habilidades (dano +x %, poca vida) y de jungla se combinan multiplicando.
+    const abilityFactor = require("./abilities").dmgFactor(hero, now);
+
+    hero.mobaPhysMult = hero.mobaBasePhys * (1 + phys) * abilityFactor;
+    hero.mobaSpellMult = hero.mobaBaseSpell * (1 + spell) * abilityFactor;
 }
 
 function notify(hero: any, text: string) {

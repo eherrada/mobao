@@ -51,7 +51,7 @@ async function main() {
     let me = st.players.find((p) => p.name === "JgHero")!;
     check(me.hp === me.maxHp, "los monstruos no atacan a un heroe que no los golpeo");
 
-    const physBefore = me.physMult as number;
+    const physBefore = me.spellMult as number;
     hero.heading(DIR.up);
     await sleep(300);
     hero.melee();

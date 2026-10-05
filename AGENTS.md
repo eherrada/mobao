@@ -45,6 +45,12 @@ Hecho:
 - **Progresión estilo LoL**: niveles 1–18 (mapeados a nivel AO 8–50), XP compartida, puntos de habilidad con rangos y
   definitiva, razas con modificadores, equipo inicial básico y tienda con 3 mejoras por espacio filtrada por clase y raza.
   Oro pasivo, por kills y torres. Fuente de curación en la base y regeneración pasiva.
+- **Habilidades propias del MOBA y builds** (`moba/abilityCatalog.ts` datos, `abilities.ts` motor, `specs.ts` rasgos): cada
+  campeón tiene pool de 7-9 habilidades (hechizos de AO intactos, kind `aoSpell`, sin cooldown propio + técnicas nuevas,
+  kind `tech`, con costo de recurso y solo dash/definitivas con cooldown), 2 definitivas, 3 especializaciones y 3 kits.
+  Build = `{ abilities[4], ult, spec, kit }` validado en el servidor (inválido = por defecto); slots 1-4 normales y 5 la
+  definitiva. Recursos: Maná / Furia (Guerrero) / Energía (Cazador, Asesino) sobre `hero.mana/maxMana`. Escudos y reducción
+  de daño viven en un setter de `hero.hp`. Detalle y contrato de datos en MOBAO.md ("Habilidades y builds").
 - Balance con datos: matriz de duelos y afinador (`duelMatrix.ts`, `tuneBalance.ts`); multiplicadores en `heroes.ts`.
 - Escalado de minions y torres con el tiempo de partida.
 - Héroes con kits por rol (`server/src/moba/heroes.ts`), lobby con roles, muerte sin pérdida de items, respawn.
@@ -66,10 +72,14 @@ server/src/moba/                 TODO el MOBA del servidor
   ai.ts          IA de minions, torres y jungla + índice espacial por celdas (findTargets)
   match.ts       ciclo de partida: instancia, oleadas, respawn, oro, regeneración, victoria, estado del HUD, perf
   fog.ts         visión por equipo y filtros sobre handleProtocol; sync de visibilidad por tick
-  heroes.ts      kits de hechizos, orden de habilidades de los bots y multiplicadores de balance (STATS)
+  heroes.ts      kits clásicos (KITS, referencia), spellsFor(build) y multiplicadores de balance (STATS)
+  abilityCatalog.ts  catálogo de habilidades, especializaciones, kits y builds por defecto (solo datos)
+  abilities.ts   motor: build, lanzamiento de técnicas, daño/curación/escudo/control, zonas, DoT, recursos, estado del HUD
+  specs.ts       especializaciones y kits de inicio (ganchos on-hit/on-kill/tick)
   progression.ts niveles/XP/oro/reaparición · skills.ts puntos de habilidad · races.ts razas · gear.ts equipo y tienda
   debugApi.ts    API HTTP de depuración (SOLO NODE_ENV=development y localhost)
 server/src/scripts/              generateMobaMap, botClient (+tests testMatch/testFog/testHeroes/testJungle/testMinions/testLoad)
+server/src/scripts/exportAbilityCatalog.ts  genera frontend/lib/mobaCatalog.generated.json (contrato para HUD/lobby)
 api/src/scripts/seedMobaNpcs.ts  plantillas de NPC del MOBA en la base (ids 9601-9609)
 frontend/components/moba/MobaHud.tsx   HUD (escucha el evento de ventana "mobao:state")
 frontend/components/game/rendering/fogOverlay.ts      oscuridad visual del fog
@@ -78,6 +88,7 @@ devdb/                           Postgres embebido, scripts de reinicio y consul
 ```
 
 Puntos donde se tocó código de aoweb (todos mínimos y marcados):
+`protocol.ts` (`attackSpell`: ramal de técnicas MOBA, aturdimiento en ataques, paso por velocidad), `game.ts` (ganchos `onBasicHit`),
 `game.ts` (`isArenaCombat`, guardas de `userDmgNpc`/`userSpellNpc`, muerte/revivir sin pérdidas, límites por mapa),
 `challengeManager.getCombatRelation`, `npcs.ts` (selección de objetivo, `dealDamageTo*`, hook en `muereNpc`),
 `login.ts` (`createId` con contador, unión a partida, opciones `moba`), `socket.ts`/`server.ts` (salida inmediata,
@@ -127,6 +138,12 @@ cd frontend && npx pnpm dev                                 # :3000
 - `window.__aoEngine` expone el motor del cliente solo en desarrollo (para medir desde la consola).
 - Los hechizos del MOBA ignoran el requisito de nivel de AO (`minSkill`): manda el rango de la habilidad. El panel
   izquierdo del cliente muestra el nivel AO efectivo (8–50), no el nivel MOBA (1–18, insignia "Nv" del HUD).
+- Habilidades: el `hp` de los héroes del MOBA es un accessor (`installHpGuard`): para fijar vida en tests usar
+  `/debug/hero-hp` (salta escudo/reducción) o `abilities.rawSetHp`; `/debug/hero-damage` pasa por el escudo. Los controles usan
+  el temporizador de AO (`cooldownParalizado` se adelanta para que venza a la hora pedida). Las técnicas gastan el intervalo
+  global de hechizo aunque fallen (como cualquier intento de lanzar en AO). Un test que cambia la regeneración o el rasgo
+  de un campeón cambia su balance: re-medir con duelMatrix.
+- El catálogo exportado (`mobaCatalog.generated.json`) debe regenerarse con `npm run export-ability-catalog` al tocar abilityCatalog.ts.
 - Para tests, los bots (`typeGame=3`) aceptan `level`, `gearTier`, `race`, `exactMana` y `autoSkills`; sin `level` empiezan
   en nivel 1 con 1 punto. Los héroes de test que necesiten pelear cerca de torres deberían usar `level: 18`.
 - Durante `tuneBalance.ts` no tocar código del servidor: `tsx watch` lo reinicia y rompe la corrida (usar `-NoWatch`).
