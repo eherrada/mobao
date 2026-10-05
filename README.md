@@ -1,10 +1,45 @@
-# AOWeb
+# MobAO
 
-> **Este fork agrega MobAO**, un MOBA 3v3 de mapa único sobre AOWeb. Ver [MOBAO.md](MOBAO.md).
+**MOBA 3v3 de mapa único sobre Argentum Online, jugable en el navegador.**
+Tres carriles, jungla con buffs, niebla de guerra y combate manual al estilo AO (ASDW + mouse, apuntado por tile).
 
-Proyecto creado por Damián Catanzaro.
+> MobAO es un **fork de [aoweb](https://github.com/dcatanzaro/aoweb)** (Argentum Online web, de Damián Catanzaro).
+> Usa su servidor autoritativo, su cliente PixiJS y sus assets; encima agrega todo el MOBA.
+> aoweb no declara licencia y los gráficos/sonidos son de Argentum Online: este proyecto es un experimento
+> de fans, sin fines comerciales ni afiliación con los autores originales.
 
-X: [@DamianCatanzaro](https://x.com/DamianCatanzaro)
+![Inicio](docs/screenshots/home.jpg)
+
+## Qué es
+
+- **Mapa único de 255×255** (sin cruces de mapa): 3 carriles, río, 18 campamentos de jungla, 2 bases con barracas, torres y nexo.
+- **Fog of war autoritativo**: el servidor nunca envía enemigos que tu equipo no ve.
+- **8 campeones = las clases de AO** (Mago, Clérigo, Guerrero, Asesino, Bardo, Druida, Paladín, Cazador) × 5 razas.
+- **Esencia Argentum**: los hechizos clásicos de AO siguen ahí (tile apuntado a mano, maná, intervalo global, parálisis/inmovilizar, invisibilidad…), más técnicas nuevas con Furia/Energía para las clases no mágicas.
+- **Builds**: elegí 4 habilidades del pool, una definitiva, una especialización y un kit de inicio.
+- **Progresión estilo LoL**: niveles 1–18, puntos de habilidad, oro, tienda, minions por oleadas (cuerpo a cuerpo, magos, asedio), jungla con Centinela, Zarza, Dragón y Rey Demonio, `/recall`.
+- **Bots que juegan como humanos** para probar partidas 3v3 completas.
+
+| Lobby 3v3 | Constructor de build |
+|---|---|
+| ![Lobby](docs/screenshots/lobby.jpg) | ![Build](docs/screenshots/build.jpg) |
+
+| Campeones | Partida |
+|---|---|
+| ![Campeones](docs/screenshots/campeones.jpg) | ![Juego](docs/screenshots/juego.jpg) |
+
+## Documentación
+
+- [MOBAO.md](MOBAO.md): producto, mecánicas, habilidades y builds, balance.
+- [AGENTS.md](AGENTS.md): guía de trabajo (cómo correr y testear en Windows sin Docker, mapa del código, trampas conocidas, roadmap).
+
+Comandos útiles (desde `server/`): `npm run test:moba` (con `devdb/restart-server.ps1 -Fast`) y `npm run play:moba` (partida de 6 bots).
+
+---
+
+# Documentación original de aoweb
+
+Proyecto original creado por Damián Catanzaro — X: [@DamianCatanzaro](https://x.com/DamianCatanzaro)
 
 ## Requisitos
 
