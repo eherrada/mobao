@@ -7,6 +7,8 @@ import {
     type ChampionStatKey,
 } from "@/lib/mobaChampions";
 import { MOBA_RACES } from "@/lib/arenas";
+import type { BuildDraft } from "@/lib/mobaCatalog";
+import BuildBuilder from "./BuildBuilder";
 import SpriteImage from "./SpriteImage";
 
 /** Retrato del campeón con la raza elegida (sprite real de AO sobre fondo del color del campeón). */
@@ -163,11 +165,18 @@ export default function ChampionDetail({
     raceId,
     onRaceChange,
     raceLocked,
+    buildDraft,
+    onBuildChange,
+    buildReadOnly,
 }: {
     champion: ChampionInfo;
     raceId: number;
     onRaceChange?: (raceId: number) => void;
     raceLocked?: boolean;
+    /** Borrador del build (lobby). Sin él y con buildReadOnly se muestra el pool y el build por defecto (galería). */
+    buildDraft?: BuildDraft;
+    onBuildChange?: (draft: BuildDraft) => void;
+    buildReadOnly?: boolean;
 }) {
     return (
         <div className="space-y-4">
@@ -202,10 +211,12 @@ export default function ChampionDetail({
             </div>
 
             <div>
-                <p className="mb-1.5 text-[11px] font-bold uppercase tracking-[0.24em] text-slate-500">
-                    Habilidades
-                </p>
-                <AbilityList champion={champion} />
+                <BuildBuilder
+                    templateId={champion.id}
+                    draft={buildDraft}
+                    onChange={onBuildChange}
+                    readOnly={buildReadOnly}
+                />
             </div>
 
             <div>

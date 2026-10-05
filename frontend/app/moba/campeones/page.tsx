@@ -57,6 +57,7 @@ export default function MobaChampionsPage() {
                         champion={champion}
                         raceId={raceId}
                         onRaceChange={setRaceId}
+                        buildReadOnly
                     />
                 </section>
             </div>

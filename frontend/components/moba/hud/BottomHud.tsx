@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Anchor, Lock, Snail, Zap } from "lucide-react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import { OBJECT_TYPE, type InventoryItem, type PlayerHudState } from "../../../lib/aowProtocol";
 import { formatNumber } from "../../../lib/number-format";
+import { AbilityIcon } from "./AbilityIcon";
 import { ItemIcon, useGraphicsDB } from "./ItemIcon";
-import { SKILL_KEYS, type MobaSkill, type MobaState } from "./types";
+import { RESOURCE_STYLE, keyLabel, type MobaResource, type MobaSkill, type MobaState } from "./types";
 
 type HeadSprite = [numFile: string, sx: number, sy: number, w: number, h: number];
 
@@ -45,29 +47,51 @@ function getEquipped(hud: PlayerHudState | null): InventoryItem[] {
         .slice(0, 6);
 }
 
-function Bar({
-    value,
-    max,
-    from,
-    to,
-    label,
-}: {
-    value: number;
-    max: number;
-    from: string;
-    to: string;
-    label: string;
-}) {
-    const pct = max > 0 ? Math.max(0, Math.min(100, (value / max) * 100)) : 0;
+/** Barra de vida con segmento de escudo a continuacion (la barra se estira si vida + escudo superan la maxima). */
+function HealthBar({ hp, maxHp, shield }: { hp: number; maxHp: number; shield: number }) {
+    const total = Math.max(1, maxHp, hp + shield);
+    const hpPct = Math.max(0, Math.min(100, (hp / total) * 100));
+    const shieldPct = Math.max(0, Math.min(100 - hpPct, (shield / total) * 100));
 
     return (
         <div className="relative h-[17px] w-full overflow-hidden rounded-[3px] border border-black/80 bg-black/70">
+            <div className="flex h-full w-full">
+                <div
+                    className="h-full shrink-0 transition-[width] duration-200"
+                    style={{ width: `${hpPct}%`, background: "linear-gradient(180deg, #4fd56a, #1f8a3a)" }}
+                />
+                {shield > 0 ? (
+                    <div
+                        className="h-full shrink-0 transition-[width] duration-200"
+                        style={{
+                            width: `${shieldPct}%`,
+                            background: "linear-gradient(180deg, #f4f1e4, #a9b4c8)",
+                            boxShadow: "inset 0 0 4px rgba(255,255,255,0.9)",
+                        }}
+                        title={`Escudo ${Math.round(shield)}`}
+                    />
+                ) : null}
+            </div>
+            <div className="absolute inset-0 flex items-center justify-center text-[11px] font-semibold text-white [text-shadow:0_1px_2px_#000]">
+                Vida {Math.round(hp)} / {Math.round(maxHp)}
+                {shield > 0 ? <span className="ml-1 text-[#e8f0ff]">(+{Math.round(shield)})</span> : null}
+            </div>
+        </div>
+    );
+}
+
+function ResourceBar({ value, max, resource }: { value: number; max: number; resource: MobaResource }) {
+    const style = RESOURCE_STYLE[resource];
+    const pct = max > 0 ? Math.max(0, Math.min(100, (value / max) * 100)) : 0;
+
+    return (
+        <div className="relative h-[15px] w-full overflow-hidden rounded-[3px] border border-black/80 bg-black/70">
             <div
                 className="h-full transition-[width] duration-200"
-                style={{ width: `${pct}%`, background: `linear-gradient(180deg, ${from}, ${to})` }}
+                style={{ width: `${pct}%`, background: `linear-gradient(180deg, ${style.from}, ${style.to})` }}
             />
-            <div className="absolute inset-0 flex items-center justify-center text-[11px] font-semibold text-white [text-shadow:0_1px_2px_#000]">
-                {label} {Math.round(value)} / {Math.round(max)}
+            <div className="absolute inset-0 flex items-center justify-center text-[10.5px] font-semibold text-white [text-shadow:0_1px_2px_#000]">
+                {style.name} {Math.round(value)} / {Math.round(max)}
             </div>
         </div>
     );
@@ -114,32 +138,104 @@ function Portrait({ state, hud }: { state: MobaState | null; hud: PlayerHudState
     );
 }
 
-function SkillButton({
-    skill,
-    index,
-    cooldownLeft,
-    cooldownTotal,
-    armed,
-    noMana,
-    onCast,
-    onLevelUp,
-}: {
-    skill: MobaSkill;
-    index: number;
-    cooldownLeft: number;
-    cooldownTotal: number;
-    armed: boolean;
-    noMana: boolean;
-    onCast: () => void;
-    onLevelUp: () => void;
-}) {
-    const key = SKILL_KEYS[index]?.label ?? "";
+const TARGET_LABEL: Record<string, string> = {
+    self: "Sobre vos",
+    point: "Apuntada",
+    line: "Direccion",
+    area: "Area alrededor tuyo",
+    ally: "Aliado",
+};
+
+/** Tooltip de una habilidad: nombre, rango, costo (color del recurso), alcance, recarga y descripcion. */
+function SkillTooltip({ skill, keyText, cost, resource }: { skill: MobaSkill; keyText: string; cost: number; resource: MobaResource }) {
+    const style = RESOURCE_STYLE[resource];
     const learned = skill.rank > 0;
-    const dim = !learned || noMana;
-    const cd = cooldownLeft > 0 ? Math.min(1, cooldownLeft / Math.max(1, cooldownTotal)) : 0;
 
     return (
-        <div className="relative flex w-[56px] flex-col items-center">
+        <div className="pointer-events-none absolute bottom-full left-1/2 z-30 mb-2 w-[230px] -translate-x-1/2 rounded border border-[#8a6d2f] bg-[#0a0d14]/97 p-2 text-left shadow-[0_4px_18px_rgba(0,0,0,0.8)]">
+            <div className="flex items-baseline justify-between gap-2">
+                <span className="text-[13px] font-bold text-[#f1dfa8]">{skill.name}</span>
+                <span className="rounded bg-white/10 px-1 text-[10px] font-bold text-white">{keyText}</span>
+            </div>
+            <div className="text-[10px] uppercase tracking-wider text-stone-400">
+                {skill.ult ? "Definitiva" : "Habilidad"} · rango {skill.rank}/{skill.max}
+                {skill.kind === "aoSpell" ? " · hechizo AO" : ""}
+            </div>
+            <div className="mt-1 flex flex-wrap gap-x-3 text-[11px]">
+                {cost > 0 ? (
+                    <span style={{ color: style.text }}>
+                        Costo {Math.round(cost)} {style.name}
+                    </span>
+                ) : null}
+                {skill.range ? <span className="text-stone-300">Alcance {skill.range}</span> : null}
+                {skill.cdTotalMs ? (
+                    <span className="text-stone-300">Recarga {(skill.cdTotalMs / 1000).toFixed(skill.cdTotalMs % 1000 ? 1 : 0)} s</span>
+                ) : (
+                    <span className="text-stone-500">Sin recarga propia</span>
+                )}
+            </div>
+            <div className="text-[11px] text-stone-400">{TARGET_LABEL[skill.target ?? "point"]}</div>
+            {skill.desc ? <p className="mt-1 text-[11.5px] leading-snug text-stone-200">{skill.desc}</p> : null}
+            <div className="mt-1 text-[10.5px] text-amber-300/90">
+                {!learned
+                    ? skill.canLevel
+                        ? "Click en + para aprenderla"
+                        : `Se desbloquea en nivel ${skill.nextReqLevel}`
+                    : skill.canLevel
+                      ? "Click en + para subir de rango"
+                      : skill.rank < skill.max
+                        ? `Proximo rango: nivel ${skill.nextReqLevel}`
+                        : "Rango maximo"}
+                <span className="text-stone-500"> · click derecho: cambiar tecla</span>
+            </div>
+        </div>
+    );
+}
+
+function SkillButton({
+    skill,
+    keyText,
+    ownCdLeft,
+    globalLeft,
+    globalTotal,
+    mana,
+    fallbackCost,
+    level,
+    armed,
+    rebinding,
+    onCast,
+    onLevelUp,
+    onRebind,
+}: {
+    skill: MobaSkill;
+    level: number;
+    keyText: string;
+    ownCdLeft: number;
+    globalLeft: number;
+    globalTotal: number;
+    mana: number;
+    fallbackCost: number;
+    armed: boolean;
+    rebinding: boolean;
+    onCast: () => void;
+    onLevelUp: () => void;
+    onRebind: () => void;
+}) {
+    const [hover, setHover] = useState(false);
+    const resource: MobaResource = skill.resource ?? "mana";
+    const rs = RESOURCE_STYLE[resource];
+    const cost = skill.cost ?? fallbackCost;
+    const learned = skill.rank > 0;
+    // Bloqueada solo si falta nivel (no si simplemente no quedan puntos).
+    const locked = !learned && !skill.canLevel && skill.nextReqLevel > level;
+    const noResource = learned && cost > 0 && mana < cost;
+    const dim = !learned || noResource;
+    const ownTotal = Math.max(1, skill.cdTotalMs ?? 0);
+    const ownFrac = ownCdLeft > 0 ? Math.min(1, ownCdLeft / ownTotal) : 0;
+    const globalFrac = globalLeft > 0 ? Math.min(1, globalLeft / Math.max(1, globalTotal)) : 0;
+
+    return (
+        <div className="relative flex w-[58px] flex-col items-center">
             {skill.canLevel ? (
                 <button
                     type="button"
@@ -150,39 +246,78 @@ function SkillButton({
                     +
                 </button>
             ) : null}
-            <button
-                type="button"
-                onClick={onCast}
-                title={`${skill.name} · rango ${skill.rank}/${skill.max}${skill.ult ? " · definitiva" : ""} · proximo rango: nivel ${skill.nextReqLevel}`}
-                className={`relative h-[52px] w-[52px] overflow-hidden rounded border-2 ${
-                    armed ? "border-white shadow-[0_0_12px_#fff]" : skill.ult ? "border-[#b57cff]" : "border-[#8a6d2f]"
-                } ${skill.ult ? "bg-[#241437]" : "bg-[#141a26]"}`}
-            >
-                <div className={`flex h-full w-full flex-col items-center justify-center px-0.5 ${dim ? "opacity-40" : ""}`}>
-                    <span className="text-[17px] font-black leading-none text-[#e9d8a6]">
-                        {skill.name.replace(/[^A-Za-zÁÉÍÓÚÑáéíóúñ ]/g, "").split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()}
-                    </span>
-                    <span className="mt-0.5 line-clamp-2 text-center text-[8px] leading-[9px] text-stone-300">
-                        {skill.name}
-                    </span>
-                </div>
-                {cd > 0 ? (
-                    <div className="absolute inset-x-0 bottom-0 bg-black/70" style={{ height: `${cd * 100}%` }}>
-                        <div className="absolute inset-0 flex items-center justify-center text-[13px] font-bold text-white">
-                            {(cooldownLeft / 1000).toFixed(1)}
-                        </div>
+            <div className="relative" onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}>
+                {hover ? <SkillTooltip skill={skill} keyText={keyText} cost={cost} resource={resource} /> : null}
+                <button
+                    type="button"
+                    onClick={onCast}
+                    onContextMenu={(event) => {
+                        event.preventDefault();
+                        onRebind();
+                    }}
+                    className={`relative h-[54px] w-[54px] overflow-hidden rounded border-2 transition-shadow ${
+                        armed
+                            ? "border-white shadow-[0_0_14px_#fff]"
+                            : skill.ult
+                              ? "border-[#b57cff]"
+                              : "border-[#8a6d2f]"
+                    } ${skill.ult ? "bg-gradient-to-b from-[#2b1745] to-[#150a24]" : "bg-gradient-to-b from-[#1b2333] to-[#0e121b]"}`}
+                >
+                    <div
+                        className={`flex h-full w-full items-center justify-center ${dim ? "opacity-35" : ""} ${locked ? "grayscale" : ""}`}
+                        style={{ color: skill.ult ? "#d6b3ff" : rs.text }}
+                    >
+                        <AbilityIcon name={skill.icon} size={30} />
                     </div>
-                ) : null}
-                {skill.ult ? <div className="absolute right-0.5 top-0.5 text-[8px] font-bold text-[#d6b3ff]">R</div> : null}
-                <span className="absolute left-0.5 top-0 text-[11px] font-bold text-white [text-shadow:0_1px_2px_#000]">
-                    {key}
-                </span>
-            </button>
+
+                    {/* Recarga global (~850 ms): destello breve */}
+                    {globalFrac > 0 && ownFrac === 0 ? (
+                        <div className="absolute inset-0 bg-white/25" style={{ opacity: 0.25 + globalFrac * 0.75 }} />
+                    ) : null}
+
+                    {/* Recarga propia: barrido circular + segundos */}
+                    {ownFrac > 0 ? (
+                        <div
+                            className="absolute inset-0"
+                            style={{
+                                background: `conic-gradient(rgba(0,0,0,0.78) ${ownFrac * 360}deg, rgba(0,0,0,0.12) 0deg)`,
+                            }}
+                        >
+                            <div className="absolute inset-0 flex items-center justify-center text-[15px] font-bold text-white [text-shadow:0_1px_3px_#000]">
+                                {ownCdLeft >= 10000 ? Math.ceil(ownCdLeft / 1000) : (ownCdLeft / 1000).toFixed(1)}
+                            </div>
+                        </div>
+                    ) : null}
+
+                    {/* Bloqueada hasta el nivel indicado */}
+                    {locked ? (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/55 text-[#d6b3ff]">
+                            <Lock size={14} />
+                            <span className="text-[10px] font-bold leading-none">Nv {skill.nextReqLevel}</span>
+                        </div>
+                    ) : null}
+
+                    <span className="absolute left-0.5 top-0 rounded-br bg-black/60 px-[3px] text-[11px] font-bold text-white [text-shadow:0_1px_2px_#000]">
+                        {rebinding ? "..." : keyText}
+                    </span>
+                    {cost > 0 && !locked ? (
+                        <span
+                            className="absolute bottom-0 right-0.5 text-[10.5px] font-bold [text-shadow:0_1px_2px_#000]"
+                            style={{ color: noResource ? "#ff6b6b" : rs.text }}
+                        >
+                            {Math.round(cost)}
+                        </span>
+                    ) : null}
+                    {skill.ult ? (
+                        <span className="absolute right-0.5 top-0 text-[9px] font-black text-[#d6b3ff]">ULT</span>
+                    ) : null}
+                </button>
+            </div>
             <div className="mt-1 flex gap-[3px]">
                 {Array.from({ length: skill.max }, (_, i) => (
                     <span
                         key={i}
-                        className={`h-[5px] w-[9px] rounded-[1px] ${i < skill.rank ? "bg-[#e9c46a]" : "bg-white/20"}`}
+                        className={`h-[5px] ${skill.max > 3 ? "w-[8px]" : "w-[12px]"} rounded-[1px] ${i < skill.rank ? "bg-[#e9c46a]" : "bg-white/20"}`}
                     />
                 ))}
             </div>
@@ -190,24 +325,92 @@ function SkillButton({
     );
 }
 
+function Chip({ children, title, color }: { children: ReactNode; title?: string; color: string }) {
+    return (
+        <span
+            title={title}
+            className="flex items-center gap-1 rounded border bg-black/60 px-1.5 py-[1px] text-[10.5px] font-semibold"
+            style={{ borderColor: color, color }}
+        >
+            {children}
+        </span>
+    );
+}
+
+/** Estados de control, reduccion de dano y especializacion. */
+function StatusRow({ me }: { me: MobaState["me"] | undefined }) {
+    if (!me) return null;
+    const slow = me.slowPct ?? 0;
+    const items: ReactNode[] = [];
+
+    if (me.stunned) {
+        items.push(
+            <Chip key="stun" color="#ffd84a" title="Aturdido: no podes moverte, atacar ni lanzar">
+                <Zap size={11} /> Aturdido
+            </Chip>,
+        );
+    }
+    if (me.rooted) {
+        items.push(
+            <Chip key="root" color="#7fd1ff" title="Inmovilizado: no podes moverte (si podes lanzar y atacar)">
+                <Anchor size={11} /> Inmovilizado
+            </Chip>,
+        );
+    }
+    if (slow >= 5) {
+        items.push(
+            <Chip key="slow" color="#9fb4ff" title={`Ralentizado ${slow}%`}>
+                <Snail size={11} /> Ralentizado -{slow}%
+            </Chip>,
+        );
+    }
+    if ((me.dr ?? 0) >= 1) {
+        items.push(
+            <Chip key="dr" color="#c8aa6e" title="Reduccion de dano recibido">
+                -{me.dr}% dano
+            </Chip>,
+        );
+    }
+    if (me.spec) {
+        items.push(
+            <Chip key="spec" color="#b57cff" title={me.spec.desc}>
+                {me.spec.name}
+            </Chip>,
+        );
+    }
+
+    return items.length ? <div className="flex min-h-[18px] flex-wrap justify-center gap-1">{items}</div> : null;
+}
+
 export function BottomHud({
     state,
     hud,
+    now,
+    stateAt,
     cooldownLeft,
     cooldownTotal,
     armedSlot,
+    skillCodes,
+    rebindIndex,
     onCast,
     onLevelUp,
+    onRebind,
     onUsePotion,
     onOpenShop,
 }: {
     state: MobaState | null;
     hud: PlayerHudState | null;
+    now: number;
+    /** Momento (ms) en que llego el ultimo estado: los cooldowns propios se interpolan desde ahi. */
+    stateAt: number;
     cooldownLeft: number;
     cooldownTotal: number;
     armedSlot: number | null;
+    skillCodes: string[];
+    rebindIndex: number | null;
     onCast: (skill: MobaSkill) => void;
     onLevelUp: (slot: number) => void;
+    onRebind: (index: number) => void;
     onUsePotion: (slot: number) => void;
     onOpenShop: () => void;
 }) {
@@ -216,6 +419,8 @@ export function BottomHud({
     const potions = getPotions(hud);
     const equipped = getEquipped(hud);
     const mana = hud?.mana ?? 0;
+    const resource: MobaResource = state?.me.resource ?? "mana";
+    const elapsedSinceState = Math.max(0, now - stateAt);
 
     return (
         <div className="pointer-events-auto flex items-end gap-3 rounded-t-lg border border-b-0 border-[#8a6d2f] bg-gradient-to-b from-[#10141d]/95 to-[#070a10]/95 px-4 pb-3 pt-4 shadow-[0_-4px_24px_rgba(0,0,0,0.6)]">
@@ -227,7 +432,8 @@ export function BottomHud({
                         {state.points} punto{state.points > 1 ? "s" : ""} de habilidad
                     </div>
                 ) : null}
-                <div className="flex min-h-[90px] items-end justify-center gap-1.5">
+                <StatusRow me={state?.me} />
+                <div className="flex min-h-[90px] items-end justify-center gap-2">
                     {skills.length === 0 ? (
                         <div className="pb-5 text-center text-xs text-stone-400">
                             Tu heroe pelea con armas
@@ -235,27 +441,29 @@ export function BottomHud({
                             (ataque basico: Espacio)
                         </div>
                     ) : (
-                        skills.slice(0, SKILL_KEYS.length).map((skill, index) => (
+                        skills.slice(0, skillCodes.length).map((skill, index) => (
                             <SkillButton
                                 key={skill.slot}
                                 skill={skill}
-                                index={index}
-                                cooldownLeft={cooldownLeft}
-                                cooldownTotal={cooldownTotal}
+                                keyText={keyLabel(skillCodes[index])}
+                                ownCdLeft={Math.max(0, (skill.cdLeftMs ?? 0) - elapsedSinceState)}
+                                globalLeft={cooldownLeft}
+                                globalTotal={cooldownTotal}
+                                mana={mana}
+                                fallbackCost={hud?.spells.find((s) => s.slot === skill.slot)?.manaRequired ?? 0}
+                                level={state?.me.level ?? 1}
                                 armed={armedSlot === skill.slot}
-                                noMana={
-                                    mana <
-                                    (hud?.spells.find((s) => s.slot === skill.slot)?.manaRequired ?? 0)
-                                }
+                                rebinding={rebindIndex === index}
                                 onCast={() => onCast(skill)}
                                 onLevelUp={() => onLevelUp(skill.slot)}
+                                onRebind={() => onRebind(index)}
                             />
                         ))
                     )}
                 </div>
-                <Bar value={hud?.hp ?? 0} max={hud?.maxHp ?? 1} from="#4fd56a" to="#1f8a3a" label="Vida" />
+                <HealthBar hp={hud?.hp ?? 0} maxHp={hud?.maxHp ?? 1} shield={state?.me.shield ?? 0} />
                 {(hud?.maxMana ?? 0) > 0 ? (
-                    <Bar value={mana} max={hud?.maxMana ?? 1} from="#5aa8ff" to="#2457b8" label="Mana" />
+                    <ResourceBar value={mana} max={hud?.maxMana ?? 1} resource={resource} />
                 ) : null}
             </div>
 

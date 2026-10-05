@@ -33,6 +33,14 @@ export type PasswordResetRequestRecord = {
     created_at: Date;
 };
 
+/** Build de habilidades MOBA: ids del catalogo del servidor de juego (que valida y cae al default si es invalido). */
+export type PvpBuild = {
+    abilities: string[];
+    ult: string;
+    spec: string;
+    kit: string;
+};
+
 export type GameTicketRecord = {
     ticket: string;
     account_id: string;
@@ -43,6 +51,7 @@ export type GameTicketRecord = {
     pvp_template_id: number | null;
     pvp_race_id: number | null;
     pvp_team?: string | null;
+    pvp_build?: PvpBuild | null;
     created_at: Date;
     expires_at: Date;
     consumed_at: Date | null;
@@ -69,6 +78,7 @@ export type ArenaRoomMemberRecord = {
     selected_pvp_race_id: number | null;
     team?: string | null;
     ready?: boolean;
+    pvp_build?: PvpBuild | null;
     connected: boolean;
     joined_at: Date;
     updated_at: Date;
@@ -475,6 +485,7 @@ export type ArenaRoomDetails = ArenaRoomSummary & {
     member: {
         selectedPvpTemplateId: number | null;
         selectedPvpRaceId: number | null;
+        build: PvpBuild | null;
         connected: boolean;
         team: string | null;
         ready: boolean;
@@ -490,6 +501,7 @@ export type ArenaRoomMemberView = {
     isOwner: boolean;
     templateId: number | null;
     raceId: number | null;
+    build: PvpBuild | null;
     team: "blue" | "red";
     ready: boolean;
     connected: boolean;
@@ -508,6 +520,7 @@ export type ArenaGameTicketConsumeResponse = {
         mapId: number;
         pvpTemplateId: number;
         pvpRaceId?: number;
+        pvpBuild?: PvpBuild;
         team?: "blue" | "red";
     };
 };

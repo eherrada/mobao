@@ -5,6 +5,17 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Check, Copy, Crown, LogOut } from "lucide-react";
 import { useAuthRedirect } from "@/hooks/useAuthRedirect";
 import {
+    buildsEqual,
+    draftFromBuild,
+    draftToBuild,
+    getChampionCatalog,
+    isValidBuild,
+    loadStoredDraft,
+    storeDraft,
+    type BuildDraft,
+    type MobaBuild,
+} from "@/lib/mobaCatalog";
+import {
     type ArenaRoomDetails,
     type ArenaRoomMemberView,
 } from "@/lib/arenas";
@@ -22,6 +33,7 @@ import {
     MOBA_TEAMS,
     type MobaTeam,
 } from "@/lib/mobaChampions";
+import { BuildIcons } from "@/components/moba/lobby/BuildBuilder";
 import ChampionDetail, {
     ChampionGrid,
     ChampionPortrait,
@@ -55,7 +67,7 @@ function SlotCard({
                 type="button"
                 disabled={!canJoin}
                 onClick={onJoin}
-                className="flex h-[76px] w-full items-center justify-center rounded border border-dashed border-white/15 text-xs uppercase tracking-[0.2em] text-slate-500 transition enabled:hover:border-white/40 enabled:hover:text-slate-200 disabled:cursor-default"
+                className="flex h-[92px] w-full items-center justify-center rounded border border-dashed border-white/15 text-xs uppercase tracking-[0.2em] text-slate-500 transition enabled:hover:border-white/40 enabled:hover:text-slate-200 disabled:cursor-default"
             >
                 {canJoin ? "Pasarme a este equipo" : "Vacío"}
             </button>
@@ -67,7 +79,7 @@ function SlotCard({
 
     return (
         <div
-            className={`flex h-[76px] items-center gap-3 rounded border px-2.5 ${
+            className={`flex h-[92px] items-center gap-3 rounded border px-2.5 ${
                 isMe ? "bg-white/[0.07]" : "bg-white/[0.03]"
             }`}
             style={{ borderColor: isMe ? color : "rgba(255,255,255,0.1)" }}
@@ -95,6 +107,15 @@ function SlotCard({
                 <p className="truncate text-xs text-slate-400">
                     {champion ? `${champion.name} · ${race.name}` : "Eligiendo campeón..."}
                 </p>
+                {champion ? (
+                    <div className="mt-1" data-testid="slot-build">
+                        <BuildIcons
+                            templateId={champion.id}
+                            build={member.build}
+                            className="h-5 w-5"
+                        />
+                    </div>
+                ) : null}
             </div>
             <span
                 className={`shrink-0 rounded px-2 py-1 text-[10px] font-bold uppercase tracking-wider ${
@@ -124,6 +145,8 @@ function LobbyContent() {
     const [viewId, setViewId] = useState<number | null>(null);
     const [copied, setCopied] = useState(false);
     const [starting, setStarting] = useState(false);
+    const [drafts, setDrafts] = useState<Record<number, BuildDraft>>({});
+    const reconciled = useRef(false);
     const mutationSeq = useRef(0);
     const navigated = useRef(false);
     const triedJoin = useRef(false);
@@ -196,6 +219,32 @@ function LobbyContent() {
             goPlay();
         }
     }, [goPlay, myTemplate, room?.launching]);
+
+    /** Build que se manda al servidor para un campeón: el guardado en este navegador (null = por defecto). */
+    const storedBuildFor = (templateId: number): MobaBuild | null => {
+        const catalog = getChampionCatalog(templateId);
+        const stored = loadStoredDraft(templateId);
+        const build = stored ? draftToBuild(stored) : null;
+
+        if (!catalog || !isValidBuild(catalog, build)) return null;
+
+        return buildsEqual(build, catalog.defaultBuild) ? null : build;
+    };
+
+    // Al abrir el lobby, aplica el build recordado (localStorage) del campeón ya elegido si difiere del de la sala.
+    useEffect(() => {
+        if (reconciled.current || !room?.member || myTemplate === null) return;
+
+        reconciled.current = true;
+
+        const wanted = storedBuildFor(myTemplate);
+        const serverBuild = room.member.build ?? null;
+
+        if (wanted && !buildsEqual(wanted, serverBuild)) {
+            void mutate({ templateId: myTemplate, build: wanted });
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [myTemplate, room?.member]);
 
     const mutate = async (
         patch: Parameters<typeof updateMobaLobby>[1],
@@ -277,8 +326,53 @@ function LobbyContent() {
 
     const chooseChampion = (id: number) => {
         setViewId(id);
-        void mutate({ templateId: id, raceId: myRace, ready: false });
+        void mutate({
+            templateId: id,
+            raceId: myRace,
+            ready: false,
+            build: storedBuildFor(id),
+        });
     };
+
+    /** Borrador del build de un campeón: lo recordado en el navegador, o el de la sala si es mi campeón, o el default. */
+    const draftFor = (templateId: number): BuildDraft => {
+        const local = drafts[templateId];
+
+        if (local) return local;
+
+        const stored = loadStoredDraft(templateId);
+
+        if (stored) return stored;
+
+        const catalog = getChampionCatalog(templateId);
+        const serverBuild = templateId === myTemplate ? room.member?.build : null;
+
+        if (catalog && isValidBuild(catalog, serverBuild)) return draftFromBuild(serverBuild);
+
+        return draftFromBuild(
+            catalog?.defaultBuild ?? { abilities: [], ult: "", spec: "", kit: "" },
+        );
+    };
+
+    const changeBuild = (templateId: number, draft: BuildDraft) => {
+        setDrafts((previous) => ({ ...previous, [templateId]: draft }));
+        storeDraft(templateId, draft);
+
+        const catalog = getChampionCatalog(templateId);
+        const build = draftToBuild(draft);
+
+        // Solo se guarda en la sala cuando están las 4 habilidades; el servidor valida los ids.
+        if (!catalog || !build || !isValidBuild(catalog, build)) return;
+
+        void mutate({
+            templateId,
+            build: buildsEqual(build, catalog.defaultBuild) ? null : build,
+            ...(templateId !== myTemplate ? { raceId: myRace, ready: false } : {}),
+        });
+    };
+
+    const shownDraft = draftFor(shownChampion.id);
+    const draftIncomplete = myTemplate !== null && draftFor(myTemplate).slots.some((slot) => !slot);
 
     const chooseRace = (raceId: number) => {
         void mutate({ raceId, templateId: myTemplate ?? shownChampion.id });
@@ -399,7 +493,7 @@ function LobbyContent() {
                     <div className="mt-5 flex flex-wrap items-center gap-3">
                         <button
                             type="button"
-                            disabled={myTemplate === null}
+                            disabled={myTemplate === null || draftIncomplete}
                             onClick={() => void mutate({ ready: !myReady })}
                             className={`rounded border-2 px-8 py-3 text-sm font-black uppercase tracking-[0.24em] transition disabled:cursor-not-allowed disabled:opacity-40 ${
                                 myReady
@@ -430,6 +524,9 @@ function LobbyContent() {
                         {myTemplate === null
                             ? "Elegí un campeón para poder marcarte listo. "
                             : ""}
+                        {draftIncomplete
+                            ? "Completá las 4 habilidades de tu build para marcarte listo. "
+                            : ""}
                         {room.isOwner
                             ? "Podés iniciar con slots vacíos: se juega con los que haya."
                             : ""}
@@ -451,6 +548,8 @@ function LobbyContent() {
                             champion={shownChampion}
                             raceId={myRace}
                             onRaceChange={chooseRace}
+                            buildDraft={shownDraft}
+                            onBuildChange={(draft) => changeBuild(shownChampion.id, draft)}
                         />
                     </div>
                 </section>

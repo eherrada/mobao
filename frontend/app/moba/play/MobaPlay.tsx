@@ -13,14 +13,20 @@ import { ScoreBoard } from "../../../components/moba/hud/ScoreBoard";
 import { ShopModal } from "../../../components/moba/hud/ShopModal";
 import { BuffChips, TopBar } from "../../../components/moba/hud/TopBar";
 import {
-    SKILL_KEYS,
+    DEFAULT_SKILL_CODES,
     cssColor,
+    RESOURCE_STYLE,
+    isReservedCode,
+    keyLabel,
+    loadSkillCodes,
+    saveSkillCodes,
     type FeedLine,
     type MobaSkill,
     type MobaState,
 } from "../../../components/moba/hud/types";
 import { useAuthRedirect } from "../../../hooks/useAuthRedirect";
 import {
+    createAttackSpellPacket,
     createClickPacket,
     createMobaSkillPacket,
     type PlayerHudState,
@@ -90,7 +96,13 @@ export default function MobaPlay() {
     const [showBoard, setShowBoard] = useState(false);
     const [chatOpen, setChatOpen] = useState(false);
     const [armedSlot, setArmedSlot] = useState<number | null>(null);
+    const [targeting, setTargeting] = useState(false);
+    const [stateAt, setStateAt] = useState(() => Date.now());
+    const [skillCodes, setSkillCodes] = useState<string[]>([...DEFAULT_SKILL_CODES]);
+    const [rebindIndex, setRebindIndex] = useState<number | null>(null);
     const [cooldownUntil, setCooldownUntil] = useState(0);
+    const cooldownUntilRef = useRef(0);
+    const stateAtRef = useRef(0);
     const [now, setNow] = useState(() => Date.now());
     const [leaveArmed, setLeaveArmed] = useState(false);
     const [leaving, setLeaving] = useState(false);
@@ -112,10 +124,51 @@ export default function MobaPlay() {
     const stateRef = useRef<MobaState | null>(null);
     const hudRef = useRef<PlayerHudState | null>(null);
     const tradeRef = useRef<TradeState | null>(null);
+    const skillCodesRef = useRef<string[]>([...DEFAULT_SKILL_CODES]);
+    const rebindRef = useRef<number | null>(null);
+    /** Ventana en la que una baja de recurso se atribuye a un lanzamiento (dispara el destello del intervalo global). */
+    const castWindowUntilRef = useRef(0);
+    const escPressedAtRef = useRef(0);
 
     useEffect(() => {
         stateRef.current = state;
     }, [state]);
+    useEffect(() => {
+        skillCodesRef.current = skillCodes;
+    }, [skillCodes]);
+    useEffect(() => {
+        cooldownUntilRef.current = cooldownUntil;
+    }, [cooldownUntil]);
+    useEffect(() => {
+        stateAtRef.current = stateAt;
+    }, [stateAt]);
+    useEffect(() => {
+        rebindRef.current = rebindIndex;
+    }, [rebindIndex]);
+
+    // Teclas de habilidad guardadas por el jugador.
+    useEffect(() => {
+        setSkillCodes(loadSkillCodes());
+    }, []);
+
+    // El motor marca <html class="game-targeting"> mientras espera el click de un hechizo/tecnica.
+    useEffect(() => {
+        const root = document.documentElement;
+        const sync = () => setTargeting(root.classList.contains("game-targeting"));
+        const observer = new MutationObserver(sync);
+
+        sync();
+        observer.observe(root, { attributes: true, attributeFilter: ["class"] });
+
+        return () => observer.disconnect();
+    }, []);
+
+    // Al terminar el apuntado (click o Esc) se apaga el resaltado; si no fue Esc se asume un lanzamiento.
+    useEffect(() => {
+        if (targeting) return;
+        setArmedSlot(null);
+        if (Date.now() - escPressedAtRef.current > 300) castWindowUntilRef.current = Date.now() + 1500;
+    }, [targeting]);
     useEffect(() => {
         hudRef.current = hud;
     }, [hud]);
@@ -137,6 +190,8 @@ export default function MobaPlay() {
     useEffect(() => {
         const onState = (event: Event) => {
             const detail = (event as CustomEvent<MobaState>).detail;
+
+            setStateAt(Date.now());
 
             // Solo desarrollo: ?preview=ended|dead fuerza esas pantallas para revisarlas sin jugar una partida.
             setState(
@@ -199,7 +254,13 @@ export default function MobaPlay() {
                 return;
             }
 
-            if (/mana|lejos|insuficiente|no puedes|no tienes|oro/i.test(text) && text.length < 120) {
+            // Avisos de habilidades y recursos (aturdido, recarga, sin objetivo, sin furia/energia...).
+            if (
+                /mana|lejos|insuficiente|no puedes|no tienes|no ten[eé]s|oro|aturdid|recarg|objetivo|espacio|aprendiste|furia|energ[ií]a/i.test(
+                    text,
+                ) &&
+                text.length < 120
+            ) {
                 setToast({ text: text.replace(/^\[[^\]]+\]\s*/, ""), at: Date.now() });
             }
         },
@@ -217,9 +278,9 @@ export default function MobaPlay() {
 
         prevManaRef.current = mana;
 
-        if (mana !== null && prev !== null && mana < prev && armedSlot !== null) {
+        if (mana !== null && prev !== null && mana < prev && (armedSlot !== null || Date.now() < castWindowUntilRef.current)) {
             setCooldownUntil(Date.now() + GLOBAL_COOLDOWN_MS);
-            setArmedSlot(null);
+            castWindowUntilRef.current = 0;
         }
     }, [hud?.mana, armedSlot]);
 
@@ -243,15 +304,48 @@ export default function MobaPlay() {
                 return;
             }
 
-            const manaRequired = current.spells.find((s) => s.slot === skill.slot)?.manaRequired ?? 0;
+            // Las tecnicas del MOBA no son hechizos de AO: el costo viene del contrato (en unidades del recurso),
+            // no de datSpell (el hechizo "imagen" del panel tiene un costo de mana que no aplica).
+            const aoCost = current.spells.find((s) => s.slot === skill.slot)?.manaRequired ?? 0;
+            const cost = skill.kind === "tech" ? (skill.cost ?? 0) : aoCost || (skill.cost ?? 0);
+            const resourceName = RESOURCE_STYLE[skill.resource ?? stateRef.current?.me.resource ?? "mana"].name;
 
-            if ((current.mana ?? 0) < manaRequired) {
-                showToast("Mana insuficiente");
+            if (stateRef.current?.me.stunned) {
+                showToast("Estas aturdido");
+                return;
+            }
+
+            const inState = stateRef.current?.skills.find((s) => s.slot === skill.slot);
+            const cdLeft = Math.max(0, (inState?.cdLeftMs ?? 0) - (Date.now() - stateAtRef.current));
+
+            if (cdLeft > 0) {
+                showToast(`${skill.name} se esta recargando (${(cdLeft / 1000).toFixed(1)} s)`);
+                return;
+            }
+
+            if ((current.mana ?? 0) < cost) {
+                showToast(`${resourceName} insuficiente`);
+                return;
+            }
+
+            // Sobre vos / area alrededor del heroe: se lanza al instante sobre el propio tile, sin apuntar.
+            if (skill.target === "self" || skill.target === "area") {
+                if (Date.now() < cooldownUntilRef.current - 100) return;
+
+                const socketPos = current.pos;
+
+                window.dispatchEvent(
+                    new CustomEvent("mobao:send", {
+                        detail: createAttackSpellPacket(skill.slot, socketPos.x, socketPos.y, true),
+                    }),
+                );
+                castWindowUntilRef.current = Date.now() + 1500;
+                setCooldownUntil(Date.now() + GLOBAL_COOLDOWN_MS);
                 return;
             }
 
             setArmedSlot(skill.slot);
-            setSpellTargetRequest((c) => ({ slot: skill.slot, manaRequired, name: skill.name, token: next(c) }));
+            setSpellTargetRequest((c) => ({ slot: skill.slot, manaRequired: Math.floor(cost), name: skill.name, token: next(c) }));
         },
         [showToast],
     );
@@ -353,6 +447,32 @@ export default function MobaPlay() {
 
             if (typing(event.target)) return;
 
+            // Cambio de tecla de una habilidad (click derecho sobre el boton): la proxima tecla queda asignada.
+            const rebinding = rebindRef.current;
+
+            if (rebinding !== null) {
+                event.preventDefault();
+                event.stopPropagation();
+                setRebindIndex(null);
+
+                if (event.code === "Escape") return;
+
+                if (isReservedCode(event.code) || /^(Shift|Control|Alt|Meta)/.test(event.code)) {
+                    showToast("Esa tecla no se puede usar para una habilidad");
+                    return;
+                }
+
+                const codes = [...skillCodesRef.current];
+                const clash = codes.indexOf(event.code);
+
+                // Si la tecla ya era de otra habilidad, intercambian.
+                if (clash >= 0) codes[clash] = codes[rebinding];
+                codes[rebinding] = event.code;
+                setSkillCodes(codes);
+                saveSkillCodes(codes);
+                return;
+            }
+
             if (event.code === "Tab") {
                 event.preventDefault();
                 setShowBoard(true);
@@ -368,6 +488,7 @@ export default function MobaPlay() {
             }
 
             if (event.code === "Escape") {
+                escPressedAtRef.current = Date.now();
                 setArmedSlot(null);
                 if (tradeRef.current) closeShop();
                 return;
@@ -389,7 +510,7 @@ export default function MobaPlay() {
                 return;
             }
 
-            const index = SKILL_KEYS.findIndex((k) => k.code === event.code);
+            const index = skillCodesRef.current.indexOf(event.code);
             const skill = index >= 0 ? stateRef.current?.skills[index] : undefined;
 
             if (skill) {
@@ -416,7 +537,7 @@ export default function MobaPlay() {
             window.removeEventListener("keyup", onKeyUp);
             window.removeEventListener("blur", onBlur);
         };
-    }, [castSkill, closeShop, toggleFullscreen, toggleShop, drinkPotion]);
+    }, [castSkill, closeShop, toggleFullscreen, toggleShop, drinkPotion, showToast]);
 
     // Si la sala no sirve, volvemos al lobby despues de mostrar el motivo.
     useEffect(() => {
@@ -488,6 +609,7 @@ export default function MobaPlay() {
     );
 
     const cooldownLeft = Math.max(0, cooldownUntil - now);
+    const armedSkill = armedSlot === null ? null : (state?.skills.find((s) => s.slot === armedSlot) ?? null);
     const ready = !!state && !!hud;
     const failure = conn.phase === "error" ? conn.error : status.error && !status.connected && !status.connecting ? status.error : null;
 
@@ -562,15 +684,30 @@ export default function MobaPlay() {
                         <BottomHud
                             state={state}
                             hud={hud}
+                            now={now}
+                            stateAt={stateAt}
                             cooldownLeft={cooldownLeft}
                             cooldownTotal={GLOBAL_COOLDOWN_MS}
-                            armedSlot={armedSlot}
+                            armedSlot={targeting ? armedSlot : null}
+                            skillCodes={skillCodes}
+                            rebindIndex={rebindIndex}
                             onCast={castSkill}
                             onLevelUp={levelUp}
+                            onRebind={(index) => {
+                                setRebindIndex(index);
+                                showToast("Presiona la tecla nueva para esta habilidad (Esc cancela)");
+                            }}
                             onUsePotion={(slot) => drinkPotion(slot, false)}
                             onOpenShop={toggleShop}
                         />
                     </div>
+
+                    {targeting && armedSkill ? (
+                        <div className="absolute bottom-[222px] left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-white/70 bg-black/80 px-3 py-1 text-sm text-white shadow-[0_0_12px_rgba(255,255,255,0.35)]">
+                            <span className="font-semibold text-[#f1dfa8]">{armedSkill.name}</span>: apunta y hace click
+                            <span className="ml-2 text-xs text-stone-400">Esc para cancelar</span>
+                        </div>
+                    ) : null}
 
                     {toast ? (
                         <div className="absolute bottom-[190px] left-1/2 -translate-x-1/2 rounded border border-[#8a6d2f] bg-[#0a0d14]/90 px-3 py-1 text-sm text-[#e9d8a6] shadow">

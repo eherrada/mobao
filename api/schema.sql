@@ -568,3 +568,7 @@ ALTER TABLE arena_room_members ADD COLUMN IF NOT EXISTS team TEXT;
 ALTER TABLE arena_room_members ADD COLUMN IF NOT EXISTS ready BOOLEAN NOT NULL DEFAULT FALSE;
 ALTER TABLE arena_rooms ADD COLUMN IF NOT EXISTS started_at TIMESTAMPTZ;
 ALTER TABLE game_tickets ADD COLUMN IF NOT EXISTS pvp_team TEXT;
+
+-- MOBA: build de habilidades elegido en el lobby ({ abilities[4], ult, spec, kit }); el servidor de juego lo valida
+ALTER TABLE arena_room_members ADD COLUMN IF NOT EXISTS pvp_build JSONB;
+ALTER TABLE game_tickets ADD COLUMN IF NOT EXISTS pvp_build JSONB;

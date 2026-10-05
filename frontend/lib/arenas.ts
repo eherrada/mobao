@@ -14,12 +14,22 @@ export type ArenaRoomSummary = {
     };
 };
 
+/** Build de habilidades MOBA ({ abilities[4], ult, spec, kit }; ver lib/mobaCatalog.ts). */
+export type ArenaBuild = {
+    abilities: string[];
+    ult: string;
+    spec: string;
+    kit: string;
+};
+
 export type ArenaRoomMemberView = {
     accountId: string;
     name: string;
     isOwner: boolean;
     templateId: number | null;
     raceId: number | null;
+    /** null = build por defecto del campeón. */
+    build?: ArenaBuild | null;
     team: "blue" | "red";
     ready: boolean;
     connected: boolean;
@@ -30,6 +40,7 @@ export type ArenaRoomDetails = ArenaRoomSummary & {
     member: {
         selectedPvpTemplateId: number | null;
         selectedPvpRaceId?: number | null;
+        build?: ArenaBuild | null;
         connected: boolean;
         team?: "blue" | "red" | null;
         ready?: boolean;

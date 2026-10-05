@@ -7,7 +7,7 @@ export type MobaState = {
     team: 0 | 1;
     respawnIn: number;
     size: number;
-    me: { id: number; x: number; y: number; gold: number; level: number; xp: number; xpNext: number; maxLevel: number };
+    me: MobaMe;
     points: number;
     buffs?: Array<{ id: string; name: string; left: number; stacks: number; team: boolean }>;
     skills: MobaSkill[];
@@ -28,6 +28,43 @@ export type MobaSkill = {
     ult: boolean;
     canLevel: boolean;
     nextReqLevel: number;
+    // Campos del sistema de habilidades (abilities.ts → describeSkills); opcionales por compatibilidad.
+    id?: string;
+    desc?: string;
+    cdLeftMs?: number;
+    cdTotalMs?: number;
+    cost?: number;
+    resource?: MobaResource;
+    range?: number;
+    target?: MobaTarget;
+    icon?: string;
+    tags?: string[];
+    kind?: "aoSpell" | "tech";
+};
+
+export type MobaResource = "mana" | "furia" | "energia";
+
+export type MobaTarget = "self" | "point" | "line" | "area" | "ally";
+
+export type MobaMe = {
+    id: number;
+    x: number;
+    y: number;
+    gold: number;
+    level: number;
+    xp: number;
+    xpNext: number;
+    maxLevel: number;
+    /** Recurso del heroe (hero.mana / maxMana del HUD de AO es ese recurso). */
+    resource?: MobaResource;
+    shield?: number;
+    spec?: { id: string; name: string; desc: string } | null;
+    stunned?: boolean;
+    rooted?: boolean;
+    /** Porcentaje de ralentizacion (0 = sin ralentizar). */
+    slowPct?: number;
+    /** Reduccion de dano en porcentaje. */
+    dr?: number;
 };
 
 export type MobaHeroRow = {
@@ -54,17 +91,61 @@ export type FeedLine = {
 export const TEAM_COLOR = ["#4aa3ff", "#ff5a4a"] as const;
 export const TEAM_NAME = ["AZUL", "ROJO"] as const;
 
-/** Teclas de habilidad por posicion en el kit (W queda libre para moverse). */
-export const SKILL_KEYS = [
-    { code: "KeyQ", label: "Q" },
-    { code: "KeyE", label: "E" },
-    { code: "KeyR", label: "R" },
-    { code: "KeyT", label: "T" },
-    { code: "KeyY", label: "Y" },
-    { code: "KeyF", label: "F" },
-    { code: "KeyG", label: "G" },
-    { code: "KeyH", label: "H" },
-] as const;
+/** Teclas de habilidad por posicion en el kit: 4 normales + definitiva (W y el resto del movimiento quedan libres). */
+export const DEFAULT_SKILL_CODES = ["KeyQ", "KeyE", "KeyR", "KeyT", "KeyY"] as const;
+export const SKILL_KEYS_STORAGE = "mobao.skillKeys.v1";
+
+/** Teclas que no se pueden usar para una habilidad (movimiento, ataque, tienda, pociones, chat, marcador). */
+const RESERVED_CODES = new Set([
+    "KeyW", "KeyA", "KeyS", "KeyD", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight",
+    "Space", "Tab", "Enter", "NumpadEnter", "Escape", "KeyB", "Digit1", "Digit2", "Numpad1", "Numpad2",
+]);
+
+export function isReservedCode(code: string) {
+    return RESERVED_CODES.has(code);
+}
+
+export function keyLabel(code: string): string {
+    if (code.startsWith("Key")) return code.slice(3);
+    if (code.startsWith("Digit")) return code.slice(5);
+    if (code.startsWith("Numpad")) return `N${code.slice(6)}`;
+
+    return code;
+}
+
+export function loadSkillCodes(): string[] {
+    try {
+        const parsed = JSON.parse(window.localStorage.getItem(SKILL_KEYS_STORAGE) ?? "null");
+
+        if (
+            Array.isArray(parsed) &&
+            parsed.length === DEFAULT_SKILL_CODES.length &&
+            parsed.every((c) => typeof c === "string" && c && !isReservedCode(c)) &&
+            new Set(parsed).size === parsed.length
+        ) {
+            return parsed;
+        }
+    } catch {
+        // Sin configuracion guardada.
+    }
+
+    return [...DEFAULT_SKILL_CODES];
+}
+
+export function saveSkillCodes(codes: string[]) {
+    try {
+        window.localStorage.setItem(SKILL_KEYS_STORAGE, JSON.stringify(codes));
+    } catch {
+        // Sin almacenamiento: la configuracion dura la sesion.
+    }
+}
+
+/** Colores y nombre por recurso. */
+export const RESOURCE_STYLE: Record<MobaResource, { name: string; from: string; to: string; text: string }> = {
+    mana: { name: "Mana", from: "#5aa8ff", to: "#2457b8", text: "#7ab8ff" },
+    furia: { name: "Furia", from: "#ff7a3d", to: "#b3201a", text: "#ff8a5c" },
+    energia: { name: "Energia", from: "#e8e04d", to: "#5fae3a", text: "#d9e86a" },
+};
 
 export function formatClock(totalSeconds: number) {
     const m = Math.floor(totalSeconds / 60);

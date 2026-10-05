@@ -11,6 +11,7 @@ import type {
   ArenaRoomSummary,
   AuthSessionRecord,
   GameTicketResponse,
+  PvpBuild,
 } from "../types";
 
 const ARENA_GAME_TICKET_TTL_MS = 1000 * 60;
@@ -45,11 +46,22 @@ const joinRoomSchema = z.object({
   password: z.string().trim().max(100).optional(),
 });
 
+const buildId = z.string().trim().min(1).max(48);
+
+const pvpBuildSchema = z.object({
+  abilities: z.array(buildId).length(4),
+  ult: buildId,
+  spec: buildId,
+  kit: buildId,
+});
+
 const lobbyUpdateSchema = z.object({
   team: z.enum(["blue", "red"]).optional(),
   ready: z.boolean().optional(),
   templateId: z.coerce.number().int().min(0).max(MAX_PVP_TEMPLATE_ID).optional(),
   raceId: z.coerce.number().int().min(1).max(5).optional(),
+  // null = volver al build por defecto. Solo se valida la forma; los ids los valida el servidor de juego.
+  build: pvpBuildSchema.nullable().optional(),
 });
 
 const selectTemplateSchema = z.object({
@@ -125,7 +137,7 @@ async function getRoomRecordByJoinToken(joinToken: string): Promise<ArenaRoomRec
 async function getMemberRecord(roomId: string, accountId: string): Promise<ArenaRoomMemberRecord | null> {
   const memberResult = await pool.query<ArenaRoomMemberRecord>(
     `
-      SELECT room_id, account_id, selected_pvp_template_id, selected_pvp_race_id, team, ready, connected, joined_at, updated_at
+      SELECT room_id, account_id, selected_pvp_template_id, selected_pvp_race_id, pvp_build, team, ready, connected, joined_at, updated_at
       FROM arena_room_members
       WHERE room_id = $1
         AND account_id = $2
@@ -171,13 +183,14 @@ async function listRoomMembers(room: ArenaRoomRecord): Promise<ArenaRoomMemberVi
     name: string;
     selected_pvp_template_id: number | null;
     selected_pvp_race_id: number | null;
+    pvp_build: PvpBuild | null;
     team: string | null;
     ready: boolean;
     connected: boolean;
   }>(
     `
       SELECT member.account_id, account.name, member.selected_pvp_template_id, member.selected_pvp_race_id,
-             member.team, member.ready, member.connected
+             member.pvp_build, member.team, member.ready, member.connected
       FROM arena_room_members member
       JOIN accounts account ON account.id = member.account_id
       WHERE member.room_id = $1
@@ -210,6 +223,7 @@ async function listRoomMembers(room: ArenaRoomRecord): Promise<ArenaRoomMemberVi
     isOwner: row.account_id === room.owner_account_id,
     templateId: row.selected_pvp_template_id,
     raceId: row.selected_pvp_race_id,
+    build: row.pvp_build ?? null,
     team: row.team === "red" ? "red" : "blue",
     ready: row.ready,
     connected: row.connected,
@@ -254,6 +268,7 @@ async function buildRoomDetails(room: ArenaRoomRecord, accountId: string): Promi
       ? {
           selectedPvpTemplateId: member.selected_pvp_template_id,
           selectedPvpRaceId: member.selected_pvp_race_id,
+          build: member.pvp_build ?? null,
           connected: member.connected,
           team: own?.team ?? member.team ?? null,
           ready: Boolean(member.ready),
@@ -561,6 +576,11 @@ export async function updateArenaLobby(token: string, roomId: string, payload: u
     }
   }
 
+  // Si cambia de campeon sin mandar build, el anterior ya no sirve: se vuelve al default.
+  const changedChampion =
+    data.templateId !== undefined && data.templateId !== member.selected_pvp_template_id;
+  const writeBuild = data.build !== undefined || changedChampion;
+
   await pool.query(
     `
       UPDATE arena_room_members
@@ -568,11 +588,21 @@ export async function updateArenaLobby(token: string, roomId: string, payload: u
           ready = COALESCE($4, ready),
           selected_pvp_template_id = COALESCE($5, selected_pvp_template_id),
           selected_pvp_race_id = COALESCE($6, selected_pvp_race_id),
+          pvp_build = CASE WHEN $7::boolean THEN $8::jsonb ELSE pvp_build END,
           updated_at = NOW()
       WHERE room_id = $1
         AND account_id = $2
     `,
-    [room.id, session.account_id, data.team ?? null, data.ready ?? null, data.templateId ?? null, data.raceId ?? null],
+    [
+      room.id,
+      session.account_id,
+      data.team ?? null,
+      data.ready ?? null,
+      data.templateId ?? null,
+      data.raceId ?? null,
+      writeBuild,
+      data.build ? JSON.stringify(data.build) : null,
+    ],
   );
 
   await touchRoomActivity(room.id);
@@ -638,6 +668,9 @@ export async function createArenaGameTicket(token: string, roomId: string, paylo
   const { templateId, raceId: requestedRaceId } = selectTemplateSchema.parse(payload);
   const raceId = requestedRaceId ?? member.selected_pvp_race_id ?? 1;
   const ticket = createOpaqueTicket();
+  // El build guardado solo vale para el campeon con el que se guardo; si cambia, el servidor usa el default.
+  const ticketBuild =
+    member.pvp_build && member.selected_pvp_template_id === templateId ? JSON.stringify(member.pvp_build) : null;
 
   await pool.query(
     `
@@ -665,12 +698,13 @@ export async function createArenaGameTicket(token: string, roomId: string, paylo
         pvp_template_id,
         pvp_race_id,
         pvp_team,
+        pvp_build,
         expires_at
       )
-      VALUES ($1, $2, $3, NULL, 'arena', $4, $5, $7, $8, NOW() + ($6 * INTERVAL '1 millisecond'))
+      VALUES ($1, $2, $3, NULL, 'arena', $4, $5, $7, $8, $9::jsonb, NOW() + ($6 * INTERVAL '1 millisecond'))
       RETURNING expires_at
     `,
-    [ticket, token, session.account_id, room.id, templateId, ARENA_GAME_TICKET_TTL_MS, raceId, member.team ?? null],
+    [ticket, token, session.account_id, room.id, templateId, ARENA_GAME_TICKET_TTL_MS, raceId, member.team ?? null, ticketBuild],
   );
 
   return {

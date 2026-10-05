@@ -1,4 +1,5 @@
 import type {
+    ArenaBuild,
     ArenaRoomDetails,
     ArenaRoomSummary,
     ArenaRoomsResponse,
@@ -80,6 +81,8 @@ export function updateMobaLobby(
         ready?: boolean;
         templateId?: number;
         raceId?: number;
+        /** null = volver al build por defecto. */
+        build?: ArenaBuild | null;
     },
 ) {
     return post<ArenaRoomDetails>(`/api/arenas/rooms/${roomId}/lobby`, patch);
